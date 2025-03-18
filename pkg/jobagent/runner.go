@@ -71,7 +71,7 @@ func (a *JobAgent) RunQueuedJobs() error {
 			defer wg.Done()
 			externalId,err := a.runner.Start(job)
 			if err != nil {
-				status := api.InProgress
+				status := api.JobStatusInProgress
 				message := fmt.Sprintf("Failed to start job: %s", err.Error())
 				log.Error("Failed to start job", "error", err, "jobId", job.Id.String())
 				a.client.UpdateJobWithResponse(
