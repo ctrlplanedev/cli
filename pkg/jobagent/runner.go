@@ -94,14 +94,14 @@ func (a *JobAgent) RunQueuedJobs() error {
 		wg.Add(1)
 		go func(job api.Job) {
 			defer wg.Done()
-			
+
 			// Create a status update callback for this job
 			statusUpdateFunc := func(jobID string, status api.JobStatus, message string) {
 				a.updateJobStatus(jobID, status, message, nil)
 			}
-			
+
 			externalId, status, err := a.runner.Start(job, jobDetails, statusUpdateFunc)
-			
+
 			if err != nil {
 				status := api.JobStatusInProgress
 				message := fmt.Sprintf("Failed to start job: %s", err.Error())
@@ -116,7 +116,7 @@ func (a *JobAgent) RunQueuedJobs() error {
 				a.updateJobStatus(job.Id.String(), status, message, nil)
 				return
 			}
-			
+
 			if externalId != "" {
 				status := api.JobStatusInProgress
 				a.updateJobStatus(job.Id.String(), status, "", &externalId)
