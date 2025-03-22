@@ -2,7 +2,6 @@ package exec
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/pkg/jobagent"
-	"github.com/spf13/viper"
 )
 
 var _ jobagent.Runner = &ExecRunner{}
@@ -51,7 +49,7 @@ func (r *ExecRunner) Status(job api.Job) (api.JobStatus, string) {
 	return api.JobStatusInProgress, fmt.Sprintf("process running with pid %d", externalId)
 }
 
-func (r *ExecRunner) Start(job api.Job) (string, error) {
+func (r *ExecRunner) Start(job api.Job, jobDetails map[string]interface{}) (string, error) {
 	// Create temp script file
 	ext := ".sh"
 	if runtime.GOOS == "windows" {
@@ -72,27 +70,6 @@ func (r *ExecRunner) Start(job api.Job) (string, error) {
 	if err := json.Unmarshal(jsonBytes, &config); err != nil {
 		return "", fmt.Errorf("failed to unmarshal job agent config: %w", err)
 	}
-
-	client, err := api.NewAPIKeyClientWithResponses(
-		viper.GetString("url"),
-		viper.GetString("api-key"),
-	)
-	if err != nil {
-		return "", fmt.Errorf("failed to create API client for job details: %w", err)
-	}
-
-	resp, err := client.GetJobWithResponse(context.Background(), job.Id.String())
-	if err != nil {
-		return "", fmt.Errorf("failed to get job details: %w", err)
-	}
-
-	if resp.JSON200 == nil {
-		return "", fmt.Errorf("received empty response from job details API")
-	}
-
-	var jobDetails map[string]interface{}
-	detailsBytes, _ := json.Marshal(resp.JSON200)
-	json.Unmarshal(detailsBytes, &jobDetails)
 
 	templatedScript, err := template.New("script").Parse(config.Script)
 	if err != nil {

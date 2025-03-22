@@ -10,7 +10,7 @@ import (
 )
 
 type Runner interface {
-	Start(job api.Job) (string, error)
+	Start(job api.Job, jobDetails map[string]interface{}) (string, error)
 	Status(job api.Job) (api.JobStatus, string)
 }
 
@@ -66,9 +66,14 @@ func (a *JobAgent) RunQueuedJobs() error {
 	var wg sync.WaitGroup
 	for _, job := range *jobs.JSON200.Jobs {
 		wg.Add(1)
+		jobDetails, err := fetchJobDetails(context.Background(), job.Id.String())
+		if err != nil {
+			log.Error("Failed to fetch job details", "error", err, "jobId", job.Id.String())
+			continue
+		}
 		go func(job api.Job) {
 			defer wg.Done()
-			externalId, err := a.runner.Start(job)
+			externalId, err := a.runner.Start(job, jobDetails)
 			if err != nil {
 				status := api.JobStatusInProgress
 				message := fmt.Sprintf("Failed to start job: %s", err.Error())

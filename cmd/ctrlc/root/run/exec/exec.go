@@ -2,6 +2,7 @@ package exec
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
@@ -11,23 +12,18 @@ import (
 	"github.com/spf13/viper"
 )
 
-type JobAgentType string
-
-const (
-	JobAgentTypeLinux   JobAgentType = "exec-linux"
-	JobAgentTypeWindows JobAgentType = "exec-windows"
-)
-
 func NewRunExecCmd() *cobra.Command {
 	var name string
-	var jobAgentType string
+	var jobAgentType = "exec-bash"
+	if runtime.GOOS == "windows" {
+		jobAgentType = "exec-powershell"
+	}
 
 	cmd := &cobra.Command{
 		Use:   "exec",
 		Short: "Execute commands directly when a job is received",
 		Example: heredoc.Doc(`
-			$ ctrlc run exec --name "my-script-agent" --workspace 123e4567-e89b-12d3-a456-426614174000 
-			$ ctrlc run exec --name "my-script-agent" --workspace 123e4567-e89b-12d3-a456-426614174000 --type windows
+			$ ctrlc run exec --name "my-script-agent" --workspace 123e4567-e89b-12d3-a456-426614174000
 		`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			apiURL := viper.GetString("url")
@@ -42,13 +38,6 @@ func NewRunExecCmd() *cobra.Command {
 			}
 			if workspaceId == "" {
 				return fmt.Errorf("workspace is required")
-			}
-			validTypes := map[string]bool{
-				string(JobAgentTypeLinux):   true,
-				string(JobAgentTypeWindows): true,
-			}
-			if !validTypes[jobAgentType] {
-				return fmt.Errorf("invalid type: %s. Must be one of: linux, windows", jobAgentType)
 			}
 
 			ja, err := jobagent.NewJobAgent(
@@ -75,6 +64,5 @@ func NewRunExecCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&name, "name", "", "Name of the job agent")
 	cmd.MarkFlagRequired("name")
-	cmd.Flags().StringVar(&jobAgentType, "type", "exec-linux", "Type of the job agent, defaults to linux")
 	return cmd
 }
