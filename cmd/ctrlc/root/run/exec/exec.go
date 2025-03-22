@@ -40,6 +40,9 @@ func NewRunExecCmd() *cobra.Command {
 				return fmt.Errorf("workspace is required")
 			}
 
+			runner := NewExecRunner()
+			defer runner.Shutdown()
+
 			ja, err := jobagent.NewJobAgent(
 				client,
 				api.UpsertJobAgentJSONRequestBody{
@@ -47,7 +50,7 @@ func NewRunExecCmd() *cobra.Command {
 					Type:        jobAgentType,
 					WorkspaceId: workspaceId,
 				},
-				NewExecRunner(),
+				runner,
 			)
 			if err != nil {
 				return fmt.Errorf("failed to create job agent: %w", err)

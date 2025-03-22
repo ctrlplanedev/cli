@@ -9,25 +9,86 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"strconv"
 	"sync"
-	"syscall"
+	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/pkg/jobagent"
+	"github.com/google/uuid"
 )
 
 var _ jobagent.Runner = &ExecRunner{}
 
+type ProcessInfo struct {
+	cmd       *exec.Cmd
+	finished  error
+	startTime time.Time
+}
 type ExecRunner struct {
-	mu       sync.Mutex
-	finished map[int]error
+	mu        sync.Mutex
+	processes map[string]*ProcessInfo
+
+	// For graceful shutdown
+	ctx        context.Context
+	cancelFunc context.CancelFunc
+	wg         sync.WaitGroup
 }
 
 func NewExecRunner() *ExecRunner {
-	return &ExecRunner{
-		finished: make(map[int]error),
+	ctx, cancel := context.WithCancel(context.Background())
+
+	runner := &ExecRunner{
+		processes:  make(map[string]*ProcessInfo),
+		ctx:        ctx,
+		cancelFunc: cancel,
+	}
+
+	runner.wg.Add(1)
+	go runner.startHousekeeping()
+
+	return runner
+}
+
+func (r *ExecRunner) Shutdown() {
+	if r.cancelFunc != nil {
+		r.cancelFunc()
+		r.wg.Wait()
+	}
+}
+
+func (r *ExecRunner) startHousekeeping() {
+	defer r.wg.Done()
+
+	ticker := time.NewTicker(1 * time.Hour)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			r.cleanupOldProcesses()
+		case <-r.ctx.Done():
+			log.Debug("Housekeeping goroutine shutting down")
+			return
+		}
+	}
+}
+
+func (r *ExecRunner) cleanupOldProcesses() {
+	const retentionPeriod = 24 * time.Hour
+	now := time.Now()
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for id, proc := range r.processes {
+		if proc.finished != nil {
+			age := now.Sub(proc.startTime)
+			if age > retentionPeriod {
+				log.Debug("Cleaning up old process", "uniqueID", id, "age", age.String())
+				delete(r.processes, id)
+			}
+		}
 	}
 }
 
@@ -36,43 +97,38 @@ type ExecConfig struct {
 	Script     string `json:"script"`
 }
 
+// Status looks up the process using the unique ID (stored in job.ExternalId)
+// rather than the PID. It returns the status based on whether the process has
+// finished and if so, whether it exited with an error.
 func (r *ExecRunner) Status(job api.Job) (api.JobStatus, string) {
 	if job.ExternalId == nil {
-		return api.JobStatusExternalRunNotFound, fmt.Sprintf("external ID is nil: %v", job.ExternalId)
+		return api.JobStatusExternalRunNotFound, "external ID is nil"
 	}
+	uniqueID := *job.ExternalId
 
-	pid, err := strconv.Atoi(*job.ExternalId)
-	if err != nil {
-		return api.JobStatusExternalRunNotFound, fmt.Sprintf("invalid process id: %v", err)
-	}
-
-	// Check if we've recorded a finished result for this process
 	r.mu.Lock()
-	finishedErr, exists := r.finished[pid]
+	proc, exists := r.processes[uniqueID]
 	r.mu.Unlock()
-	if exists {
-		if finishedErr != nil {
-			return api.JobStatusFailure, fmt.Sprintf("process exited with error: %v", finishedErr)
+
+	if !exists {
+		return api.JobStatusExternalRunNotFound, "process info not found"
+	}
+
+	if proc.cmd.ProcessState != nil {
+		if proc.finished != nil && proc.finished.Error() != "" {
+			return api.JobStatusFailure, fmt.Sprintf("process exited with error: %s", proc.finished.Error())
 		}
 		return api.JobStatusSuccessful, "process completed successfully"
 	}
 
-	// If not finished yet, try to check if the process is still running.
-	process, err := os.FindProcess(pid)
-	if err != nil {
-		return api.JobStatusExternalRunNotFound, fmt.Sprintf("failed to find process: %v", err)
-	}
-	// On Unix, Signal 0 will error if the process is not running.
-	err = process.Signal(syscall.Signal(0))
-	if err != nil {
-		// Process is not running but we haven't recorded its result.
-		return api.JobStatusFailure, fmt.Sprintf("process not running: %v", err)
-	}
-	return api.JobStatusInProgress, fmt.Sprintf("process running with pid %d", pid)
+	// Process is still running
+	return api.JobStatusInProgress, fmt.Sprintf("process running with unique ID %s", uniqueID)
 }
 
+// Start creates a temporary script file, starts the process, and stores a unique
+// identifier along with the process handle in the runner's in-memory map.
 func (r *ExecRunner) Start(job api.Job, jobDetails map[string]interface{}) (string, error) {
-	// Create temp script file
+	// Determine file extension based on OS.
 	ext := ".sh"
 	if runtime.GOOS == "windows" {
 		ext = ".ps1"
@@ -103,7 +159,6 @@ func (r *ExecRunner) Start(job api.Job, jobDetails map[string]interface{}) (stri
 	}
 	script := buf.String()
 
-	// Write script contents
 	if _, err := tmpFile.WriteString(script); err != nil {
 		return "", fmt.Errorf("failed to write script file: %w", err)
 	}
@@ -111,7 +166,6 @@ func (r *ExecRunner) Start(job api.Job, jobDetails map[string]interface{}) (stri
 		return "", fmt.Errorf("failed to close script file: %w", err)
 	}
 
-	// Make executable on Unix systems
 	if runtime.GOOS != "windows" {
 		if err := os.Chmod(tmpFile.Name(), 0700); err != nil {
 			return "", fmt.Errorf("failed to make script executable: %w", err)
@@ -134,26 +188,36 @@ func (r *ExecRunner) Start(job api.Job, jobDetails map[string]interface{}) (stri
 		return "", fmt.Errorf("failed to start process: %w", err)
 	}
 
-	pid := cmd.Process.Pid
+	// Generate a unique identifier for this process.
+	uniqueID := uuid.New().String()
 
-	// Launch a goroutine to wait for process completion and store the result.
+	// Store the process handle in the runner's map.
+	r.mu.Lock()
+	r.processes[uniqueID] = &ProcessInfo{
+		cmd:       cmd,
+		startTime: time.Now(),
+	}
+	r.mu.Unlock()
+
 	ctx, cancel := context.WithCancel(context.Background())
-	go func(ctx context.Context, pid int, scriptPath string) {
+	go func(ctx context.Context, uniqueID, scriptPath string) {
 		defer cancel()
-		defer os.Remove(scriptPath) // Ensure cleanup happens in all cases
+		defer os.Remove(scriptPath)
 
 		err := cmd.Wait()
-		// Store the result
+
 		r.mu.Lock()
-		r.finished[pid] = err
+		if proc, exists := r.processes[uniqueID]; exists {
+			proc.finished = err
+		}
 		r.mu.Unlock()
 
 		if err != nil {
-			log.Error("Process execution failed", "pid", pid, "error", err)
+			log.Error("Process execution failed", "uniqueID", uniqueID, "error", err)
 		} else {
-			log.Info("Process execution succeeded", "pid", pid)
+			log.Info("Process execution succeeded", "uniqueID", uniqueID)
 		}
-	}(ctx, pid, tmpFile.Name())
+	}(ctx, uniqueID, tmpFile.Name())
 
-	return strconv.Itoa(cmd.Process.Pid), nil
+	return uniqueID, nil
 }
