@@ -15,7 +15,6 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/pkg/jobagent"
-	"github.com/google/uuid"
 )
 
 var _ jobagent.Runner = &ExecRunner{}
@@ -81,12 +80,12 @@ func (r *ExecRunner) cleanupOldProcesses() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	for id, proc := range r.processes {
+	for handle, proc := range r.processes {
 		if proc.finished != nil {
 			age := now.Sub(proc.startTime)
 			if age > retentionPeriod {
-				log.Debug("Cleaning up old process", "uniqueID", id, "age", age.String())
-				delete(r.processes, id)
+				log.Debug("Cleaning up old process", "handle", handle, "age", age.String())
+				delete(r.processes, handle)
 			}
 		}
 	}
@@ -104,10 +103,10 @@ func (r *ExecRunner) Status(job api.Job) (api.JobStatus, string) {
 	if job.ExternalId == nil {
 		return api.JobStatusExternalRunNotFound, "external ID is nil"
 	}
-	uniqueID := *job.ExternalId
+	handle := *job.ExternalId
 
 	r.mu.Lock()
-	proc, exists := r.processes[uniqueID]
+	proc, exists := r.processes[handle]
 	r.mu.Unlock()
 
 	if !exists {
@@ -122,7 +121,7 @@ func (r *ExecRunner) Status(job api.Job) (api.JobStatus, string) {
 	}
 
 	// Process is still running
-	return api.JobStatusInProgress, fmt.Sprintf("process running with unique ID %s", uniqueID)
+	return api.JobStatusInProgress, fmt.Sprintf("process running with handle %s", handle)
 }
 
 // Start creates a temporary script file, starts the process, and stores a unique
@@ -188,36 +187,39 @@ func (r *ExecRunner) Start(job api.Job, jobDetails map[string]interface{}) (stri
 		return "", fmt.Errorf("failed to start process: %w", err)
 	}
 
-	// Generate a unique identifier for this process.
-	uniqueID := uuid.New().String()
-
-	// Store the process handle in the runner's map.
-	r.mu.Lock()
-	r.processes[uniqueID] = &ProcessInfo{
+	// Create the ProcessInfo object
+	procInfo := &ProcessInfo{
 		cmd:       cmd,
 		startTime: time.Now(),
 	}
+
+	// Use the pointer address as the handle
+	handle := fmt.Sprintf("%p", procInfo)
+
+	// Store the process handle in the runner's map.
+	r.mu.Lock()
+	r.processes[handle] = procInfo
 	r.mu.Unlock()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	go func(ctx context.Context, uniqueID, scriptPath string) {
+	go func(ctx context.Context, handle, scriptPath string) {
 		defer cancel()
 		defer os.Remove(scriptPath)
 
 		err := cmd.Wait()
 
 		r.mu.Lock()
-		if proc, exists := r.processes[uniqueID]; exists {
+		if proc, exists := r.processes[handle]; exists {
 			proc.finished = err
 		}
 		r.mu.Unlock()
 
 		if err != nil {
-			log.Error("Process execution failed", "uniqueID", uniqueID, "error", err)
+			log.Error("Process execution failed", "handle", handle, "error", err)
 		} else {
-			log.Info("Process execution succeeded", "uniqueID", uniqueID)
+			log.Info("Process execution succeeded", "handle", handle)
 		}
-	}(ctx, uniqueID, tmpFile.Name())
+	}(ctx, handle, tmpFile.Name())
 
-	return uniqueID, nil
+	return handle, nil
 }
