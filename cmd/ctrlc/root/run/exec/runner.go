@@ -2,6 +2,7 @@ package exec
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -136,24 +137,23 @@ func (r *ExecRunner) Start(job api.Job, jobDetails map[string]interface{}) (stri
 	pid := cmd.Process.Pid
 
 	// Launch a goroutine to wait for process completion and store the result.
-	go func(pid int, scriptPath string) {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func(ctx context.Context, pid int, scriptPath string) {
+		defer cancel()
+		defer os.Remove(scriptPath) // Ensure cleanup happens in all cases
+
 		err := cmd.Wait()
-		// Ensure the map is not nil; if there's any chance ExecRunner is used as a zero-value, initialize it.
+		// Store the result
 		r.mu.Lock()
-		if r.finished == nil {
-			r.finished = make(map[int]error)
-		}
 		r.finished[pid] = err
 		r.mu.Unlock()
-		
+
 		if err != nil {
 			log.Error("Process execution failed", "pid", pid, "error", err)
 		} else {
 			log.Info("Process execution succeeded", "pid", pid)
 		}
-
-		os.Remove(scriptPath)
-	}(pid, tmpFile.Name())
+	}(ctx, pid, tmpFile.Name())
 
 	return strconv.Itoa(cmd.Process.Pid), nil
 }
