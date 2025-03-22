@@ -47,7 +47,7 @@ func NewRunExecCmd() *cobra.Command {
 					Type:        jobAgentType,
 					WorkspaceId: workspaceId,
 				},
-				&ExecRunner{},
+				NewExecRunner(),
 			)
 			if err != nil {
 				return fmt.Errorf("failed to create job agent: %w", err)
