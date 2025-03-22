@@ -59,13 +59,13 @@ func (r *ExecRunner) Shutdown() {
 func (r *ExecRunner) startHousekeeping() {
 	defer r.wg.Done()
 
-	ticker := time.NewTicker(1 * time.Hour)
+	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			r.cleanupOldProcesses()
+			r.cleanupOldProcesses(time.Now(), 1*time.Minute)
 		case <-r.ctx.Done():
 			log.Debug("Housekeeping goroutine shutting down")
 			return
@@ -73,9 +73,7 @@ func (r *ExecRunner) startHousekeeping() {
 	}
 }
 
-func (r *ExecRunner) cleanupOldProcesses() {
-	const retentionPeriod = 24 * time.Hour
-	now := time.Now()
+func (r *ExecRunner) cleanupOldProcesses(now time.Time, retentionPeriod time.Duration) {
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
