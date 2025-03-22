@@ -26,61 +26,6 @@ type ExecConfig struct {
 	Script     string `json:"script"`
 }
 
-type Resource struct {
-	ID          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	Kind        string                 `json:"kind"`
-	Version     string                 `json:"version"`
-	Identifier  string                 `json:"identifier"`
-	Config      map[string]interface{} `json:"config"`
-	Metadata    map[string]interface{} `json:"metadata"`
-	WorkspaceID string                 `json:"workspaceId"`
-}
-
-type Release struct {
-	ID       string                 `json:"id"`
-	Version  string                 `json:"version"`
-	Config   map[string]interface{} `json:"config"`
-	Metadata map[string]interface{} `json:"metadata"`
-}
-
-type Environment struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
-type Approval struct {
-	Approver *struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-	} `json:"approver"`
-}
-
-type Deployment struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Slug     string `json:"slug"`
-	SystemID string `json:"systemId"`
-}
-
-type Runbook struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	SystemID string `json:"systemId"`
-}
-
-type JobData struct {
-	Variables   map[string]string `json:"variables"`
-	Resource    *Resource         `json:"resource"`
-	Release     *Release          `json:"release"`
-	Environment *Environment      `json:"environment"`
-	Deployment  *Deployment       `json:"deployment"`
-	Runbook     *Runbook          `json:"runbook"`
-	Approval    *Approval         `json:"approval"`
-	// Add the original config for backward compatibility
-	Config map[string]interface{} `json:"config"`
-}
-
 func (r *ExecRunner) Status(job api.Job) (api.JobStatus, string) {
 	if job.ExternalId == nil {
 		return api.JobStatusExternalRunNotFound, fmt.Sprintf("external ID is nil: %v", job.ExternalId)
