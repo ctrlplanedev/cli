@@ -29,10 +29,10 @@ func NewJobAgent(
 	}
 
 	ja := &JobAgent{
-		client: client,
-
+		client:      client,
 		id:          agent.JSON200.Id,
 		workspaceId: config.WorkspaceId,
+		runner:      runner,
 	}
 
 	return ja, nil

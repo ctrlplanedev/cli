@@ -2,6 +2,7 @@ package exec
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/pkg/jobagent"
+	"github.com/spf13/viper"
 )
 
 var _ jobagent.Runner = &ExecRunner{}
@@ -24,7 +26,66 @@ type ExecConfig struct {
 	Script     string `json:"script"`
 }
 
+type Resource struct {
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	Kind        string                 `json:"kind"`
+	Version     string                 `json:"version"`
+	Identifier  string                 `json:"identifier"`
+	Config      map[string]interface{} `json:"config"`
+	Metadata    map[string]interface{} `json:"metadata"`
+	WorkspaceID string                 `json:"workspaceId"`
+}
+
+type Release struct {
+	ID       string                 `json:"id"`
+	Version  string                 `json:"version"`
+	Config   map[string]interface{} `json:"config"`
+	Metadata map[string]interface{} `json:"metadata"`
+}
+
+type Environment struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type Approval struct {
+	Approver *struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"approver"`
+}
+
+type Deployment struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Slug     string `json:"slug"`
+	SystemID string `json:"systemId"`
+}
+
+type Runbook struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	SystemID string `json:"systemId"`
+}
+
+type JobData struct {
+	Variables   map[string]string `json:"variables"`
+	Resource    *Resource         `json:"resource"`
+	Release     *Release          `json:"release"`
+	Environment *Environment      `json:"environment"`
+	Deployment  *Deployment       `json:"deployment"`
+	Runbook     *Runbook          `json:"runbook"`
+	Approval    *Approval         `json:"approval"`
+	// Add the original config for backward compatibility
+	Config map[string]interface{} `json:"config"`
+}
+
 func (r *ExecRunner) Status(job api.Job) (api.JobStatus, string) {
+	if job.ExternalId == nil {
+		return api.JobStatusExternalRunNotFound, fmt.Sprintf("external ID is nil: %v", job.ExternalId)
+	}
+
 	externalId, err := strconv.Atoi(*job.ExternalId)
 	if err != nil {
 		return api.JobStatusExternalRunNotFound, fmt.Sprintf("invalid process id: %v", err)
@@ -67,13 +128,34 @@ func (r *ExecRunner) Start(job api.Job) (string, error) {
 		return "", fmt.Errorf("failed to unmarshal job agent config: %w", err)
 	}
 
+	client, err := api.NewAPIKeyClientWithResponses(
+		viper.GetString("url"),
+		viper.GetString("api-key"),
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to create API client for job details: %w", err)
+	}
+
+	resp, err := client.GetJobWithResponse(context.Background(), job.Id.String())
+	if err != nil {
+		return "", fmt.Errorf("failed to get job details: %w", err)
+	}
+
+	if resp.JSON200 == nil {
+		return "", fmt.Errorf("received empty response from job details API")
+	}
+
+	var jobDetails map[string]interface{}
+	detailsBytes, _ := json.Marshal(resp.JSON200)
+	json.Unmarshal(detailsBytes, &jobDetails)
+
 	templatedScript, err := template.New("script").Parse(config.Script)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse script template: %w", err)
 	}
 
 	buf := new(bytes.Buffer)
-	if err := templatedScript.Execute(buf, job); err != nil {
+	if err := templatedScript.Execute(buf, jobDetails); err != nil {
 		return "", fmt.Errorf("failed to execute script template: %w", err)
 	}
 	script := buf.String()
