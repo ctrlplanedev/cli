@@ -1,13 +1,11 @@
 package exec
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
-	"time"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
@@ -37,24 +35,10 @@ func NewRunExecCmd() *cobra.Command {
 			apiURL := viper.GetString("url")
 			apiKey := viper.GetString("api-key")
 			workspaceId := viper.GetString("workspace")
-
-			// Get interval from the flag set by AddIntervalSupport
-			intervalStr, _ := cmd.Flags().GetString("interval")
-
-			interval := 10 * time.Second
-			if intervalStr != "" {
-				duration, err := time.ParseDuration(intervalStr)
-				if err != nil {
-					return fmt.Errorf("invalid interval format: %w", err)
-				}
-				interval = duration
-			}
-
 			client, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
-
 			if name == "" {
 				return fmt.Errorf("name is required")
 			}
@@ -63,57 +47,36 @@ func NewRunExecCmd() *cobra.Command {
 			}
 
 			runner := NewExecRunner(client)
-
 			jobAgentConfig := api.UpsertJobAgentJSONRequestBody{
 				Name:        name,
 				Type:        jobAgentType,
 				WorkspaceId: workspaceId,
 			}
-
 			ja, err := jobagent.NewJobAgent(
 				client,
 				jobAgentConfig,
 				runner,
 			)
-
 			if err != nil {
 				return fmt.Errorf("failed to create job agent: %w", err)
 			}
-
-			// Setup signal handling for graceful shutdown
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
-			sigCh := make(chan os.Signal, 1)
-			signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-
+			
+			// Set up a simple shutdown handler for non-interval mode
+			// When used with AddIntervalSupport, this would only affect a single iteration
+			c := make(chan os.Signal, 1)
+			signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 			go func() {
-				<-sigCh
+				<-c
 				log.Info("Shutting down gracefully...")
 				runner.ExitAll(true)
-				cancel()
 			}()
 
-			// Main polling loop
-			ticker := time.NewTicker(interval)
-			defer ticker.Stop()
-
-			// Run initial job check
+			// Run job check - AddIntervalSupport will handle repeated execution
 			if err := ja.RunQueuedJobs(); err != nil {
-				log.Error("Failed to run queued jobs", "error", err)
+				return fmt.Errorf("failed to run queued jobs: %w", err)
 			}
-
-			// Polling loop
-			for {
-				select {
-				case <-ctx.Done():
-					return nil
-				case <-ticker.C:
-					if err := ja.RunQueuedJobs(); err != nil {
-						log.Error("Failed to run queued jobs", "error", err)
-					}
-				}
-			}
+			
+			return nil
 		},
 	}
 
