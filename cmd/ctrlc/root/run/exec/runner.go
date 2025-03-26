@@ -53,9 +53,9 @@ func NewExecRunner(client *api.ClientWithResponses) *ExecRunner {
 }
 
 // Start creates a temporary script file, starts the process, and updates job status when the process completes.
-func (r *ExecRunner) Start(ctx context.Context, job api.Job, jobDetails map[string]interface{}, 
+func (r *ExecRunner) Start(ctx context.Context, job api.Job, jobDetails map[string]interface{},
 	statusUpdateFunc func(jobID string, status api.JobStatus, message string)) (string, api.JobStatus, error) {
-	
+
 	// Template the script using the API client
 	script, err := r.client.TemplateJobDetails(job, jobDetails)
 	if err != nil {

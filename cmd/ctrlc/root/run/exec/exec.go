@@ -19,8 +19,8 @@ import (
 
 func NewRunExecCmd() *cobra.Command {
 	var (
-		name          string
-		jobAgentType  = "exec-bash"
+		name         string
+		jobAgentType = "exec-bash"
 	)
 
 	if runtime.GOOS == "windows" {
@@ -37,10 +37,10 @@ func NewRunExecCmd() *cobra.Command {
 			apiURL := viper.GetString("url")
 			apiKey := viper.GetString("api-key")
 			workspaceId := viper.GetString("workspace")
-			
+
 			// Get interval from the flag set by AddIntervalSupport
 			intervalStr, _ := cmd.Flags().GetString("interval")
-			
+
 			interval := 10 * time.Second
 			if intervalStr != "" {
 				duration, err := time.ParseDuration(intervalStr)
@@ -49,12 +49,12 @@ func NewRunExecCmd() *cobra.Command {
 				}
 				interval = duration
 			}
-			
+
 			client, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
-			
+
 			if name == "" {
 				return fmt.Errorf("name is required")
 			}
@@ -79,7 +79,7 @@ func NewRunExecCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to create job agent: %w", err)
 			}
-			
+
 			// Setup signal handling for graceful shutdown
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()

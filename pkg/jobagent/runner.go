@@ -13,8 +13,8 @@ import (
 // Start initiates a job and returns an external ID or error.
 // The implementation should handle status updates when the job completes.
 type Runner interface {
-	Start(ctx context.Context, job api.Job, jobDetails map[string]interface{}, 
-		  statusUpdateFunc func(jobID string, status api.JobStatus, message string)) (string, api.JobStatus, error)
+	Start(ctx context.Context, job api.Job, jobDetails map[string]interface{},
+		statusUpdateFunc func(jobID string, status api.JobStatus, message string)) (string, api.JobStatus, error)
 }
 
 func NewJobAgent(
@@ -74,16 +74,16 @@ func (a *JobAgent) RunQueuedJobs() error {
 		wg.Add(1)
 		go func(job api.Job) {
 			defer wg.Done()
-			
+
 			// Create a status update callback for this job
 			statusUpdateFunc := func(jobID string, status api.JobStatus, message string) {
 				if err := a.client.UpdateJobStatus(jobID, status, message, nil); err != nil {
 					log.Error("Failed to update job status", "error", err, "jobId", jobID)
 				}
 			}
-			
+
 			externalId, _, err := a.runner.Start(context.Background(), job, jobDetails, statusUpdateFunc)
-			
+
 			if err != nil {
 				status := api.JobStatusInProgress
 				message := fmt.Sprintf("Failed to start job: %s", err.Error())
@@ -93,7 +93,7 @@ func (a *JobAgent) RunQueuedJobs() error {
 				}
 				return
 			}
-			
+
 			if externalId != "" {
 				status := api.JobStatusInProgress
 				if err := a.client.UpdateJobStatus(job.Id.String(), status, "", &externalId); err != nil {
