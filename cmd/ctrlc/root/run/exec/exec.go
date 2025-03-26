@@ -45,6 +45,10 @@ func NewRunExecCmd() *cobra.Command {
 			if workspaceId == "" {
 				return fmt.Errorf("workspace is required")
 			}
+			interval := viper.GetString("interval")
+			if interval == "" {
+				interval = "10s"
+			}
 
 			runner := NewExecRunner(client)
 			jobAgentConfig := api.UpsertJobAgentJSONRequestBody{
