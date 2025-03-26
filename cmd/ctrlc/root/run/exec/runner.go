@@ -91,12 +91,9 @@ func (r *ExecRunner) Start(ctx context.Context, job api.Job, jobDetails map[stri
 		}
 	}
 
-	// Create and configure the command
-	var cmd *exec.Cmd
+	cmd := exec.CommandContext(ctx, "bash", "-c", tmpFile.Name())
 	if runtime.GOOS == "windows" {
 		cmd = exec.CommandContext(ctx, "powershell", "-File", tmpFile.Name())
-	} else {
-		cmd = exec.CommandContext(ctx, "bash", "-c", tmpFile.Name())
 	}
 
 	// Set up command environment
