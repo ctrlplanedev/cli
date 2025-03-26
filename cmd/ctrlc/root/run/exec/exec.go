@@ -60,7 +60,7 @@ func NewRunExecCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to create job agent: %w", err)
 			}
-			
+
 			// Set up a simple shutdown handler for non-interval mode
 			// When used with AddIntervalSupport, this would only affect a single iteration
 			c := make(chan os.Signal, 1)
@@ -75,7 +75,7 @@ func NewRunExecCmd() *cobra.Command {
 			if err := ja.RunQueuedJobs(); err != nil {
 				return fmt.Errorf("failed to run queued jobs: %w", err)
 			}
-			
+
 			return nil
 		},
 	}

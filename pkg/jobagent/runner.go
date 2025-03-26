@@ -30,18 +30,18 @@ func NewJobAgent(
 	}
 
 	ja := &JobAgent{
-		client:      client,
-		id:          agent.JSON200.Id,
-		runner:      runner,
+		client: client,
+		id:     agent.JSON200.Id,
+		runner: runner,
 	}
 
 	return ja, nil
 }
 
 type JobAgent struct {
-	client      *api.ClientWithResponses
-	id          string
-	runner      Runner
+	client *api.ClientWithResponses
+	id     string
+	runner Runner
 }
 
 // RunQueuedJobs retrieves and executes any queued jobs for this agent.

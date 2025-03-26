@@ -168,8 +168,8 @@ func (r *ExecRunner) Start(ctx context.Context, job *api.JobWithDetails) (api.Jo
 		if runningJob.cancelled {
 			updateJobStatus(job, api.JobStatusCancelled, "Job was cancelled", runningJob.jobID)
 		} else if err != nil {
-			updateJobStatus(job, api.JobStatusFailure, 
-				fmt.Sprintf("Process exited with code %d: %v", exitCode, err),  
+			updateJobStatus(job, api.JobStatusFailure,
+				fmt.Sprintf("Process exited with code %d: %v", exitCode, err),
 				runningJob.jobID)
 		} else {
 			updateJobStatus(job, api.JobStatusSuccessful, "", runningJob.jobID)
