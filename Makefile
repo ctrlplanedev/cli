@@ -5,18 +5,19 @@ LDFLAGS = -X github.com/ctrlplanedev/cli/cmd/ctrlc/root/version.Version=$(VERSIO
           -X github.com/ctrlplanedev/cli/cmd/ctrlc/root/version.GitCommit=$(COMMIT) \
           -X github.com/ctrlplanedev/cli/cmd/ctrlc/root/version.BuildDate=$(DATE)
 
-.PHONY: build
 build:
 	go build -ldflags "$(LDFLAGS)" -o bin/ctrlc ./cmd/ctrlc
 
-.PHONY: install
 install:
 	go install -ldflags "$(LDFLAGS)" ./cmd/ctrlc
 
-.PHONY: test
 test:
 	go test -v ./...
 
-.PHONY: clean
+fmt:
+	gofmt -w -s -e .
+
 clean:
 	rm -rf bin/
+
+.PHONY: build install test clean
