@@ -35,21 +35,16 @@ func NewRunExecCmd() *cobra.Command {
 			apiURL := viper.GetString("url")
 			apiKey := viper.GetString("api-key")
 			workspaceId := viper.GetString("workspace")
-			client, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
-			if err != nil {
-				return fmt.Errorf("failed to create API client: %w", err)
-			}
 			if name == "" {
 				return fmt.Errorf("name is required")
 			}
 			if workspaceId == "" {
 				return fmt.Errorf("workspace is required")
 			}
-			interval := viper.GetString("interval")
-			if interval == "" {
-				interval = "10s"
+			client, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			if err != nil {
+				return fmt.Errorf("failed to create API client: %w", err)
 			}
-
 			runner := NewExecRunner(client)
 			jobAgentConfig := api.UpsertJobAgentJSONRequestBody{
 				Name:        name,

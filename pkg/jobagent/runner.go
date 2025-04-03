@@ -59,16 +59,20 @@ func (a *JobAgent) RunQueuedJobs() error {
 	log.Debug("Got jobs", "count", len(*jobs.JSON200.Jobs))
 	var wg sync.WaitGroup
 	for _, apiJob := range *jobs.JSON200.Jobs {
-
-		// TODO: If we can start jobs in pending, then this is valid and will prevent us from starting the same job twice.
-		// if apiJob.Status == api.JobStatusInProgress {
-		// 	continue
-		// }
+		if apiJob.Status == api.JobStatusInProgress {
+			continue
+		}
 
 		job, err := api.NewJobWithDetails(a.client, apiJob)
 		if err != nil {
 			log.Error("Failed to create job with details", "error", err, "jobId", apiJob.Id.String())
 			continue
+		}
+
+		// Update job status to InProgress before starting execution
+		if err := job.UpdateStatus(api.JobStatusInProgress, "Job execution started"); err != nil {
+			log.Error("Failed to update job status to InProgress", "error", err, "jobId", job.Id.String())
+			// Continue anyway
 		}
 
 		wg.Add(1)

@@ -17,6 +17,9 @@ test:
 fmt:
 	gofmt -w -s -e .
 
+lint:
+	golangci-lint run
+
 clean:
 	rm -rf bin/
 
