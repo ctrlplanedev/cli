@@ -9,9 +9,10 @@ import (
 	"github.com/ctrlplanedev/cli/internal/api"
 )
 
+// Runner defines the interface for job execution.
+// Start initiates a job and returns a status or error.
 type Runner interface {
-	Start(job api.Job) (string, error)
-	Status(job api.Job) (api.JobStatus, string)
+	Start(ctx context.Context, job *api.JobWithDetails) (api.JobStatus, error)
 }
 
 func NewJobAgent(
@@ -30,9 +31,8 @@ func NewJobAgent(
 
 	ja := &JobAgent{
 		client: client,
-
-		id:          agent.JSON200.Id,
-		workspaceId: config.WorkspaceId,
+		id:     agent.JSON200.Id,
+		runner: runner,
 	}
 
 	return ja, nil
@@ -40,19 +40,13 @@ func NewJobAgent(
 
 type JobAgent struct {
 	client *api.ClientWithResponses
-
-	workspaceId string
-	id          string
-
+	id     string
 	runner Runner
 }
 
-// RunQueuedJobs retrieves and executes any queued jobs for this agent. For each
-// job, it starts execution using the runner's Start method in a separate
-// goroutine. If starting a job fails, it updates the job status to InProgress
-// with an error message. If starting succeeds and returns an external ID, it
-// updates the job with that ID. The function waits for all jobs to complete
-// before returning.
+// RunQueuedJobs retrieves and executes any queued jobs for this agent.
+// For each job, it starts execution using the runner's Start method, which
+// will update the job status when the job completes.
 func (a *JobAgent) RunQueuedJobs() error {
 	jobs, err := a.client.GetNextJobsWithResponse(context.Background(), a.id)
 	if err != nil {
@@ -64,78 +58,43 @@ func (a *JobAgent) RunQueuedJobs() error {
 
 	log.Debug("Got jobs", "count", len(*jobs.JSON200.Jobs))
 	var wg sync.WaitGroup
-	for _, job := range *jobs.JSON200.Jobs {
+	for _, apiJob := range *jobs.JSON200.Jobs {
+		if apiJob.Status == api.JobStatusInProgress {
+			continue
+		}
+
+		job, err := api.NewJobWithDetails(a.client, apiJob)
+		if err != nil {
+			log.Error("Failed to create job with details", "error", err, "jobId", apiJob.Id.String())
+			continue
+		}
+
+		// Update job status to InProgress before starting execution
+		if err := job.UpdateStatus(api.JobStatusInProgress, "Job execution started"); err != nil {
+			log.Error("Failed to update job status to InProgress", "error", err, "jobId", job.Id.String())
+			// Continue anyway
+		}
+
 		wg.Add(1)
-		go func(job api.Job) {
+		go func(job *api.JobWithDetails) {
 			defer wg.Done()
-			externalId, err := a.runner.Start(job)
+
+			// Start the job - status updates happen inside Start
+			status, err := a.runner.Start(context.Background(), job)
+
 			if err != nil {
-				status := api.JobStatusInProgress
-				message := fmt.Sprintf("Failed to start job: %s", err.Error())
 				log.Error("Failed to start job", "error", err, "jobId", job.Id.String())
-				a.client.UpdateJobWithResponse(
-					context.Background(),
-					job.Id.String(),
-					api.UpdateJobJSONRequestBody{
-						Status:  &status,
-						Message: &message,
-					},
-				)
+				if updErr := job.UpdateStatus(api.JobStatusFailure, fmt.Sprintf("Failed to start job: %s", err.Error())); updErr != nil {
+					log.Error("Failed to update job status", "error", updErr, "jobId", job.Id.String())
+				}
 				return
 			}
-			if externalId != "" {
-				a.client.UpdateJobWithResponse(
-					context.Background(),
-					job.Id.String(),
-					api.UpdateJobJSONRequestBody{
-						ExternalId: &externalId,
-					},
-				)
-			}
-		}(job)
-	}
-	wg.Wait()
 
-	return nil
-}
-
-// UpdateRunningJobs checks the status of all currently running jobs for this
-// agent. It queries the API for running jobs, then concurrently checks the
-// status of each job using the runner's Status method and updates the job
-// status in the API accordingly. Any errors checking job status or updating the
-// API are logged but do not stop other job updates from proceeding.
-func (a *JobAgent) UpdateRunningJobs() error {
-	jobs, err := a.client.GetAgentRunningJobsWithResponse(context.Background(), a.id)
-	if err != nil {
-		log.Error("Failed to get job", "error", err, "status", jobs.StatusCode())
-		return err
-	}
-
-	if jobs.JSON200 == nil {
-		log.Error("Failed to get job", "error", err, "status", jobs.StatusCode())
-		return fmt.Errorf("failed to get job")
-	}
-
-	var wg sync.WaitGroup
-	for _, job := range *jobs.JSON200 {
-		wg.Add(1)
-		go func(job api.Job) {
-			defer wg.Done()
-			status, message := a.runner.Status(job)
-
-			body := api.UpdateJobJSONRequestBody{
-				Status: &status,
-			}
-			if message != "" {
-				body.Message = &message
-			}
-			_, err := a.client.UpdateJobWithResponse(
-				context.Background(),
-				job.Id.String(),
-				body,
-			)
-			if err != nil {
-				log.Error("Failed to update job", "error", err, "jobId", job.Id.String())
+			// If we got a status that's not InProgress, update it
+			if status != api.JobStatusInProgress {
+				if updErr := job.UpdateStatus(status, ""); updErr != nil {
+					log.Error("Failed to update job status", "error", updErr, "jobId", job.Id.String())
+				}
 			}
 		}(job)
 	}
