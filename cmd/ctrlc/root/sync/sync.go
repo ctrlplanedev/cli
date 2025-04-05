@@ -3,6 +3,7 @@ package sync
 import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/clickhouse"
+	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/steampipe"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/tailscale"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/terraform"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
@@ -19,6 +20,7 @@ func NewSyncCmd() *cobra.Command {
 			$ ctrlc sync tfe --interval 5m # Run every 5 minutes
 			$ ctrlc sync tailscale --interval 1h # Run every hour
 			$ ctrlc sync clickhouse # Run once
+			$ ctrlc sync steampipe # Run once
 		`),
 	}
 
@@ -27,6 +29,7 @@ func NewSyncCmd() *cobra.Command {
 	cmd.AddCommand(cliutil.AddIntervalSupport(terraform.NewSyncTerraformCmd(), ""))
 	cmd.AddCommand(cliutil.AddIntervalSupport(tailscale.NewSyncTailscaleCmd(), ""))
 	cmd.AddCommand(cliutil.AddIntervalSupport(clickhouse.NewSyncClickhouseCmd(), ""))
+	cmd.AddCommand(steampipe.NewSyncSteampipeCmd())
 
 	return cmd
 }
