@@ -15,13 +15,21 @@ func NewResourceProvider(client *ClientWithResponses, workspaceId string, name s
 	log.Debug("Upserting resource provider", "workspaceId", workspaceId, "name", name)
 	resp, err := client.UpsertResourceProviderWithResponse(
 		ctx, workspaceId, name)
+	var respBody string
+	if resp != nil && resp.Body != nil {
+		respBody = string(resp.Body)
+	}
+	var respCode int
+	if resp != nil {
+		respCode = resp.StatusCode()
+	}
 	if err != nil {
 		log.Error("Failed to upsert resource provider",
 			"error", err,
 			"workspaceId", workspaceId,
 			"name", name,
-			"status", resp.StatusCode,
-			"body", string(resp.Body))
+			"status", respCode,
+			"body", respBody)
 		return nil, fmt.Errorf("failed to upsert resource provider: %w", err)
 	}
 
@@ -55,12 +63,13 @@ type ResourceProvider struct {
 }
 
 type AgentResource struct {
-	Config     map[string]interface{} `json:"config"`
-	Identifier string                 `json:"identifier"`
-	Kind       string                 `json:"kind"`
-	Metadata   map[string]string      `json:"metadata"`
-	Name       string                 `json:"name"`
-	Version    string                 `json:"version"`
+	WorkspaceId string                 `json:"workspaceId"`
+	Config      map[string]interface{} `json:"config"`
+	Identifier  string                 `json:"identifier"`
+	Kind        string                 `json:"kind"`
+	Metadata    map[string]string      `json:"metadata"`
+	Name        string                 `json:"name"`
+	Version     string                 `json:"version"`
 }
 
 func (r *ResourceProvider) UpsertResource(ctx context.Context, resources []AgentResource) (*http.Response, error) {

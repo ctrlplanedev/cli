@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AwsEc2SqlRow",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "arn",
+    "instance_id",
+    "account_id",
+    "region",
+    "instance_state",
+    "private_dns_name",
+    "tags"
+  ],
+  "properties": {
+    "arn": {
+      "type": "string",
+      "description": "EC2 ARN"
+    },
+    "instance_id": {
+      "type": "string",
+      "description": "Using the instance_id as the 'name' for an EC2 instance"
+    },
+    "account_id": {
+      "type": "string",
+      "description": "AWS Account ID"
+    },
+    "region": {
+      "type": "string",
+      "description": "AWS Region"
+    },
+    "instance_state": {
+      "type": "string",
+      "description": "EC2 instance status"
+    },
+    "private_dns_name": {
+      "type": "string",
+      "description": "Private DNS name of the EC2 instance"
+    },
+    "tags": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "All tags on EC2 instance itself"
+    }
+  }
+}

@@ -1,0 +1,52 @@
+flowchart TD
+ subgraph s1["Steampipe 
+  Processor"]
+        F1{"Next Row"}
+        OG1(["SQL Row
+    map[string]interface{}"])
+        STR1(["SQL Row
+    JSON String"])
+        V1{"Validate"}
+        SCH1(["SQL Row
+    JSON Schema"])
+        GO1(["SQL Row
+    AwsEc2Row{}"])
+  end
+ subgraph ad["Adapter"]
+        M2{"Translate"}
+        GO2(["Resource
+    AwsEc2Resource{}"])
+        STR2(["Resource
+    JSON String"])
+        V2{"Validate"}
+        SCH2(["Resource
+    JSON Schema"])
+  end
+ subgraph sync["sync"]
+        M3{"Collect"}
+        GO3(["AgentResource
+  AgentResource{}"])
+  end
+    SPDB[("SteampipeDB")] -- each row --> F1
+    F1 -- build --> OG1
+    OG1 -- marshal --> STR1
+    STR1 -.-> V1
+    V1 -.-> STR1 & SCH1
+    STR1 -- unmarshal --> GO1
+    GO1 --> M2
+    M2 --> GO2
+    GO2 -- marshal --> STR2
+    STR2 -.-> V2
+    V2 -.-> STR2 & SCH2
+    note["extension of <br/>AgentResource schema"] -.-> GO2 & SCH2
+    GO3 -.-> note
+    M3 -- unmarshal --> GO3
+    STR2 --> M3
+    ctrlplane["CtrlPlane API"]
+
+    note@{ shape: notch-rect}
+    ctrlplane@{ shape: h-cyl}
+
+    sync ==> ctrlplane
+
+

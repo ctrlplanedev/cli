@@ -1,0 +1,1031 @@
+{
+  "$schema": "../ec2_row.schema.json",
+  "_ctx": {
+    "connection_name": "aws",
+    "steampipe": {
+      "sdk_version": "5.11.4"
+    }
+  },
+  "account_id": "830241207209",
+  "akas": [
+    "arn:aws:ec2:us-east-1:830241207209:instance/i-01288b6098e18be7b"
+  ],
+  "ami_launch_index": 0,
+  "architecture": "x86_64",
+  "arn": "arn:aws:ec2:us-east-1:830241207209:instance/i-01288b6098e18be7b",
+  "block_device_mappings": [
+    {
+      "DeviceName": "/dev/xvda",
+      "Ebs": {
+        "AssociatedResource": null,
+        "AttachTime": "2025-04-01T00:02:43Z",
+        "DeleteOnTermination": true,
+        "Status": "attached",
+        "VolumeId": "vol-08d70dc58536f3b25",
+        "VolumeOwnerId": null
+      }
+    }
+  ],
+  "boot_mode": "",
+  "capacity_reservation_specification": {
+    "CapacityReservationPreference": "open",
+    "CapacityReservationTarget": null
+  },
+  "client_token": "fleet-f186b826-5197-c19c-8410-860ad9dbf3a5-0",
+  "cpu_options_core_count": 2,
+  "cpu_options_threads_per_core": 2,
+  "current_instance_boot_mode": "legacy-bios",
+  "disable_api_termination": false,
+  "ebs_optimized": false,
+  "ena_support": true,
+  "enclave_options": {
+    "Enabled": false
+  },
+  "hibernation_options": {
+    "Configured": false
+  },
+  "hypervisor": "xen",
+  "iam_instance_profile_arn": "arn:aws:iam::830241207209:instance-profile/eks-68c946c0-3a40-ec02-6c53-1c319cac08e5",
+  "iam_instance_profile_id": "AIPA4CTR3OOU47HXDN4ZA",
+  "image_id": "ami-03fcb7c9c1ca36b4d",
+  "instance_id": "i-01288b6098e18be7b",
+  "instance_initiated_shutdown_behavior": "stop",
+  "instance_lifecycle": "",
+  "instance_state": "running",
+  "instance_status": {
+    "AvailabilityZone": "us-east-1b",
+    "Events": null,
+    "InstanceId": "i-01288b6098e18be7b",
+    "InstanceState": {
+      "Code": 16,
+      "Name": "running"
+    },
+    "InstanceStatus": {
+      "Details": [
+        {
+          "ImpairedSince": null,
+          "Name": "reachability",
+          "Status": "passed"
+        }
+      ],
+      "Status": "ok"
+    },
+    "OutpostArn": null,
+    "SystemStatus": {
+      "Details": [
+        {
+          "ImpairedSince": null,
+          "Name": "reachability",
+          "Status": "passed"
+        }
+      ],
+      "Status": "ok"
+    }
+  },
+  "instance_type": "r6i.xlarge",
+  "launch_template_data": {
+    "BlockDeviceMappings": [
+      {
+        "DeviceName": "/dev/xvda",
+        "Ebs": {
+          "DeleteOnTermination": true,
+          "Encrypted": true,
+          "Iops": 3000,
+          "KmsKeyId": "arn:aws:kms:us-east-1:830241207209:key/244aa299-ec84-4817-9d0e-01eb0dd099a3",
+          "SnapshotId": "snap-06f117083705d83dd",
+          "Throughput": 125,
+          "VolumeSize": 100,
+          "VolumeType": "gp3"
+        },
+        "NoDevice": null,
+        "VirtualName": null
+      }
+    ],
+    "CapacityReservationSpecification": {
+      "CapacityReservationPreference": "open",
+      "CapacityReservationTarget": null
+    },
+    "CpuOptions": {
+      "AmdSevSnp": "",
+      "CoreCount": 2,
+      "ThreadsPerCore": 2
+    },
+    "CreditSpecification": null,
+    "DisableApiStop": false,
+    "DisableApiTermination": false,
+    "EbsOptimized": false,
+    "ElasticGpuSpecifications": null,
+    "ElasticInferenceAccelerators": null,
+    "EnclaveOptions": {
+      "Enabled": false
+    },
+    "HibernationOptions": {
+      "Configured": false
+    },
+    "IamInstanceProfile": {
+      "Arn": "arn:aws:iam::830241207209:instance-profile/eks-68c946c0-3a40-ec02-6c53-1c319cac08e5",
+      "Name": null
+    },
+    "ImageId": "ami-03fcb7c9c1ca36b4d",
+    "InstanceInitiatedShutdownBehavior": "stop",
+    "InstanceMarketOptions": null,
+    "InstanceRequirements": null,
+    "InstanceType": "r6i.xlarge",
+    "KernelId": null,
+    "KeyName": null,
+    "LicenseSpecifications": null,
+    "MaintenanceOptions": {
+      "AutoRecovery": "default"
+    },
+    "MetadataOptions": {
+      "HttpEndpoint": "enabled",
+      "HttpProtocolIpv6": "disabled",
+      "HttpPutResponseHopLimit": 2,
+      "HttpTokens": "required",
+      "InstanceMetadataTags": "disabled",
+      "State": ""
+    },
+    "Monitoring": {
+      "Enabled": true
+    },
+    "NetworkInterfaces": [
+      {
+        "AssociateCarrierIpAddress": null,
+        "AssociatePublicIpAddress": null,
+        "ConnectionTrackingSpecification": null,
+        "DeleteOnTermination": true,
+        "Description": "",
+        "DeviceIndex": 0,
+        "EnaSrdSpecification": null,
+        "Groups": [
+          "sg-04e83501310692e69",
+          "sg-0f52e5a544842390f"
+        ],
+        "InterfaceType": "interface",
+        "Ipv4PrefixCount": null,
+        "Ipv4Prefixes": [],
+        "Ipv6AddressCount": null,
+        "Ipv6Addresses": [],
+        "Ipv6PrefixCount": null,
+        "Ipv6Prefixes": [],
+        "NetworkCardIndex": 0,
+        "NetworkInterfaceId": null,
+        "PrimaryIpv6": null,
+        "PrivateIpAddress": null,
+        "PrivateIpAddresses": [
+          {
+            "Primary": true,
+            "PrivateIpAddress": "10.10.11.57"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.10"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.43"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.233"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.206"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.163"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.94"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.223"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.188"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.210"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.83"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.208"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.87"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.117"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.53"
+          }
+        ],
+        "SecondaryPrivateIpAddressCount": null,
+        "SubnetId": "subnet-0f0d619a86b69c67c"
+      },
+      {
+        "AssociateCarrierIpAddress": null,
+        "AssociatePublicIpAddress": null,
+        "ConnectionTrackingSpecification": null,
+        "DeleteOnTermination": true,
+        "Description": "aws-K8S-i-01288b6098e18be7b",
+        "DeviceIndex": 1,
+        "EnaSrdSpecification": null,
+        "Groups": [
+          "sg-04e83501310692e69",
+          "sg-0f52e5a544842390f"
+        ],
+        "InterfaceType": "interface",
+        "Ipv4PrefixCount": null,
+        "Ipv4Prefixes": [],
+        "Ipv6AddressCount": null,
+        "Ipv6Addresses": [],
+        "Ipv6PrefixCount": null,
+        "Ipv6Prefixes": [],
+        "NetworkCardIndex": 0,
+        "NetworkInterfaceId": null,
+        "PrimaryIpv6": null,
+        "PrivateIpAddress": null,
+        "PrivateIpAddresses": [
+          {
+            "Primary": true,
+            "PrivateIpAddress": "10.10.11.201"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.73"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.110"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.47"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.12"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.172"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.66"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.134"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.26"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.31"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.28"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.18"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.114"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.150"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.180"
+          }
+        ],
+        "SecondaryPrivateIpAddressCount": null,
+        "SubnetId": "subnet-0f0d619a86b69c67c"
+      },
+      {
+        "AssociateCarrierIpAddress": null,
+        "AssociatePublicIpAddress": null,
+        "ConnectionTrackingSpecification": null,
+        "DeleteOnTermination": true,
+        "Description": "aws-K8S-i-01288b6098e18be7b",
+        "DeviceIndex": 2,
+        "EnaSrdSpecification": null,
+        "Groups": [
+          "sg-04e83501310692e69",
+          "sg-0f52e5a544842390f"
+        ],
+        "InterfaceType": "interface",
+        "Ipv4PrefixCount": null,
+        "Ipv4Prefixes": [],
+        "Ipv6AddressCount": null,
+        "Ipv6Addresses": [],
+        "Ipv6PrefixCount": null,
+        "Ipv6Prefixes": [],
+        "NetworkCardIndex": 0,
+        "NetworkInterfaceId": null,
+        "PrimaryIpv6": null,
+        "PrivateIpAddress": null,
+        "PrivateIpAddresses": [
+          {
+            "Primary": true,
+            "PrivateIpAddress": "10.10.11.170"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.202"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.171"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.139"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.232"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.105"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.98"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.32"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.96"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.6"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.37"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.157"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.243"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.112"
+          },
+          {
+            "Primary": false,
+            "PrivateIpAddress": "10.10.11.183"
+          }
+        ],
+        "SecondaryPrivateIpAddressCount": null,
+        "SubnetId": "subnet-0f0d619a86b69c67c"
+      }
+    ],
+    "Placement": {
+      "Affinity": null,
+      "AvailabilityZone": "us-east-1b",
+      "GroupId": null,
+      "GroupName": "",
+      "HostId": null,
+      "HostResourceGroupArn": null,
+      "PartitionNumber": null,
+      "SpreadDomain": null,
+      "Tenancy": "default"
+    },
+    "PrivateDnsNameOptions": {
+      "EnableResourceNameDnsAAAARecord": false,
+      "EnableResourceNameDnsARecord": false,
+      "HostnameType": "ip-name"
+    },
+    "RamDiskId": null,
+    "SecurityGroupIds": null,
+    "SecurityGroups": null,
+    "TagSpecifications": [
+      {
+        "ResourceType": "instance",
+        "Tags": [
+          {
+            "Key": "TerraformModule",
+            "Value": "terraform-aws-wandb/module/app_eks"
+          },
+          {
+            "Key": "TerraformNamespace",
+            "Value": "wandb-odaia"
+          },
+          {
+            "Key": "Name",
+            "Value": "wandb-odaia-b"
+          },
+          {
+            "Key": "eks:nodegroup-name",
+            "Value": "wandb-odaia-b20241015000738841700000005"
+          },
+          {
+            "Key": "env",
+            "Value": "managed-install"
+          },
+          {
+            "Key": "GithubRepo",
+            "Value": "wandb"
+          },
+          {
+            "Key": "kubernetes.io/cluster/wandb-odaia",
+            "Value": "owned"
+          },
+          {
+            "Key": "customer-ns",
+            "Value": "wandb-odaia"
+          },
+          {
+            "Key": "eks:cluster-name",
+            "Value": "wandb-odaia"
+          },
+          {
+            "Key": "k8s.io/cluster-autoscaler/enabled",
+            "Value": "true"
+          },
+          {
+            "Key": "k8s.io/cluster-autoscaler/wandb-odaia",
+            "Value": "owned"
+          },
+          {
+            "Key": "GithubOrg",
+            "Value": "terraform-aws-wandb"
+          }
+        ]
+      }
+    ],
+    "UserData": "TUlNRS1WZXJzaW9uOiAxLjANCkNvbnRlbnQtVHlwZTogbXVsdGlwYXJ0L21peGVkOyBib3VuZGFyeT0iLy8iDQoNCi0tLy8NCkNvbnRlbnQtVHJhbnNmZXItRW5jb2Rpbmc6IDdiaXQNCkNvbnRlbnQtVHlwZTogdGV4dC94LXNoZWxsc2NyaXB0DQpNaW1lLVZlcnNpb246IDEuMA0KDQojIS9iaW4vYmFzaCAtZQoKIyBTZXQgYm9vdHN0cmFwIGVudgpwcmludGYgJyMhL2Jpbi9iYXNoCmV4cG9ydCBBRERJVElPTkFMX0tVQkVMRVRfRVhUUkFfQVJHUz0iLS1zeXN0ZW0tcmVzZXJ2ZWQ9Y3B1PTcwbSxtZW1vcnk9MTAwTWksZXBoZW1lcmFsLXN0b3JhZ2U9NzUwTWkscGlkPTUwMCIKJyA+IC9ldGMvcHJvZmlsZS5kL2Vrcy1ib290c3RyYXAtZW52LnNoCgojIFNvdXJjZSBleHRyYSBlbnZpcm9ubWVudCB2YXJpYWJsZXMgaW4gYm9vdHN0cmFwIHNjcmlwdApzZWQgLWkgJy9ec2V0IC1vIGVycmV4aXQvYVxcbnNvdXJjZSAvZXRjL3Byb2ZpbGUuZC9la3MtYm9vdHN0cmFwLWVudi5zaCcgL2V0Yy9la3MvYm9vdHN0cmFwLnNoCgojIE1lcmdlIEFERElUSU9OQUxfS1VCRUxFVF9FWFRSQV9BUkdTIGludG8gS1VCRUxFVF9FWFRSQV9BUkdTCnNlZCAtaSAncy9eS1VCRUxFVF9FWFRSQV9BUkdTPSIke0tVQkVMRVRfRVhUUkFfQVJHUzotfS9LVUJFTEVUX0VYVFJBX0FSR1M9IiR7S1VCRUxFVF9FWFRSQV9BUkdTOi19ICR7QURESVRJT05BTF9LVUJFTEVUX0VYVFJBX0FSR1N9LycgL2V0Yy9la3MvYm9vdHN0cmFwLnNoCgojIFVzZXIgc3VwcGxpZWQgcHJlIHVzZXJkYXRhCgoNCi0tLy8NCkNvbnRlbnQtVHlwZTogdGV4dC94LXNoZWxsc2NyaXB0OyBjaGFyc2V0PSJ1cy1hc2NpaSINCiMhL2Jpbi9iYXNoDQpzZXQgLWV4DQpCNjRfQ0xVU1RFUl9DQT1MUzB0TFMxQ1JVZEpUaUJEUlZKVVNVWkpRMEZVUlMwdExTMHRDazFKU1VSQ1ZFTkRRV1V5WjBGM1NVSkJaMGxKVUU1cFkyeHZTVE01ZVRoM1JGRlpTa3R2V2tsb2RtTk9RVkZGVEVKUlFYZEdWRVZVVFVKRlIwRXhWVVVLUVhoTlMyRXpWbWxhV0VwMVdsaFNiR042UVdWR2R6QjVUa1JCZWsxVVJYaE9SRlUwVFhwYVlVWjNNSHBPUkVGNlRVUnJlRTVVUVhwTmVscGhUVUpWZUFwRmVrRlNRbWRPVmtKQlRWUkRiWFF4V1cxV2VXSnRWakJhV0UxM1oyZEZhVTFCTUVkRFUzRkhVMGxpTTBSUlJVSkJVVlZCUVRSSlFrUjNRWGRuWjBWTENrRnZTVUpCVVVNNWRVNU9TVTVwUVRkUU1IcE1OV3R6WjA0MWJ6aFVWMHBTYWxScVZ6QndiVzU2TVVaSlZqaElXRUY2ZW05WE9GTlBSamRUWm5nemNHa0tVWFp5Y0hCa1JURnJSMGQyWW14SFoxQjFNMUpqTmpNeFJTdHdZMlJCU1hwdmVUZFVibGQyZW1KRmJWVXdSRGRJWVd0UVZHZFJabVJpZFZGTGFWSXdZZ3BSTkZKaGMwMW9kR3hIVm1nMFQzQnRZM05uZEU5SGRtTm5UMFpXTlRCS2FIVnNiRTloZFdSb2VqTkdLMU52YjJka1ZHVlRNM2RpWnpGSFZHaFJlazg1Q2taalYxaHRkamxYVTFGUk16ZDFkMUJuZDJGdmRYRkdlRmcwZFdaT2RUUnZiMmxNZUc0eVFqWkpNbEpTYldsTmVHOVNRMFpQTm5CSlNXdzNkblJOZDNVS1RuSTJRelZTVDFOT2JISXZja1JGTTBReVpsTm9WME50YVhkMFlrWkhVSFoyZWt0SVRHRlNhRGM0TkZKdmEwbElSVTE0TUcxNmVIZHlUblJ4U1VwUFJ3cEdUWEZOTmxKRVdXZzFjMWw1TTNsVGJ6bE5Ra0ZDWlVWTWJsWnFRV2ROUWtGQlIycFhWRUpZVFVFMFIwRXhWV1JFZDBWQ0wzZFJSVUYzU1VOd1JFRlFDa0puVGxaSVVrMUNRV1k0UlVKVVFVUkJVVWd2VFVJd1IwRXhWV1JFWjFGWFFrSlVaMnBET1dJd2MwdzNjM0ZFTkdGWFZWaExURTFQTVRaa1JIWlVRVllLUW1kT1ZraFNSVVZFYWtGTloyZHdjbVJYU214amJUVnNaRWRXZWsxQk1FZERVM0ZIVTBsaU0wUlJSVUpEZDFWQlFUUkpRa0ZSUWtkNFRIVXJhRkUzYmdwU01FcGphUzlVZDJOV1ppOVhjRmhDUWxSMmRtdHVNM040WVdkVVExSnJjWFZPWkRoVk1GUXlZMHd5WWxKWGR6RlBWek5FTUc1Q09VSm1NbE01TWxaSUNtNWphVTlITlRSSlZXaFVORE5RUzBkbE1WbHBha054TUU0M2FtTjRRalUyZDBoU1JrbzJRVzlDVW10VWRWZ3pielJ6WWtKdUswMXJPREowV2tremMwNEthV3MwWm5kdmNHSnRhVTkyVldscVRsZFNSVXhDZUVKSGFUWmhhbFJUVmtwSmJuVkRWazA1Ylcxd1RXVlBOMUJ4YW1OcVdXMVBNRGxMVVVWUFprSnRXUW92UkRFelVUQnlabTk2YUM5Q1dIQldNbGRLUVUxR2VEaHBVM2xZY2s1SlMyd3ZhVzlyZEhVNVltcERTa3hWY2tKYVdWbG5UMHAzYUc1R05WYzNjbWM0Q25kaEwydG9Tbkl6UVVGTU1IQjJOM1pUY25OVWRYRm9WelZXUXl0U1NFUlpNbEEwVTBsWVlUaHFUR3hSVmtjdmVYVmtNemRKS3psb1YyeHBabXN4Tm5BS1dtOUlkM2gzZUZCS1MzTkpDaTB0TFMwdFJVNUVJRU5GVWxSSlJrbERRVlJGTFMwdExTMEsNCkFQSV9TRVJWRVJfVVJMPWh0dHBzOi8vQUEzOUI0NDA4QzY5MjE1QjY1OTUwRDI3NEYxQTYzMzQuZ3I3LnVzLWVhc3QtMS5la3MuYW1hem9uYXdzLmNvbQ0KSzhTX0NMVVNURVJfRE5TX0lQPTE3Mi4yMC4wLjEwDQovZXRjL2Vrcy9ib290c3RyYXAuc2ggd2FuZGItb2RhaWEgLS1rdWJlbGV0LWV4dHJhLWFyZ3MgJy0tbm9kZS1sYWJlbHM9ZWtzLmFtYXpvbmF3cy5jb20vbm9kZWdyb3VwLWltYWdlPWFtaS0wM2ZjYjdjOWMxY2EzNmI0ZCxla3MuYW1hem9uYXdzLmNvbS9zb3VyY2VMYXVuY2hUZW1wbGF0ZVZlcnNpb249NSxla3MuYW1hem9uYXdzLmNvbS9jYXBhY2l0eVR5cGU9T05fREVNQU5ELGVrcy5hbWF6b25hd3MuY29tL25vZGVncm91cD13YW5kYi1vZGFpYS1iMjAyNDEwMTUwMDA3Mzg4NDE3MDAwMDAwMDUsZWtzLmFtYXpvbmF3cy5jb20vc291cmNlTGF1bmNoVGVtcGxhdGVJZD1sdC0wZjIyNWYwYzk0YTViOGEyNiAtLW1heC1wb2RzPTU4JyAtLWI2NC1jbHVzdGVyLWNhICRCNjRfQ0xVU1RFUl9DQSAtLWFwaXNlcnZlci1lbmRwb2ludCAkQVBJX1NFUlZFUl9VUkwgLS1kbnMtY2x1c3Rlci1pcCAkSzhTX0NMVVNURVJfRE5TX0lQIC0tdXNlLW1heC1wb2RzIGZhbHNlDQoNCg0KLS0vLy0tDQo="
+  },
+  "launch_time": "2025-04-01T00:02:43Z",
+  "maintenance_options": {
+    "AutoRecovery": "default"
+  },
+  "metadata_options": {
+    "HttpEndpoint": "enabled",
+    "HttpProtocolIpv6": "disabled",
+    "HttpPutResponseHopLimit": 2,
+    "HttpTokens": "required",
+    "InstanceMetadataTags": "disabled",
+    "State": "applied"
+  },
+  "monitoring_state": "enabled",
+  "network_interfaces": [
+    {
+      "Association": null,
+      "Attachment": {
+        "AttachTime": "2025-04-01T00:02:43Z",
+        "AttachmentId": "eni-attach-0fa0d3162b90ad65f",
+        "DeleteOnTermination": true,
+        "DeviceIndex": 0,
+        "EnaSrdSpecification": null,
+        "NetworkCardIndex": 0,
+        "Status": "attached"
+      },
+      "ConnectionTrackingConfiguration": null,
+      "Description": "",
+      "Groups": [
+        {
+          "GroupId": "sg-04e83501310692e69",
+          "GroupName": "wandb-odaia-primary-workers"
+        },
+        {
+          "GroupId": "sg-0f52e5a544842390f",
+          "GroupName": "wandb-odaia20240311145836066400000018"
+        }
+      ],
+      "InterfaceType": "interface",
+      "Ipv4Prefixes": null,
+      "Ipv6Addresses": [],
+      "Ipv6Prefixes": null,
+      "MacAddress": "12:c8:b5:a6:bb:39",
+      "NetworkInterfaceId": "eni-0fafbd414a122d5b0",
+      "OwnerId": "830241207209",
+      "PrivateDnsName": "ip-10-10-11-57.ec2.internal",
+      "PrivateIpAddress": "10.10.11.57",
+      "PrivateIpAddresses": [
+        {
+          "Association": null,
+          "Primary": true,
+          "PrivateDnsName": "ip-10-10-11-57.ec2.internal",
+          "PrivateIpAddress": "10.10.11.57"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-10.ec2.internal",
+          "PrivateIpAddress": "10.10.11.10"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-43.ec2.internal",
+          "PrivateIpAddress": "10.10.11.43"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-233.ec2.internal",
+          "PrivateIpAddress": "10.10.11.233"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-206.ec2.internal",
+          "PrivateIpAddress": "10.10.11.206"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-163.ec2.internal",
+          "PrivateIpAddress": "10.10.11.163"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-94.ec2.internal",
+          "PrivateIpAddress": "10.10.11.94"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-223.ec2.internal",
+          "PrivateIpAddress": "10.10.11.223"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-188.ec2.internal",
+          "PrivateIpAddress": "10.10.11.188"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-210.ec2.internal",
+          "PrivateIpAddress": "10.10.11.210"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-83.ec2.internal",
+          "PrivateIpAddress": "10.10.11.83"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-208.ec2.internal",
+          "PrivateIpAddress": "10.10.11.208"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-87.ec2.internal",
+          "PrivateIpAddress": "10.10.11.87"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-117.ec2.internal",
+          "PrivateIpAddress": "10.10.11.117"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-53.ec2.internal",
+          "PrivateIpAddress": "10.10.11.53"
+        }
+      ],
+      "SourceDestCheck": true,
+      "Status": "in-use",
+      "SubnetId": "subnet-0f0d619a86b69c67c",
+      "VpcId": "vpc-0b78c58bce36a4ad3"
+    },
+    {
+      "Association": null,
+      "Attachment": {
+        "AttachTime": "2025-04-01T00:05:30Z",
+        "AttachmentId": "eni-attach-06104d186c23d0709",
+        "DeleteOnTermination": true,
+        "DeviceIndex": 1,
+        "EnaSrdSpecification": null,
+        "NetworkCardIndex": 0,
+        "Status": "attached"
+      },
+      "ConnectionTrackingConfiguration": null,
+      "Description": "aws-K8S-i-01288b6098e18be7b",
+      "Groups": [
+        {
+          "GroupId": "sg-04e83501310692e69",
+          "GroupName": "wandb-odaia-primary-workers"
+        },
+        {
+          "GroupId": "sg-0f52e5a544842390f",
+          "GroupName": "wandb-odaia20240311145836066400000018"
+        }
+      ],
+      "InterfaceType": "interface",
+      "Ipv4Prefixes": null,
+      "Ipv6Addresses": [],
+      "Ipv6Prefixes": null,
+      "MacAddress": "12:c8:6c:76:c4:fd",
+      "NetworkInterfaceId": "eni-040f9558e9322de53",
+      "OwnerId": "830241207209",
+      "PrivateDnsName": "ip-10-10-11-201.ec2.internal",
+      "PrivateIpAddress": "10.10.11.201",
+      "PrivateIpAddresses": [
+        {
+          "Association": null,
+          "Primary": true,
+          "PrivateDnsName": "ip-10-10-11-201.ec2.internal",
+          "PrivateIpAddress": "10.10.11.201"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-73.ec2.internal",
+          "PrivateIpAddress": "10.10.11.73"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-110.ec2.internal",
+          "PrivateIpAddress": "10.10.11.110"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-47.ec2.internal",
+          "PrivateIpAddress": "10.10.11.47"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-12.ec2.internal",
+          "PrivateIpAddress": "10.10.11.12"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-172.ec2.internal",
+          "PrivateIpAddress": "10.10.11.172"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-66.ec2.internal",
+          "PrivateIpAddress": "10.10.11.66"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-134.ec2.internal",
+          "PrivateIpAddress": "10.10.11.134"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-26.ec2.internal",
+          "PrivateIpAddress": "10.10.11.26"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-31.ec2.internal",
+          "PrivateIpAddress": "10.10.11.31"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-28.ec2.internal",
+          "PrivateIpAddress": "10.10.11.28"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-18.ec2.internal",
+          "PrivateIpAddress": "10.10.11.18"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-114.ec2.internal",
+          "PrivateIpAddress": "10.10.11.114"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-150.ec2.internal",
+          "PrivateIpAddress": "10.10.11.150"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-180.ec2.internal",
+          "PrivateIpAddress": "10.10.11.180"
+        }
+      ],
+      "SourceDestCheck": true,
+      "Status": "in-use",
+      "SubnetId": "subnet-0f0d619a86b69c67c",
+      "VpcId": "vpc-0b78c58bce36a4ad3"
+    },
+    {
+      "Association": null,
+      "Attachment": {
+        "AttachTime": "2025-04-01T00:09:48Z",
+        "AttachmentId": "eni-attach-0b9d4a70e4659a04c",
+        "DeleteOnTermination": true,
+        "DeviceIndex": 2,
+        "EnaSrdSpecification": null,
+        "NetworkCardIndex": 0,
+        "Status": "attached"
+      },
+      "ConnectionTrackingConfiguration": null,
+      "Description": "aws-K8S-i-01288b6098e18be7b",
+      "Groups": [
+        {
+          "GroupId": "sg-04e83501310692e69",
+          "GroupName": "wandb-odaia-primary-workers"
+        },
+        {
+          "GroupId": "sg-0f52e5a544842390f",
+          "GroupName": "wandb-odaia20240311145836066400000018"
+        }
+      ],
+      "InterfaceType": "interface",
+      "Ipv4Prefixes": null,
+      "Ipv6Addresses": [],
+      "Ipv6Prefixes": null,
+      "MacAddress": "12:6a:6b:f1:53:3f",
+      "NetworkInterfaceId": "eni-0389354afdd8385f0",
+      "OwnerId": "830241207209",
+      "PrivateDnsName": "ip-10-10-11-170.ec2.internal",
+      "PrivateIpAddress": "10.10.11.170",
+      "PrivateIpAddresses": [
+        {
+          "Association": null,
+          "Primary": true,
+          "PrivateDnsName": "ip-10-10-11-170.ec2.internal",
+          "PrivateIpAddress": "10.10.11.170"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-202.ec2.internal",
+          "PrivateIpAddress": "10.10.11.202"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-171.ec2.internal",
+          "PrivateIpAddress": "10.10.11.171"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-139.ec2.internal",
+          "PrivateIpAddress": "10.10.11.139"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-232.ec2.internal",
+          "PrivateIpAddress": "10.10.11.232"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-105.ec2.internal",
+          "PrivateIpAddress": "10.10.11.105"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-98.ec2.internal",
+          "PrivateIpAddress": "10.10.11.98"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-32.ec2.internal",
+          "PrivateIpAddress": "10.10.11.32"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-96.ec2.internal",
+          "PrivateIpAddress": "10.10.11.96"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-6.ec2.internal",
+          "PrivateIpAddress": "10.10.11.6"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-37.ec2.internal",
+          "PrivateIpAddress": "10.10.11.37"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-157.ec2.internal",
+          "PrivateIpAddress": "10.10.11.157"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-243.ec2.internal",
+          "PrivateIpAddress": "10.10.11.243"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-112.ec2.internal",
+          "PrivateIpAddress": "10.10.11.112"
+        },
+        {
+          "Association": null,
+          "Primary": false,
+          "PrivateDnsName": "ip-10-10-11-183.ec2.internal",
+          "PrivateIpAddress": "10.10.11.183"
+        }
+      ],
+      "SourceDestCheck": true,
+      "Status": "in-use",
+      "SubnetId": "subnet-0f0d619a86b69c67c",
+      "VpcId": "vpc-0b78c58bce36a4ad3"
+    }
+  ],
+  "partition": "aws",
+  "placement_availability_zone": "us-east-1b",
+  "placement_group_name": "",
+  "placement_tenancy": "default",
+  "platform": "",
+  "platform_details": "Linux/UNIX",
+  "private_dns_name": "ip-10-10-11-57.ec2.internal",
+  "private_dns_name_options": {
+    "EnableResourceNameDnsAAAARecord": false,
+    "EnableResourceNameDnsARecord": false,
+    "HostnameType": "ip-name"
+  },
+  "private_ip_address": "10.10.11.57",
+  "product_codes": [],
+  "public_dns_name": "",
+  "region": "us-east-1",
+  "root_device_name": "/dev/xvda",
+  "root_device_type": "ebs",
+  "security_groups": [
+    {
+      "GroupId": "sg-04e83501310692e69",
+      "GroupName": "wandb-odaia-primary-workers"
+    },
+    {
+      "GroupId": "sg-0f52e5a544842390f",
+      "GroupName": "wandb-odaia20240311145836066400000018"
+    }
+  ],
+  "source_dest_check": true,
+  "sp_connection_name": "aws",
+  "sp_ctx": {
+    "connection_name": "aws",
+    "steampipe": {
+      "sdk_version": "5.11.4"
+    }
+  },
+  "sriov_net_support": "simple",
+  "state_code": 16,
+  "state_transition_reason": "",
+  "state_transition_time": "2025-04-01T00:02:43Z",
+  "subnet_id": "subnet-0f0d619a86b69c67c",
+  "tags": {
+    "GithubOrg": "terraform-aws-wandb",
+    "GithubRepo": "wandb",
+    "Name": "wandb-odaia-b",
+    "TerraformModule": "terraform-aws-wandb/module/app_eks",
+    "TerraformNamespace": "wandb-odaia",
+    "aws:autoscaling:groupName": "eks-wandb-odaia-b20241015000738841700000005-68c946c0-3a40-ec02-6c53-1c319cac08e5",
+    "aws:ec2:fleet-id": "fleet-f186b826-5197-c19c-8410-860ad9dbf3a5",
+    "aws:ec2launchtemplate:id": "lt-0625cbe472e9ca046",
+    "aws:ec2launchtemplate:version": "6",
+    "aws:eks:cluster-name": "wandb-odaia",
+    "customer-ns": "wandb-odaia",
+    "eks:cluster-name": "wandb-odaia",
+    "eks:nodegroup-name": "wandb-odaia-b20241015000738841700000005",
+    "env": "managed-install",
+    "k8s.io/cluster-autoscaler/enabled": "true",
+    "k8s.io/cluster-autoscaler/wandb-odaia": "owned",
+    "kubernetes.io/cluster/wandb-odaia": "owned"
+  },
+  "tags_src": [
+    {
+      "Key": "TerraformModule",
+      "Value": "terraform-aws-wandb/module/app_eks"
+    },
+    {
+      "Key": "TerraformNamespace",
+      "Value": "wandb-odaia"
+    },
+    {
+      "Key": "Name",
+      "Value": "wandb-odaia-b"
+    },
+    {
+      "Key": "eks:nodegroup-name",
+      "Value": "wandb-odaia-b20241015000738841700000005"
+    },
+    {
+      "Key": "env",
+      "Value": "managed-install"
+    },
+    {
+      "Key": "GithubRepo",
+      "Value": "wandb"
+    },
+    {
+      "Key": "kubernetes.io/cluster/wandb-odaia",
+      "Value": "owned"
+    },
+    {
+      "Key": "customer-ns",
+      "Value": "wandb-odaia"
+    },
+    {
+      "Key": "aws:ec2launchtemplate:version",
+      "Value": "6"
+    },
+    {
+      "Key": "eks:cluster-name",
+      "Value": "wandb-odaia"
+    },
+    {
+      "Key": "k8s.io/cluster-autoscaler/enabled",
+      "Value": "true"
+    },
+    {
+      "Key": "aws:autoscaling:groupName",
+      "Value": "eks-wandb-odaia-b20241015000738841700000005-68c946c0-3a40-ec02-6c53-1c319cac08e5"
+    },
+    {
+      "Key": "aws:ec2:fleet-id",
+      "Value": "fleet-f186b826-5197-c19c-8410-860ad9dbf3a5"
+    },
+    {
+      "Key": "k8s.io/cluster-autoscaler/wandb-odaia",
+      "Value": "owned"
+    },
+    {
+      "Key": "aws:ec2launchtemplate:id",
+      "Value": "lt-0625cbe472e9ca046"
+    },
+    {
+      "Key": "GithubOrg",
+      "Value": "terraform-aws-wandb"
+    },
+    {
+      "Key": "aws:eks:cluster-name",
+      "Value": "wandb-odaia"
+    }
+  ],
+  "title": "wandb-odaia-b",
+  "usage_operation": "RunInstances",
+  "usage_operation_update_time": "2025-04-01T00:02:43Z",
+  "user_data": "MIME-Version: 1.0Content-Type: multipart/mixed; boundary=\"//\"--//Content-Transfer-Encoding: 7bitContent-Type: text/x-shellscriptMime-Version: 1.0#!/bin/bash -e# Set bootstrap envprintf '#!/bin/bashexport ADDITIONAL_KUBELET_EXTRA_ARGS=\"--system-reserved=cpu=70m,memory=100Mi,ephemeral-storage=750Mi,pid=500\"' \u003e /etc/profile.d/eks-bootstrap-env.sh# Source extra environment variables in bootstrap scriptsed -i '/^set -o errexit/a\\\\nsource /etc/profile.d/eks-bootstrap-env.sh' /etc/eks/bootstrap.sh# Merge ADDITIONAL_KUBELET_EXTRA_ARGS into KUBELET_EXTRA_ARGSsed -i 's/^KUBELET_EXTRA_ARGS=\"${KUBELET_EXTRA_ARGS:-}/KUBELET_EXTRA_ARGS=\"${KUBELET_EXTRA_ARGS:-} ${ADDITIONAL_KUBELET_EXTRA_ARGS}/' /etc/eks/bootstrap.sh# User supplied pre userdata--//Content-Type: text/x-shellscript; charset=\"us-ascii\"#!/bin/bashset -exB64_CLUSTER_CA=LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURCVENDQWUyZ0F3SUJBZ0lJUE5pY2xvSTM5eTh3RFFZSktvWklodmNOQVFFTEJRQXdGVEVUTUJFR0ExVUUKQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB5TkRBek1URXhORFU0TXpaYUZ3MHpOREF6TURreE5UQXpNelphTUJVeApFekFSQmdOVkJBTVRDbXQxWW1WeWJtVjBaWE13Z2dFaU1BMEdDU3FHU0liM0RRRUJBUVVBQTRJQkR3QXdnZ0VLCkFvSUJBUUM5dU5OSU5pQTdQMHpMNWtzZ041bzhUV0pSalRqVzBwbW56MUZJVjhIWEF6em9XOFNPRjdTZngzcGkKUXZycHBkRTFrR0d2YmxHZ1B1M1JjNjMxRStwY2RBSXpveTdUbld2emJFbVUwRDdIYWtQVGdRZmRidVFLaVIwYgpRNFJhc01odGxHVmg0T3BtY3NndE9HdmNnT0ZWNTBKaHVsbE9hdWRoejNGK1Nvb2dkVGVTM3diZzFHVGhRek85CkZjV1htdjlXU1FRMzd1d1Bnd2FvdXFGeFg0dWZOdTRvb2lMeG4yQjZJMlJSbWlNeG9SQ0ZPNnBJSWw3dnRNd3UKTnI2QzVST1NObHIvckRFM0QyZlNoV0NtaXd0YkZHUHZ2ektITGFSaDc4NFJva0lIRU14MG16eHdyTnRxSUpPRwpGTXFNNlJEWWg1c1l5M3lTbzlNQkFCZUVMblZqQWdNQkFBR2pXVEJYTUE0R0ExVWREd0VCL3dRRUF3SUNwREFQCkJnTlZIUk1CQWY4RUJUQURBUUgvTUIwR0ExVWREZ1FXQkJUZ2pDOWIwc0w3c3FENGFXVVhLTE1PMTZkRHZUQVYKQmdOVkhSRUVEakFNZ2dwcmRXSmxjbTVsZEdWek1BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQkd4THUraFE3bgpSMEpjaS9Ud2NWZi9XcFhCQlR2dmtuM3N4YWdUQ1JrcXVOZDhVMFQyY0wyYlJXdzFPVzNEMG5COUJmMlM5MlZICm5jaU9HNTRJVWhUNDNQS0dlMVlpakNxME43amN4QjU2d0hSRko2QW9CUmtUdVgzbzRzYkJuK01rODJ0Wkkzc04KaWs0ZndvcGJtaU92VWlqTldSRUxCeEJHaTZhalRTVkpJbnVDVk05bW1wTWVPN1BxamNqWW1PMDlLUUVPZkJtWQovRDEzUTByZm96aC9CWHBWMldKQU1GeDhpU3lYck5JS2wvaW9rdHU5YmpDSkxVckJaWVlnT0p3aG5GNVc3cmc4CndhL2toSnIzQUFMMHB2N3ZTcnNUdXFoVzVWQytSSERZMlA0U0lYYThqTGxRVkcveXVkMzdJKzloV2xpZmsxNnAKWm9Id3h3eFBKS3NJCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0KAPI_SERVER_URL=https://AA39B4408C69215B65950D274F1A6334.gr7.us-east-1.eks.amazonaws.comK8S_CLUSTER_DNS_IP=172.20.0.10/etc/eks/bootstrap.sh wandb-odaia --kubelet-extra-args '--node-labels=eks.amazonaws.com/nodegroup-image=ami-03fcb7c9c1ca36b4d,eks.amazonaws.com/sourceLaunchTemplateVersion=5,eks.amazonaws.com/capacityType=ON_DEMAND,eks.amazonaws.com/nodegroup=wandb-odaia-b20241015000738841700000005,eks.amazonaws.com/sourceLaunchTemplateId=lt-0f225f0c94a5b8a26 --max-pods=58' --b64-cluster-ca $B64_CLUSTER_CA --apiserver-endpoint $API_SERVER_URL --dns-cluster-ip $K8S_CLUSTER_DNS_IP --use-max-pods false--//--",
+  "virtualization_type": "hvm",
+  "vpc_id": "vpc-0b78c58bce36a4ad3"
+}
