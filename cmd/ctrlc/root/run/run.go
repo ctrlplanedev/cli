@@ -4,6 +4,7 @@ import (
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/run/exec"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func NewRunCmd() *cobra.Command {
@@ -15,7 +16,12 @@ func NewRunCmd() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(cliutil.AddIntervalSupport(exec.NewRunExecCmd(), ""))
+	interval := viper.GetString("interval")
+	if interval == "" {
+		interval = "10s"
+	}
+
+	cmd.AddCommand(cliutil.AddIntervalSupport(exec.NewRunExecCmd(), interval))
 
 	return cmd
 }
