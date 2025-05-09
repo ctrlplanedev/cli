@@ -282,7 +282,7 @@ func processSubnet(subnet *compute.Subnetwork, project string, region string) (a
 	networkName := getResourceName(subnet.Network)
 
 	return api.AgentResource{
-		Version:    "ctrlplane.dev/network/v1",
+		Version:    "ctrlplane.dev/network/subnet/v1",
 		Kind:       "GoogleSubnet",
 		Name:       subnet.Name,
 		Identifier: subnet.SelfLink,
