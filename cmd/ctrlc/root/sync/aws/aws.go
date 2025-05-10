@@ -4,6 +4,7 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/aws/ec2"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/aws/eks"
+	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/aws/networks"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/aws/rds"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
 	"github.com/spf13/cobra"
@@ -33,5 +34,6 @@ func NewAWSCmd() *cobra.Command {
 	cmd.AddCommand(cliutil.AddIntervalSupport(ec2.NewSyncEC2Cmd(), ""))
 	cmd.AddCommand(cliutil.AddIntervalSupport(eks.NewSyncEKSCmd(), ""))
 	cmd.AddCommand(cliutil.AddIntervalSupport(rds.NewSyncRDSCmd(), ""))
+	cmd.AddCommand(cliutil.AddIntervalSupport(networks.NewSyncNetworksCmd(), ""))
 	return cmd
 }
