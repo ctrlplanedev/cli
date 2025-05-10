@@ -208,7 +208,7 @@ func processCluster(_ context.Context, cluster *types.Cluster, region string, ac
 
 	return api.AgentResource{
 		Version:    "ctrlplane.dev/kubernetes/cluster/v1",
-		Kind:       "AWSElasticKubernetesService",
+		Kind:       "AmazonElasticKubernetesService",
 		Name:       *cluster.Name,
 		Identifier: *cluster.Arn,
 		Config: map[string]any{
@@ -220,7 +220,7 @@ func processCluster(_ context.Context, cluster *types.Cluster, region string, ac
 			},
 
 			// Provider-specific implementation details
-			"awsElasticKubernetesService": map[string]any{
+			"amazonElasticKubernetesService": map[string]any{
 				"accountId":       accountID,
 				"arn":             *cluster.Arn,
 				"region":          region,
@@ -311,10 +311,10 @@ var relationshipRules = []api.CreateResourceRelationshipRule{
 		DependencyType: api.ProvisionedIn,
 
 		SourceVersion: "ctrlplane.dev/kubernetes/cluster/v1",
-		SourceKind:    "AWSElasticKubernetesService",
+		SourceKind:    "AmazonElasticKubernetesService",
 
 		TargetVersion: "ctrlplane.dev/network/v1",
-		TargetKind:    "AWSNetwork",
+		TargetKind:    "AmazonNetwork",
 
 		MetadataKeysMatches: &[]string{"aws/region", "network/name"},
 	},

@@ -220,7 +220,7 @@ func processInstance(ctx context.Context, instance *types.DBInstance, region str
 
 	return api.AgentResource{
 		Version:    "ctrlplane.dev/database/v1",
-		Kind:       "AWSRelationalDatabaseService",
+		Kind:       "AmazonRelationalDatabaseService",
 		Name:       *instance.DBInstanceIdentifier,
 		Identifier: identifier,
 		Config: map[string]any{
@@ -463,10 +463,10 @@ var relationshipRules = []api.CreateResourceRelationshipRule{
 		DependencyType: api.ProvisionedIn,
 
 		SourceVersion: "ctrlplane.dev/database/v1",
-		SourceKind:    "AWSRelationalDatabaseService",
+		SourceKind:    "AmazonRelationalDatabaseService",
 
 		TargetVersion: "ctrlplane.dev/network/v1",
-		TargetKind:    "AWSNetwork",
+		TargetKind:    "AmazonNetwork",
 
 		MetadataKeysMatches: &[]string{"aws/region", "network/name"},
 	},
