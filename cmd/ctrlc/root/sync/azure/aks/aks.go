@@ -415,12 +415,13 @@ var relationshipRules = []api.CreateResourceRelationshipRule{
 		Name:           "Azure Cluster Network",
 		DependencyType: api.ProvisionedIn,
 
-		SourceKind:    "AzureKubernetesService",
 		SourceVersion: "ctrlplane.dev/kubernetes/cluster/v1",
-		TargetKind:    "AzureNetwork",
-		TargetVersion: "ctrlplane.dev/network/v1",
+		SourceKind:    "AzureKubernetesService",
 
-		MetadataKeysMatch: &[]string{"azure/subscription", "azure/resource-group"},
+		TargetVersion: "ctrlplane.dev/network/v1",
+		TargetKind:    "AzureNetwork",
+
+		MetadataKeysMatches: &[]string{"azure/subscription", "azure/resource-group"},
 	},
 }
 

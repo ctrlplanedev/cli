@@ -462,12 +462,13 @@ var relationshipRules = []api.CreateResourceRelationshipRule{
 		Name:           "AWS RDS Network",
 		DependencyType: api.ProvisionedIn,
 
-		SourceKind:    "ctrlplane.dev/database/v1",
-		SourceVersion: "AWSRelationalDatabaseService",
-		TargetKind:    "ctrlplane.dev/network/v1",
-		TargetVersion: "AWSNetwork",
+		SourceVersion: "ctrlplane.dev/database/v1",
+		SourceKind:    "AWSRelationalDatabaseService",
 
-		MetadataKeysMatch: &[]string{"aws/region", "network/name"},
+		TargetVersion: "ctrlplane.dev/network/v1",
+		TargetKind:    "AWSNetwork",
+
+		MetadataKeysMatches: &[]string{"aws/region", "network/name"},
 	},
 }
 

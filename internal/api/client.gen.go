@@ -128,19 +128,19 @@ type CloudRegionGeoData struct {
 
 // CreateResourceRelationshipRule defines model for CreateResourceRelationshipRule.
 type CreateResourceRelationshipRule struct {
-	DependencyDescription    *string                                `json:"dependencyDescription,omitempty"`
-	DependencyType           ResourceRelationshipRuleDependencyType `json:"dependencyType"`
-	Description              *string                                `json:"description,omitempty"`
-	MetadataKeysMatch        *[]string                              `json:"metadataKeysMatch,omitempty"`
-	MetadataTargetKeysEquals *[]struct {
+	DependencyDescription *string                                `json:"dependencyDescription,omitempty"`
+	DependencyType        ResourceRelationshipRuleDependencyType `json:"dependencyType"`
+	Description           *string                                `json:"description,omitempty"`
+	MetadataKeysMatches   *[]string                              `json:"metadataKeysMatches,omitempty"`
+	Name                  string                                 `json:"name"`
+	Reference             string                                 `json:"reference"`
+	SourceKind            string                                 `json:"sourceKind"`
+	SourceVersion         string                                 `json:"sourceVersion"`
+	TargetKind            string                                 `json:"targetKind"`
+	TargetMetadataEquals  *[]struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
-	} `json:"metadataTargetKeysEquals,omitempty"`
-	Name          string `json:"name"`
-	Reference     string `json:"reference"`
-	SourceKind    string `json:"sourceKind"`
-	SourceVersion string `json:"sourceVersion"`
-	TargetKind    string `json:"targetKind"`
+	} `json:"targetMetadataEquals,omitempty"`
 	TargetVersion string `json:"targetVersion"`
 	WorkspaceId   string `json:"workspaceId"`
 }
@@ -468,20 +468,20 @@ type Resource struct {
 
 // ResourceRelationshipRule defines model for ResourceRelationshipRule.
 type ResourceRelationshipRule struct {
-	DependencyDescription    *string                                `json:"dependencyDescription,omitempty"`
-	DependencyType           ResourceRelationshipRuleDependencyType `json:"dependencyType"`
-	Description              *string                                `json:"description,omitempty"`
-	Id                       openapi_types.UUID                     `json:"id"`
-	MetadataKeysMatch        *[]string                              `json:"metadataKeysMatch,omitempty"`
-	MetadataTargetKeysEquals *[]struct {
+	DependencyDescription *string                                `json:"dependencyDescription,omitempty"`
+	DependencyType        ResourceRelationshipRuleDependencyType `json:"dependencyType"`
+	Description           *string                                `json:"description,omitempty"`
+	Id                    openapi_types.UUID                     `json:"id"`
+	MetadataKeysMatches   *[]string                              `json:"metadataKeysMatches,omitempty"`
+	Name                  string                                 `json:"name"`
+	Reference             string                                 `json:"reference"`
+	SourceKind            string                                 `json:"sourceKind"`
+	SourceVersion         string                                 `json:"sourceVersion"`
+	TargetKind            *string                                `json:"targetKind,omitempty"`
+	TargetMetadataEquals  *[]struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
-	} `json:"metadataTargetKeysEquals,omitempty"`
-	Name          string             `json:"name"`
-	Reference     string             `json:"reference"`
-	SourceKind    string             `json:"sourceKind"`
-	SourceVersion string             `json:"sourceVersion"`
-	TargetKind    *string            `json:"targetKind,omitempty"`
+	} `json:"targetMetadataEquals,omitempty"`
 	TargetVersion *string            `json:"targetVersion,omitempty"`
 	WorkspaceId   openapi_types.UUID `json:"workspaceId"`
 }

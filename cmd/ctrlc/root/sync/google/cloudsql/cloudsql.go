@@ -377,12 +377,12 @@ var relationshipRules = []api.CreateResourceRelationshipRule{
 		Name:           "Google Cloud SQL Network",
 		DependencyType: api.ProvisionedIn,
 
-		SourceKind:    "ctrlplane.dev/database/v1",
-		SourceVersion: "GoogleCloudSQL",
-		TargetKind:    "ctrlplane.dev/network/v1",
-		TargetVersion: "GoogleNetwork",
+		SourceVersion: "ctrlplane.dev/database/v1",
+		SourceKind:    "GoogleCloudSQL",
+		TargetVersion: "ctrlplane.dev/network/v1",
+		TargetKind:    "GoogleNetwork",
 
-		MetadataKeysMatch: &[]string{"google/project", "network/name"},
+		MetadataKeysMatches: &[]string{"google/project", "network/id"},
 	},
 }
 

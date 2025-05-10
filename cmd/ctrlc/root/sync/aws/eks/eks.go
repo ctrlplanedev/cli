@@ -310,12 +310,13 @@ var relationshipRules = []api.CreateResourceRelationshipRule{
 		Name:           "AWS Cluster Network",
 		DependencyType: api.ProvisionedIn,
 
-		SourceKind:    "ctrlplane.dev/kubernetes/cluster/v1",
-		SourceVersion: "AWSElasticKubernetesService",
-		TargetKind:    "ctrlplane.dev/network/v1",
-		TargetVersion: "AWSNetwork",
+		SourceVersion: "ctrlplane.dev/kubernetes/cluster/v1",
+		SourceKind:    "AWSElasticKubernetesService",
 
-		MetadataKeysMatch: &[]string{"aws/region", "network/name"},
+		TargetVersion: "ctrlplane.dev/network/v1",
+		TargetKind:    "AWSNetwork",
+
+		MetadataKeysMatches: &[]string{"aws/region", "network/name"},
 	},
 }
 
