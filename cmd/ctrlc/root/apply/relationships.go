@@ -23,7 +23,7 @@ func processResourceRelationships(
 		if err != nil {
 			log.Error("Failed to create relationship", "error", err, "reference", relationship.Reference)
 		}
-		
+
 		if res == nil {
 			log.Error("Empty response when creating relationship", "reference", relationship.Reference)
 			continue
@@ -42,11 +42,11 @@ func processResourceRelationships(
 
 func createRelationshipRequestBody(workspaceId string, relationship ResourceRelationship) api.CreateResourceRelationshipRule {
 	config := api.CreateResourceRelationshipRule{
-		WorkspaceId:    workspaceId,
-		Reference:      relationship.Reference,
-		DependencyType: api.ResourceRelationshipRuleDependencyType(relationship.DependencyType),
+		WorkspaceId:         workspaceId,
+		Reference:           relationship.Reference,
+		DependencyType:      api.ResourceRelationshipRuleDependencyType(relationship.DependencyType),
 		MetadataKeysMatches: &[]string{},
-		TargetMetadataEquals: &[]struct{
+		TargetMetadataEquals: &[]struct {
 			Key   string `json:"key"`
 			Value string `json:"value"`
 		}{},
@@ -55,7 +55,6 @@ func createRelationshipRequestBody(workspaceId string, relationship ResourceRela
 	if relationship.Target != nil {
 		config.TargetKind = relationship.Target.Kind
 		config.TargetVersion = relationship.Target.Version
-
 
 		if relationship.Target.MetadataEquals != nil {
 			targetMetadataEquals := []struct {
