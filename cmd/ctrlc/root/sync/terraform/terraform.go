@@ -72,24 +72,10 @@ func NewSyncTerraformCmd() *cobra.Command {
 				return fmt.Errorf("failed to get workspaces in organization: %w", err)
 			}
 
-			resources := []struct {
-				Config     map[string]interface{} `json:"config"`
-				Identifier string                 `json:"identifier"`
-				Kind       string                 `json:"kind"`
-				Metadata   map[string]string      `json:"metadata"`
-				Name       string                 `json:"name"`
-				Version    string                 `json:"version"`
-			}{}
+			resources := []api.CreateResource{}
 
 			for _, workspace := range workspaces {
-				resource := struct {
-					Config     map[string]interface{} `json:"config"`
-					Identifier string                 `json:"identifier"`
-					Kind       string                 `json:"kind"`
-					Metadata   map[string]string      `json:"metadata"`
-					Name       string                 `json:"name"`
-					Version    string                 `json:"version"`
-				}{
+				resource := api.CreateResource{
 					Version:    workspace.Version,
 					Identifier: workspace.Identifier,
 					Metadata:   workspace.Metadata,

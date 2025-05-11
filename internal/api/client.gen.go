@@ -126,6 +126,17 @@ type CloudRegionGeoData struct {
 	Timezone string `json:"timezone"`
 }
 
+// CreateResource defines model for CreateResource.
+type CreateResource struct {
+	Config     map[string]interface{} `json:"config"`
+	Identifier string                 `json:"identifier"`
+	Kind       string                 `json:"kind"`
+	Metadata   map[string]string      `json:"metadata"`
+	Name       string                 `json:"name"`
+	Variables  *[]Variable            `json:"variables,omitempty"`
+	Version    string                 `json:"version"`
+}
+
 // CreateResourceRelationshipRule defines model for CreateResourceRelationshipRule.
 type CreateResourceRelationshipRule struct {
 	DependencyDescription *string                                `json:"dependencyDescription,omitempty"`
@@ -884,14 +895,7 @@ type UpdateReleaseJSONBodyStatus string
 
 // SetResourceProvidersResourcesJSONBody defines parameters for SetResourceProvidersResources.
 type SetResourceProvidersResourcesJSONBody struct {
-	Resources []struct {
-		Config     map[string]interface{} `json:"config"`
-		Identifier string                 `json:"identifier"`
-		Kind       string                 `json:"kind"`
-		Metadata   map[string]string      `json:"metadata"`
-		Name       string                 `json:"name"`
-		Version    string                 `json:"version"`
-	} `json:"resources"`
+	Resources []CreateResource `json:"resources"`
 }
 
 // CreateResourceSchemaJSONBody defines parameters for CreateResourceSchema.

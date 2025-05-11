@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strings"
 )
@@ -16,12 +15,4 @@ func NewAPIKeyClientWithResponses(server string, apiKey string) (*ClientWithResp
 			return nil
 		}),
 	)
-}
-
-func (v *DirectVariable_Value) SetString(value string) {
-	v.union = json.RawMessage("\"" + value + "\"")
-}
-
-func (v *ReferenceVariable_DefaultValue) SetBool(value string) {
-	v.union = json.RawMessage("\"" + value + "\"")
 }

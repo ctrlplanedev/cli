@@ -87,7 +87,7 @@ func initGKEClient(ctx context.Context) (*container.Service, error) {
 }
 
 // processClusters lists and processes all GKE clusters
-func processClusters(ctx context.Context, gkeClient *container.Service, project string) ([]api.AgentResource, error) {
+func processClusters(ctx context.Context, gkeClient *container.Service, project string) ([]api.CreateResource, error) {
 	parent := fmt.Sprintf("projects/%s/locations/-", project)
 	resp, err := gkeClient.Projects.Locations.Clusters.List(parent).Do()
 	if err != nil {
@@ -96,7 +96,7 @@ func processClusters(ctx context.Context, gkeClient *container.Service, project 
 
 	log.Info("Found GKE clusters", "count", len(resp.Clusters))
 
-	resources := []api.AgentResource{}
+	resources := []api.CreateResource{}
 	for _, cluster := range resp.Clusters {
 		resource, err := processCluster(ctx, cluster, project)
 		if err != nil {
@@ -110,7 +110,7 @@ func processClusters(ctx context.Context, gkeClient *container.Service, project 
 }
 
 // processCluster handles processing of a single GKE cluster
-func processCluster(_ context.Context, cluster *container.Cluster, project string) (api.AgentResource, error) {
+func processCluster(_ context.Context, cluster *container.Cluster, project string) (api.CreateResource, error) {
 	metadata := initClusterMetadata(cluster, project)
 
 	// Extract location info
@@ -137,7 +137,7 @@ func processCluster(_ context.Context, cluster *container.Cluster, project strin
 	if cluster.MasterAuth != nil && cluster.MasterAuth.ClusterCaCertificate != "" {
 		certificateAuthorityData = cluster.MasterAuth.ClusterCaCertificate
 	}
-	return api.AgentResource{
+	return api.CreateResource{
 		Version:    "ctrlplane.dev/kubernetes/cluster/v1",
 		Kind:       "GoogleKubernetesEngine",
 		Name:       cluster.Name,
@@ -394,7 +394,7 @@ var relationshipRules = []api.CreateResourceRelationshipRule{
 }
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.AgentResource, project, name *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, project, name *string) error {
 	if *name == "" {
 		*name = fmt.Sprintf("google-gke-project-%s", *project)
 	}

@@ -108,7 +108,7 @@ func initComputeClient(ctx context.Context) (*compute.Service, error) {
 }
 
 // processNetworks lists and processes all VPC networks
-func processNetworks(_ context.Context, computeClient *compute.Service, project string) ([]api.AgentResource, error) {
+func processNetworks(_ context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
 	networks, err := computeClient.Networks.List(project).Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list networks: %w", err)
@@ -116,7 +116,7 @@ func processNetworks(_ context.Context, computeClient *compute.Service, project 
 
 	log.Info("Found networks", "count", len(networks.Items))
 
-	resources := []api.AgentResource{}
+	resources := []api.CreateResource{}
 	for _, network := range networks.Items {
 		// Count subnets for this network
 		subnetCount := 0
@@ -141,7 +141,7 @@ func processNetworks(_ context.Context, computeClient *compute.Service, project 
 }
 
 // processNetwork handles processing of a single VPC network
-func processNetwork(network *compute.Network, project string, subnetCount int) (api.AgentResource, error) {
+func processNetwork(network *compute.Network, project string, subnetCount int) (api.CreateResource, error) {
 	metadata := initNetworkMetadata(network, project, subnetCount)
 
 	// Build console URL
@@ -166,7 +166,7 @@ func processNetwork(network *compute.Network, project string, subnetCount int) (
 		metadata["network/peering-count"] = strconv.Itoa(len(network.Peerings))
 	}
 
-	return api.AgentResource{
+	return api.CreateResource{
 		Version:    "ctrlplane.dev/network/v1",
 		Kind:       "GoogleNetwork",
 		Name:       network.Name,
@@ -237,14 +237,14 @@ func initNetworkMetadata(network *compute.Network, project string, subnetCount i
 }
 
 // processSubnets lists and processes all subnetworks
-func processSubnets(_ context.Context, computeClient *compute.Service, project string) ([]api.AgentResource, error) {
+func processSubnets(_ context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
 	// Use AggregatedList to get subnets from all regions
 	resp, err := computeClient.Subnetworks.AggregatedList(project).Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list subnetworks: %w", err)
 	}
 
-	resources := []api.AgentResource{}
+	resources := []api.CreateResource{}
 	subnetCount := 0
 
 	// Process subnets from all regions
@@ -270,7 +270,7 @@ func processSubnets(_ context.Context, computeClient *compute.Service, project s
 }
 
 // processSubnet handles processing of a single subnet
-func processSubnet(subnet *compute.Subnetwork, project string, region string) (api.AgentResource, error) {
+func processSubnet(subnet *compute.Subnetwork, project string, region string) (api.CreateResource, error) {
 	metadata := initSubnetMetadata(subnet, project, region)
 
 	// Build console URL
@@ -281,7 +281,7 @@ func processSubnet(subnet *compute.Subnetwork, project string, region string) (a
 	// Extract network name from self link
 	networkName := getResourceName(subnet.Network)
 
-	return api.AgentResource{
+	return api.CreateResource{
 		Version:    "ctrlplane.dev/network/subnet/v1",
 		Kind:       "GoogleSubnet",
 		Name:       subnet.Name,
@@ -390,7 +390,7 @@ func initSubnetMetadata(subnet *compute.Subnetwork, project string, region strin
 }
 
 // processFirewalls lists and processes all firewall rules
-func processFirewalls(ctx context.Context, computeClient *compute.Service, project string) ([]api.AgentResource, error) {
+func processFirewalls(ctx context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
 	firewalls, err := computeClient.Firewalls.List(project).Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list firewalls: %w", err)
@@ -398,7 +398,7 @@ func processFirewalls(ctx context.Context, computeClient *compute.Service, proje
 
 	log.Info("Found firewall rules", "count", len(firewalls.Items))
 
-	resources := []api.AgentResource{}
+	resources := []api.CreateResource{}
 	for _, firewall := range firewalls.Items {
 		resource, err := processFirewall(firewall, project)
 		if err != nil {
@@ -412,7 +412,7 @@ func processFirewalls(ctx context.Context, computeClient *compute.Service, proje
 }
 
 // processFirewall handles processing of a single firewall rule
-func processFirewall(firewall *compute.Firewall, project string) (api.AgentResource, error) {
+func processFirewall(firewall *compute.Firewall, project string) (api.CreateResource, error) {
 	metadata := initFirewallMetadata(firewall, project)
 
 	// Build console URL for the network (since firewalls don't have direct URLs)
@@ -421,7 +421,7 @@ func processFirewall(firewall *compute.Firewall, project string) (api.AgentResou
 		networkName, project)
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"Google Cloud Console\": \"%s\" }", consoleUrl)
 
-	return api.AgentResource{
+	return api.CreateResource{
 		Version:    "ctrlplane.dev/network/v1",
 		Kind:       "GoogleFirewall",
 		Name:       firewall.Name,
@@ -558,14 +558,14 @@ func initFirewallMetadata(firewall *compute.Firewall, project string) map[string
 }
 
 // processForwardingRules lists and processes all forwarding rules (load balancers)
-func processForwardingRules(_ context.Context, computeClient *compute.Service, project string) ([]api.AgentResource, error) {
+func processForwardingRules(_ context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
 	// Use AggregatedList to get forwarding rules from all regions
 	resp, err := computeClient.ForwardingRules.AggregatedList(project).Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list forwarding rules: %w", err)
 	}
 
-	resources := []api.AgentResource{}
+	resources := []api.CreateResource{}
 	ruleCount := 0
 
 	// Process forwarding rules from all regions
@@ -591,7 +591,7 @@ func processForwardingRules(_ context.Context, computeClient *compute.Service, p
 }
 
 // processForwardingRule handles processing of a single forwarding rule
-func processForwardingRule(rule *compute.ForwardingRule, project string, region string) (api.AgentResource, error) {
+func processForwardingRule(rule *compute.ForwardingRule, project string, region string) (api.CreateResource, error) {
 	metadata := initForwardingRuleMetadata(rule, project, region)
 
 	// Build console URL
@@ -611,7 +611,7 @@ func processForwardingRule(rule *compute.ForwardingRule, project string, region 
 		networkName = getResourceName(rule.Network)
 	}
 
-	return api.AgentResource{
+	return api.CreateResource{
 		Version:    "ctrlplane.dev/network/forwarding-rule/v1",
 		Kind:       "GoogleForwardingRule",
 		Name:       rule.Name,
@@ -763,7 +763,7 @@ func getResourceName(fullPath string) string {
 }
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.AgentResource, project, name *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, project, name *string) error {
 	if *name == "" {
 		*name = fmt.Sprintf("google-networks-project-%s", *project)
 	}

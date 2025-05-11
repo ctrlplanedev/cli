@@ -61,7 +61,7 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 		log.Info("Syncing RDS instances", "regions", regionsToSync)
 
 		// Process each region
-		var allResources []api.AgentResource
+		var allResources []api.CreateResource
 		var mu sync.Mutex
 		var wg sync.WaitGroup
 		var syncErrors []error
@@ -151,8 +151,8 @@ func initRDSClient(ctx context.Context, region string) (*rds.Client, error) {
 	return rds.NewFromConfig(cfg), nil
 }
 
-func processInstances(ctx context.Context, rdsClient *rds.Client, region string) ([]api.AgentResource, error) {
-	var resources []api.AgentResource
+func processInstances(ctx context.Context, rdsClient *rds.Client, region string) ([]api.CreateResource, error) {
+	var resources []api.CreateResource
 	var marker *string
 
 	for {
@@ -182,7 +182,7 @@ func processInstances(ctx context.Context, rdsClient *rds.Client, region string)
 	return resources, nil
 }
 
-func processInstance(ctx context.Context, instance *types.DBInstance, region string, rdsClient *rds.Client) (api.AgentResource, error) {
+func processInstance(ctx context.Context, instance *types.DBInstance, region string, rdsClient *rds.Client) (api.CreateResource, error) {
 	// Get default port based on engine
 	port := int32(5432) // Default to PostgreSQL port
 	if instance.Endpoint != nil && instance.Endpoint.Port != nil && *instance.Endpoint.Port != 0 {
@@ -218,7 +218,7 @@ func processInstance(ctx context.Context, instance *types.DBInstance, region str
 		}
 	}
 
-	return api.AgentResource{
+	return api.CreateResource{
 		Version:    "ctrlplane.dev/database/v1",
 		Kind:       "AmazonRelationalDatabaseService",
 		Name:       *instance.DBInstanceIdentifier,
@@ -511,7 +511,7 @@ func fetchParameterGroupDetails(ctx context.Context, rdsClient *rds.Client, para
 }
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.AgentResource, region, name *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, region, name *string) error {
 	if *name == "" {
 		*name = fmt.Sprintf("aws-rds-%s", *region)
 	}

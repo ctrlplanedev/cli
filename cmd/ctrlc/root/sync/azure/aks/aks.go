@@ -159,8 +159,8 @@ func getDefaultSubscriptionID(ctx context.Context, cred azcore.TokenCredential) 
 	return "", fmt.Errorf("no subscriptions found")
 }
 
-func processClusters(ctx context.Context, cred azcore.TokenCredential, subscriptionID string, tenantID string) ([]api.AgentResource, error) {
-	var resources []api.AgentResource
+func processClusters(ctx context.Context, cred azcore.TokenCredential, subscriptionID string, tenantID string) ([]api.CreateResource, error) {
+	var resources []api.CreateResource
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	var syncErrors []error
@@ -211,7 +211,7 @@ func processClusters(ctx context.Context, cred azcore.TokenCredential, subscript
 	return resources, nil
 }
 
-func processCluster(_ context.Context, cluster *armcontainerservice.ManagedCluster, subscriptionID string, tenantID string) (api.AgentResource, error) {
+func processCluster(_ context.Context, cluster *armcontainerservice.ManagedCluster, subscriptionID string, tenantID string) (api.CreateResource, error) {
 	resourceGroup := extractResourceGroupFromID(*cluster.ID)
 	metadata := initClusterMetadata(cluster, subscriptionID, resourceGroup, tenantID)
 
@@ -229,7 +229,7 @@ func processCluster(_ context.Context, cluster *armcontainerservice.ManagedClust
 		endpoint = *cluster.Properties.Fqdn
 	}
 
-	return api.AgentResource{
+	return api.CreateResource{
 		Version:    "ctrlplane.dev/kubernetes/cluster/v1",
 		Kind:       "AzureKubernetesService",
 		Name:       *cluster.Name,
@@ -425,7 +425,7 @@ var relationshipRules = []api.CreateResourceRelationshipRule{
 	},
 }
 
-func upsertToCtrlplane(ctx context.Context, resources []api.AgentResource, subscriptionID, name *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, subscriptionID, name *string) error {
 	if *name == "" {
 		*name = fmt.Sprintf("azure-aks-%s", *subscriptionID)
 	}

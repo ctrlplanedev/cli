@@ -63,7 +63,7 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 		log.Info("Syncing EKS clusters", "regions", regionsToSync)
 
 		// Process each region
-		var allResources []api.AgentResource
+		var allResources []api.CreateResource
 		var mu sync.Mutex
 		var wg sync.WaitGroup
 		var syncErrors []error
@@ -153,8 +153,8 @@ func initEKSClient(ctx context.Context, region string) (*eks.Client, aws.Config,
 	return eks.NewFromConfig(cfg), cfg, nil
 }
 
-func processClusters(ctx context.Context, eksClient *eks.Client, region string, cfg aws.Config) ([]api.AgentResource, error) {
-	var resources []api.AgentResource
+func processClusters(ctx context.Context, eksClient *eks.Client, region string, cfg aws.Config) ([]api.CreateResource, error) {
+	var resources []api.CreateResource
 	var nextToken *string
 
 	accountID, err := common.GetAccountID(ctx, cfg)
@@ -197,7 +197,7 @@ func processClusters(ctx context.Context, eksClient *eks.Client, region string, 
 	return resources, nil
 }
 
-func processCluster(_ context.Context, cluster *types.Cluster, region string, accountID string) (api.AgentResource, error) {
+func processCluster(_ context.Context, cluster *types.Cluster, region string, accountID string) (api.CreateResource, error) {
 	metadata := initClusterMetadata(cluster, region)
 
 	metadata["aws/account"] = accountID
@@ -206,7 +206,7 @@ func processCluster(_ context.Context, cluster *types.Cluster, region string, ac
 		region, region, *cluster.Name)
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"AWS Console\": \"%s\" }", consoleUrl)
 
-	return api.AgentResource{
+	return api.CreateResource{
 		Version:    "ctrlplane.dev/kubernetes/cluster/v1",
 		Kind:       "AmazonElasticKubernetesService",
 		Name:       *cluster.Name,
@@ -320,7 +320,7 @@ var relationshipRules = []api.CreateResourceRelationshipRule{
 	},
 }
 
-func upsertToCtrlplane(ctx context.Context, resources []api.AgentResource, region, name *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, region, name *string) error {
 	if *name == "" {
 		*name = fmt.Sprintf("aws-eks-%s", *region)
 	}

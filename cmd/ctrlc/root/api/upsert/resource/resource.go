@@ -61,7 +61,8 @@ func NewUpsertResourceCmd() *cobra.Command {
 				sensitive := false
 				vv := api.Variable{}
 				dvv := api.DirectVariable_Value{}
-				dvv.SetString(v)
+				valueData, _ := json.Marshal(v)
+				dvv.UnmarshalJSON(valueData)
 				vv.FromDirectVariable(api.DirectVariable{
 					Key:       k,
 					Sensitive: &sensitive,

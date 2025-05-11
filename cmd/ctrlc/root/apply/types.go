@@ -41,6 +41,16 @@ type ResourceProvider struct {
 	Resources []Resource `yaml:"resources"`
 }
 
+type Variable struct {
+	DefaultValue *any      `yaml:"defaultValue,omitempty"`
+	Reference    *string   `yaml:"reference,omitempty"`
+	Path         *[]string `yaml:"path,omitempty"`
+
+	Key       string `yaml:"key"`
+	Sensitive *bool  `yaml:"sensitive,omitempty"`
+	Value     *any   `yaml:"value,omitempty"`
+}
+
 type Resource struct {
 	Identifier string            `yaml:"identifier"`
 	Name       string            `yaml:"name"`
@@ -48,7 +58,7 @@ type Resource struct {
 	Kind       string            `yaml:"kind"`
 	Config     map[string]any    `yaml:"config"`
 	Metadata   map[string]string `yaml:"metadata"`
-	Variables  map[string]any    `yaml:"variables"`
+	Variables  *[]Variable       `yaml:"variables,omitempty"`
 }
 
 type TargetResource struct {

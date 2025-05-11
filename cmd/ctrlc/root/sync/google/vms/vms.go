@@ -85,14 +85,14 @@ func initComputeClient(ctx context.Context) (*compute.Service, error) {
 }
 
 // processVMs lists and processes all VM instances
-func processVMs(ctx context.Context, computeClient *compute.Service, project string) ([]api.AgentResource, error) {
+func processVMs(ctx context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
 	// Use AggregatedList to get VMs from all zones
 	resp, err := computeClient.Instances.AggregatedList(project).Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list VM instances: %w", err)
 	}
 
-	resources := []api.AgentResource{}
+	resources := []api.CreateResource{}
 	vmCount := 0
 
 	// Process VMs from all zones
@@ -118,7 +118,7 @@ func processVMs(ctx context.Context, computeClient *compute.Service, project str
 }
 
 // processVM handles processing of a single VM instance
-func processVM(instance *compute.Instance, project string, zone string) (api.AgentResource, error) {
+func processVM(instance *compute.Instance, project string, zone string) (api.CreateResource, error) {
 	metadata := initVMMetadata(instance, project, zone)
 
 	// Extract region from zone (e.g. us-central1-a -> us-central1)
@@ -150,7 +150,7 @@ func processVM(instance *compute.Instance, project string, zone string) (api.Age
 		networkName = getResourceName(instance.NetworkInterfaces[0].Network)
 	}
 
-	return api.AgentResource{
+	return api.CreateResource{
 		Version:    "ctrlplane.dev/compute/machine/v1",
 		Kind:       "GoogleComputeEngine",
 		Name:       instance.Name,
@@ -395,7 +395,7 @@ func getResourceName(fullPath string) string {
 }
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.AgentResource, project, name *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, project, name *string) error {
 	if *name == "" {
 		*name = fmt.Sprintf("google-vms-project-%s", *project)
 	}
