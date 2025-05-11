@@ -39,10 +39,11 @@ func processDeployment(
 
 func createDeploymentRequestBody(systemID uuid.UUID, deployment Deployment) api.CreateDeploymentJSONBody {
 	return api.CreateDeploymentJSONBody{
-		SystemId:    systemID,
-		Slug:        deployment.Slug,
-		Name:        deployment.Name,
-		Description: deployment.Description,
+		SystemId:         systemID,
+		Slug:             deployment.Slug,
+		Name:             deployment.Name,
+		Description:      deployment.Description,
+		ResourceSelector: deployment.ResourceSelector,
 	}
 }
 
@@ -82,14 +83,13 @@ func processEnvironment(
 	defer environmentWg.Done()
 
 	body := api.CreateEnvironmentJSONRequestBody{
-		SystemId:    systemID.String(),
-		Name:        environment.Name,
-		Description: &environment.Description,
+		SystemId:         systemID.String(),
+		Name:             environment.Name,
+		Description:      environment.Description,
+		ResourceSelector: environment.ResourceSelector,
+		Metadata:         environment.Metadata,
 	}
 
-	if environment.ResourceSelector != nil {
-		body.ResourceSelector = environment.ResourceSelector
-	}
 	_, err := client.CreateEnvironmentWithResponse(ctx, body)
 	if err != nil {
 		log.Error("Failed to create environment", "name", environment.Name, "error", err)

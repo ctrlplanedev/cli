@@ -16,16 +16,19 @@ type System struct {
 }
 
 type Environment struct {
-	Name             string          `yaml:"name"`
-	Description      string          `yaml:"description"`
-	ResourceSelector *map[string]any `yaml:"resourceSelector,omitempty"`
+	Name             string             `yaml:"name"`
+	Description      *string            `yaml:"description,omitempty"`
+	ResourceSelector *map[string]any    `yaml:"resourceSelector,omitempty"`
+	Metadata         *map[string]string `yaml:"metadata,omitempty"`
 }
 
 type Deployment struct {
-	Slug        string    `yaml:"slug"`
-	Name        string    `yaml:"name"`
-	Description *string   `yaml:"description"`
-	JobAgent    *JobAgent `yaml:"jobAgent,omitempty"`
+	Slug             string             `yaml:"slug"`
+	Name             string             `yaml:"name"`
+	Description      *string            `yaml:"description"`
+	JobAgent         *JobAgent          `yaml:"jobAgent,omitempty"`
+	ResourceSelector *map[string]any    `yaml:"resourceSelector,omitempty"`
+	Metadata         *map[string]string `yaml:"metadata,omitempty"`
 }
 
 type JobAgent struct {
