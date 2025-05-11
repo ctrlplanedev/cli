@@ -422,7 +422,7 @@ func processFirewall(firewall *compute.Firewall, project string) (api.CreateReso
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"Google Cloud Console\": \"%s\" }", consoleUrl)
 
 	return api.CreateResource{
-		Version:    "ctrlplane.dev/network/v1",
+		Version:    "ctrlplane.dev/network/firewall/v1",
 		Kind:       "GoogleFirewall",
 		Name:       firewall.Name,
 		Identifier: firewall.SelfLink,
