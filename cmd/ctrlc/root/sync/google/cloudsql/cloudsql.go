@@ -234,7 +234,7 @@ func initSQLAdminClient(ctx context.Context) (*sqladmin.Service, error) {
 }
 
 // processInstances lists and processes all Cloud SQL instances
-func processInstances(_ context.Context, sqlService *sqladmin.Service, project string) ([]api.AgentResource, error) {
+func processInstances(_ context.Context, sqlService *sqladmin.Service, project string) ([]api.CreateResource, error) {
 	instances, err := sqlService.Instances.List(project).Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list instances: %w", err)
@@ -242,7 +242,7 @@ func processInstances(_ context.Context, sqlService *sqladmin.Service, project s
 
 	log.Info("Found instances", "count", len(instances.Items))
 
-	resources := []api.AgentResource{}
+	resources := []api.CreateResource{}
 	for _, instance := range instances.Items {
 		resource := processInstance(instance, project)
 		resources = append(resources, resource)
@@ -252,7 +252,7 @@ func processInstances(_ context.Context, sqlService *sqladmin.Service, project s
 }
 
 // processInstance handles processing of a single Cloud SQL instance
-func processInstance(instance *sqladmin.DatabaseInstance, project string) api.AgentResource {
+func processInstance(instance *sqladmin.DatabaseInstance, project string) api.CreateResource {
 	// Extract region from zone
 	region := strings.Join(strings.Split(instance.GceZone, "-")[:2], "-")
 
@@ -265,7 +265,7 @@ func processInstance(instance *sqladmin.DatabaseInstance, project string) api.Ag
 
 	metadata := buildInstanceMetadata(instance, project, region, host, port, consoleUrl)
 
-	return api.AgentResource{
+	return api.CreateResource{
 		Version:    "ctrlplane.dev/database/v1",
 		Kind:       "GoogleCloudSQL",
 		Name:       instance.Name,
@@ -377,17 +377,17 @@ var relationshipRules = []api.CreateResourceRelationshipRule{
 		Name:           "Google Cloud SQL Network",
 		DependencyType: api.ProvisionedIn,
 
-		SourceKind:    "ctrlplane.dev/database/v1",
-		SourceVersion: "GoogleCloudSQL",
-		TargetKind:    "ctrlplane.dev/network/v1",
-		TargetVersion: "GoogleNetwork",
+		SourceVersion: "ctrlplane.dev/database/v1",
+		SourceKind:    "GoogleCloudSQL",
+		TargetVersion: "ctrlplane.dev/network/v1",
+		TargetKind:    "GoogleNetwork",
 
-		MetadataKeysMatch: &[]string{"google/project", "network/name"},
+		MetadataKeysMatches: &[]string{"google/project", "network/id"},
 	},
 }
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.AgentResource, project, providerName *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, project, providerName *string) error {
 	if *providerName == "" {
 		*providerName = fmt.Sprintf("google-cloudsql-%s", *project)
 	}

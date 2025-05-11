@@ -92,7 +92,7 @@ func initStorageClient(ctx context.Context) (*storage.Service, error) {
 }
 
 // processBuckets lists and processes all Storage buckets in the project
-func processBuckets(ctx context.Context, storageClient *storage.Service, project string) ([]api.AgentResource, error) {
+func processBuckets(ctx context.Context, storageClient *storage.Service, project string) ([]api.CreateResource, error) {
 	// List all buckets in the project
 	buckets, err := storageClient.Buckets.List(project).Do()
 	if err != nil {
@@ -101,7 +101,7 @@ func processBuckets(ctx context.Context, storageClient *storage.Service, project
 
 	log.Info("Found buckets", "count", len(buckets.Items))
 
-	resources := []api.AgentResource{}
+	resources := []api.CreateResource{}
 	for _, bucket := range buckets.Items {
 		resource, err := processBucket(ctx, storageClient, bucket, project)
 		if err != nil {
@@ -115,7 +115,7 @@ func processBuckets(ctx context.Context, storageClient *storage.Service, project
 }
 
 // processBucket handles processing of a single Storage bucket
-func processBucket(_ context.Context, storageClient *storage.Service, bucket *storage.Bucket, project string) (api.AgentResource, error) {
+func processBucket(_ context.Context, storageClient *storage.Service, bucket *storage.Bucket, project string) (api.CreateResource, error) {
 	metadata := initBucketMetadata(bucket, project)
 
 	// Process IAM policy if available
@@ -135,7 +135,7 @@ func processBucket(_ context.Context, storageClient *storage.Service, bucket *st
 		bucket.Name, project)
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"Google Cloud Console\": \"%s\" }", consoleUrl)
 
-	return api.AgentResource{
+	return api.CreateResource{
 		Version:    "ctrlplane.dev/storage/v1",
 		Kind:       "GoogleBucket",
 		Name:       bucket.Name,
@@ -459,7 +459,7 @@ func processBucketStats(storageClient *storage.Service, bucket *storage.Bucket, 
 }
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.AgentResource, project, name *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, project, name *string) error {
 	if *name == "" {
 		*name = fmt.Sprintf("google-buckets-project-%s", *project)
 	}

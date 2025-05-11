@@ -179,7 +179,7 @@ func initGitHubClient(ctx context.Context, token string) (*github.Client, error)
 }
 
 // processPullRequests lists and processes all pull requests
-func processPullRequests(ctx context.Context, client *github.Client, owner, repo string, states []string) ([]api.AgentResource, error) {
+func processPullRequests(ctx context.Context, client *github.Client, owner, repo string, states []string) ([]api.CreateResource, error) {
 	log.Debug("Processing pull requests", "owner", owner, "repo", repo, "states", states)
 
 	// If no states specified or "all" is specified, include everything
@@ -270,7 +270,7 @@ func processPullRequests(ctx context.Context, client *github.Client, owner, repo
 		"filtered", len(filteredPRs),
 		"states", states)
 
-	resources := []api.AgentResource{}
+	resources := []api.CreateResource{}
 	for _, pr := range filteredPRs {
 		log.Info("Processing pull request", "number", pr.GetNumber(), "source", pr.GetHead().GetRef(), "target", pr.GetBase().GetRef())
 		resource, err := processPullRequest(ctx, client, owner, repo, pr)
@@ -454,7 +454,7 @@ func getNormalizedStatus(pr *github.PullRequest) string {
 }
 
 // processPullRequest handles processing of a single pull request
-func processPullRequest(ctx context.Context, client *github.Client, owner, repo string, pr *github.PullRequest) (api.AgentResource, error) {
+func processPullRequest(ctx context.Context, client *github.Client, owner, repo string, pr *github.PullRequest) (api.CreateResource, error) {
 	prNumber := pr.GetNumber()
 	log.Debug("Processing pull request", "number", prNumber, "title", pr.GetTitle())
 
@@ -498,7 +498,7 @@ func processPullRequest(ctx context.Context, client *github.Client, owner, repo 
 	resourceName := fmt.Sprintf("%s-%s-%d", owner, repo, prNumber)
 	log.Debug("Creating resource", "number", prNumber, "name", resourceName)
 
-	return api.AgentResource{
+	return api.CreateResource{
 		Version:    "ctrlplane.dev/git/pull-request/v1",
 		Kind:       "GitHubPullRequest",
 		Name:       resourceName,
@@ -608,7 +608,7 @@ func initPullRequestMetadata(pr *github.PullRequest, owner, repo string) map[str
 var relationshipRules = []api.CreateResourceRelationshipRule{}
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.AgentResource, owner, repo, name string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, owner, repo, name string) error {
 	log.Debug("Upserting resources to Ctrlplane", "count", len(resources))
 
 	if name == "" {

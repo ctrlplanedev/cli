@@ -56,51 +56,14 @@ type ResourceProvider struct {
 	workspaceId string
 }
 
-type AgentResource struct {
-	Config     map[string]interface{} `json:"config"`
-	Identifier string                 `json:"identifier"`
-	Kind       string                 `json:"kind"`
-	Metadata   map[string]string      `json:"metadata"`
-	Name       string                 `json:"name"`
-	Version    string                 `json:"version"`
-}
-
-func (r *ResourceProvider) UpsertResource(ctx context.Context, resources []AgentResource) (*http.Response, error) {
-	apiResources := make([]struct {
-		Config     map[string]interface{} `json:"config"`
-		Identifier string                 `json:"identifier"`
-		Kind       string                 `json:"kind"`
-		Metadata   map[string]string      `json:"metadata"`
-		Name       string                 `json:"name"`
-		Version    string                 `json:"version"`
-	}, len(resources))
-
-	for i, resource := range resources {
-		apiResources[i] = struct {
-			Config     map[string]interface{} `json:"config"`
-			Identifier string                 `json:"identifier"`
-			Kind       string                 `json:"kind"`
-			Metadata   map[string]string      `json:"metadata"`
-			Name       string                 `json:"name"`
-			Version    string                 `json:"version"`
-		}{
-			Config:     resource.Config,
-			Identifier: resource.Identifier,
-			Kind:       resource.Kind,
-			Metadata:   resource.Metadata,
-			Name:       resource.Name,
-			Version:    resource.Version,
-		}
-	}
-
+func (r *ResourceProvider) UpsertResource(ctx context.Context, resources []CreateResource) (*http.Response, error) {
 	resp, err := r.client.SetResourceProvidersResources(
 		ctx,
 		r.ID,
 		SetResourceProvidersResourcesJSONRequestBody{
-			Resources: apiResources,
+			Resources: resources,
 		},
 	)
-
 	return resp, err
 }
 

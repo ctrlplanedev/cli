@@ -97,7 +97,7 @@ func NewSyncEC2Cmd() *cobra.Command {
 				return fmt.Errorf("failed to describe instances: %w", err)
 			}
 
-			resources := []api.AgentResource{}
+			resources := []api.CreateResource{}
 			for _, reservation := range result.Reservations {
 				accountId := *reservation.OwnerId
 				for _, instance := range reservation.Instances {
@@ -231,7 +231,7 @@ func NewSyncEC2Cmd() *cobra.Command {
 
 					// Get ARN for the instance
 					arn := fmt.Sprintf("arn:aws:ec2:%s:%s:instance/%s", region, accountId, *instance.InstanceId)
-					resources = append(resources, api.AgentResource{
+					resources = append(resources, api.CreateResource{
 						Version:    "compute/v1",
 						Kind:       "Instance",
 						Name:       name,

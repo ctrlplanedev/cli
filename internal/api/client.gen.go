@@ -126,21 +126,32 @@ type CloudRegionGeoData struct {
 	Timezone string `json:"timezone"`
 }
 
+// CreateResource defines model for CreateResource.
+type CreateResource struct {
+	Config     map[string]interface{} `json:"config"`
+	Identifier string                 `json:"identifier"`
+	Kind       string                 `json:"kind"`
+	Metadata   map[string]string      `json:"metadata"`
+	Name       string                 `json:"name"`
+	Variables  *[]Variable            `json:"variables,omitempty"`
+	Version    string                 `json:"version"`
+}
+
 // CreateResourceRelationshipRule defines model for CreateResourceRelationshipRule.
 type CreateResourceRelationshipRule struct {
-	DependencyDescription    *string                                `json:"dependencyDescription,omitempty"`
-	DependencyType           ResourceRelationshipRuleDependencyType `json:"dependencyType"`
-	Description              *string                                `json:"description,omitempty"`
-	MetadataKeysMatch        *[]string                              `json:"metadataKeysMatch,omitempty"`
-	MetadataTargetKeysEquals *[]struct {
+	DependencyDescription *string                                `json:"dependencyDescription,omitempty"`
+	DependencyType        ResourceRelationshipRuleDependencyType `json:"dependencyType"`
+	Description           *string                                `json:"description,omitempty"`
+	MetadataKeysMatches   *[]string                              `json:"metadataKeysMatches,omitempty"`
+	Name                  string                                 `json:"name"`
+	Reference             string                                 `json:"reference"`
+	SourceKind            string                                 `json:"sourceKind"`
+	SourceVersion         string                                 `json:"sourceVersion"`
+	TargetKind            string                                 `json:"targetKind"`
+	TargetMetadataEquals  *[]struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
-	} `json:"metadataTargetKeysEquals,omitempty"`
-	Name          string `json:"name"`
-	Reference     string `json:"reference"`
-	SourceKind    string `json:"sourceKind"`
-	SourceVersion string `json:"sourceVersion"`
-	TargetKind    string `json:"targetKind"`
+	} `json:"targetMetadataEquals,omitempty"`
 	TargetVersion string `json:"targetVersion"`
 	WorkspaceId   string `json:"workspaceId"`
 }
@@ -468,20 +479,20 @@ type Resource struct {
 
 // ResourceRelationshipRule defines model for ResourceRelationshipRule.
 type ResourceRelationshipRule struct {
-	DependencyDescription    *string                                `json:"dependencyDescription,omitempty"`
-	DependencyType           ResourceRelationshipRuleDependencyType `json:"dependencyType"`
-	Description              *string                                `json:"description,omitempty"`
-	Id                       openapi_types.UUID                     `json:"id"`
-	MetadataKeysMatch        *[]string                              `json:"metadataKeysMatch,omitempty"`
-	MetadataTargetKeysEquals *[]struct {
+	DependencyDescription *string                                `json:"dependencyDescription,omitempty"`
+	DependencyType        ResourceRelationshipRuleDependencyType `json:"dependencyType"`
+	Description           *string                                `json:"description,omitempty"`
+	Id                    openapi_types.UUID                     `json:"id"`
+	MetadataKeysMatches   *[]string                              `json:"metadataKeysMatches,omitempty"`
+	Name                  string                                 `json:"name"`
+	Reference             string                                 `json:"reference"`
+	SourceKind            string                                 `json:"sourceKind"`
+	SourceVersion         string                                 `json:"sourceVersion"`
+	TargetKind            *string                                `json:"targetKind,omitempty"`
+	TargetMetadataEquals  *[]struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
-	} `json:"metadataTargetKeysEquals,omitempty"`
-	Name          string             `json:"name"`
-	Reference     string             `json:"reference"`
-	SourceKind    string             `json:"sourceKind"`
-	SourceVersion string             `json:"sourceVersion"`
-	TargetKind    *string            `json:"targetKind,omitempty"`
+	} `json:"targetMetadataEquals,omitempty"`
 	TargetVersion *string            `json:"targetVersion,omitempty"`
 	WorkspaceId   openapi_types.UUID `json:"workspaceId"`
 }
@@ -884,14 +895,7 @@ type UpdateReleaseJSONBodyStatus string
 
 // SetResourceProvidersResourcesJSONBody defines parameters for SetResourceProvidersResources.
 type SetResourceProvidersResourcesJSONBody struct {
-	Resources []struct {
-		Config     map[string]interface{} `json:"config"`
-		Identifier string                 `json:"identifier"`
-		Kind       string                 `json:"kind"`
-		Metadata   map[string]string      `json:"metadata"`
-		Name       string                 `json:"name"`
-		Version    string                 `json:"version"`
-	} `json:"resources"`
+	Resources []CreateResource `json:"resources"`
 }
 
 // CreateResourceSchemaJSONBody defines parameters for CreateResourceSchema.

@@ -223,7 +223,7 @@ func NewSyncClickhouseCmd() *cobra.Command {
 				return fmt.Errorf("failed to list ClickHouse services: %w", err)
 			}
 
-			resources := []api.AgentResource{}
+			resources := []api.CreateResource{}
 			for _, service := range services {
 				var endpoints []string
 				for _, endpoint := range service.Endpoints {
@@ -272,7 +272,7 @@ func NewSyncClickhouseCmd() *cobra.Command {
 
 				// Create a sanitized name
 				name := strings.Split(service.Name, ".")[0]
-				resources = append(resources, api.AgentResource{
+				resources = append(resources, api.CreateResource{
 					Version:    "ctrlplane.dev/database/v1",
 					Kind:       "ClickhouseCloud",
 					Name:       name,

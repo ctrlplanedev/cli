@@ -94,7 +94,7 @@ func NewSyncTailscaleCmd() *cobra.Command {
 				return fmt.Errorf("failed to list devices: %w", err)
 			}
 
-			resources := []api.AgentResource{}
+			resources := []api.CreateResource{}
 			for _, device := range devices {
 				metadata := map[string]string{}
 				metadata["tailscale/id"] = device.ID
@@ -131,7 +131,7 @@ func NewSyncTailscaleCmd() *cobra.Command {
 				}
 
 				name := strings.Split(device.Name, ".")[0]
-				resources = append(resources, api.AgentResource{
+				resources = append(resources, api.CreateResource{
 					Version:    "tailscale/v1",
 					Kind:       "Device",
 					Name:       name,
