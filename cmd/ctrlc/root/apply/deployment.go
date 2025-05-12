@@ -77,6 +77,7 @@ func upsertDeploymentVariable(
 			var varDirect api.VariableValue
 			varDirect.FromDeploymentVariableDirectValue(directValue)
 			vars = append(vars, varDirect)
+			continue
 		}
 
 		if value.Reference != nil && value.Path != nil {
@@ -99,7 +100,10 @@ func upsertDeploymentVariable(
 			varReference := api.VariableValue{}
 			varReference.FromDeploymentVariableReferenceValue(referenceValue)
 			vars = append(vars, varReference)
+			continue
 		}
+
+		log.Error("Unsupported variable value type", "type", variable.Values)
 	}
 
 	log.Info("Creating deployment variable", "key", variable.Key, "values", len(vars))
