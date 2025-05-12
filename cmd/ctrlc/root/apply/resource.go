@@ -36,6 +36,7 @@ func processResourceProvider(ctx context.Context, client *api.ClientWithResponse
 						)
 						continue
 					}
+
 					pathValue := []string{}
 					if variable.Path != nil {
 						pathValue = *variable.Path
@@ -85,6 +86,8 @@ func processResourceProvider(ctx context.Context, client *api.ClientWithResponse
 			Variables:  &vars,
 		})
 	}
+
+	log.Info("Upserting resources", "name", provider.Name, "count", len(resources))
 
 	upsertResp, err := rp.UpsertResource(ctx, resources)
 	if err != nil {

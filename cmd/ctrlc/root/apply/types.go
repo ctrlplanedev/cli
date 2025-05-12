@@ -22,13 +22,33 @@ type Environment struct {
 	Metadata         *map[string]string `yaml:"metadata,omitempty"`
 }
 
+type DeploymentVariableValue struct {
+	Value     *any  `yaml:"value,omitempty"`
+	Sensitive *bool `yaml:"sensitive,omitempty"`
+
+	DefaultValue *any      `yaml:"defaultValue,omitempty"`
+	Reference    *string   `yaml:"reference,omitempty"`
+	Path         *[]string `yaml:"path,omitempty"`
+
+	Default          *bool           `yaml:"default,omitempty"`
+	ResourceSelector *map[string]any `yaml:"resourceSelector,omitempty"`
+}
+
+type DeploymentVariable struct {
+	Key    string                    `yaml:"key"`
+	Config map[string]any            `yaml:"config"`
+	Description *string               `yaml:"description"`
+	Values []DeploymentVariableValue `yaml:"values"`
+}
+
 type Deployment struct {
-	Slug             string             `yaml:"slug"`
-	Name             string             `yaml:"name"`
-	Description      *string            `yaml:"description"`
-	JobAgent         *JobAgent          `yaml:"jobAgent,omitempty"`
-	ResourceSelector *map[string]any    `yaml:"resourceSelector,omitempty"`
-	Metadata         *map[string]string `yaml:"metadata,omitempty"`
+	Slug             string                `yaml:"slug"`
+	Name             string                `yaml:"name"`
+	Description      *string               `yaml:"description"`
+	JobAgent         *JobAgent             `yaml:"jobAgent,omitempty"`
+	ResourceSelector *map[string]any       `yaml:"resourceSelector,omitempty"`
+	Metadata         *map[string]string    `yaml:"metadata,omitempty"`
+	Variables        *[]DeploymentVariable `yaml:"variables,omitempty"`
 }
 
 type JobAgent struct {

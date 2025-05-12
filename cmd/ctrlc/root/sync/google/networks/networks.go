@@ -157,11 +157,11 @@ func processNetwork(network *compute.Network, project string, subnetCount int) (
 
 	// Create peering info for metadata
 	if network.Peerings != nil {
-		for i, peering := range network.Peerings {
-			metadata[fmt.Sprintf("network/peering/%d/name", i)] = peering.Name
-			metadata[fmt.Sprintf("network/peering/%d/network", i)] = getResourceName(peering.Network)
-			metadata[fmt.Sprintf("network/peering/%d/state", i)] = peering.State
-			metadata[fmt.Sprintf("network/peering/%d/auto-create-routes", i)] = strconv.FormatBool(peering.AutoCreateRoutes)
+		for _, peering := range network.Peerings {
+			metadata[fmt.Sprintf("network/peering/%s/name", peering.Name)] = peering.Name
+			metadata[fmt.Sprintf("network/peering/%s/network", peering.Name)] = getResourceName(peering.Network)
+			metadata[fmt.Sprintf("network/peering/%s/state", peering.Name)] = peering.State
+			metadata[fmt.Sprintf("network/peering/%s/auto-create-routes", peering.Name)] = strconv.FormatBool(peering.AutoCreateRoutes)
 		}
 		metadata["network/peering-count"] = strconv.Itoa(len(network.Peerings))
 	}
@@ -390,7 +390,7 @@ func initSubnetMetadata(subnet *compute.Subnetwork, project string, region strin
 }
 
 // processFirewalls lists and processes all firewall rules
-func processFirewalls(ctx context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
+func processFirewalls(_ context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
 	firewalls, err := computeClient.Firewalls.List(project).Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list firewalls: %w", err)

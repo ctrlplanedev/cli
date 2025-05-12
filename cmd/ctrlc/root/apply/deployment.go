@@ -2,6 +2,7 @@ package apply
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -31,9 +32,88 @@ func processDeployment(
 		body.JobAgentConfig = &deployment.JobAgent.Config
 	}
 
-	_, err := upsertDeployment(ctx, client, body)
+	id, err := upsertDeployment(ctx, client, body)
 	if err != nil {
 		log.Error("Failed to create deployment", "name", deployment.Name, "error", err)
+		return
+	}
+
+	if deployment.Variables != nil {
+		deploymentID, _ := uuid.Parse(id)
+		var variableWg sync.WaitGroup
+		for _, variable := range *deployment.Variables {
+			variableWg.Add(1)
+			go func(v DeploymentVariable) {
+				defer variableWg.Done()
+				upsertDeploymentVariable(ctx, client, deploymentID, v)
+			}(variable)
+		}
+		variableWg.Wait()
+	}
+}
+
+func upsertDeploymentVariable(
+	ctx context.Context,
+	client *api.ClientWithResponses,
+	deploymentID uuid.UUID,
+	variable DeploymentVariable,
+) {
+	vars := []api.VariableValue{}
+	for _, value := range variable.Values {
+		if value.Value != nil {
+			directValue := api.DeploymentVariableDirectValue{}
+			directValue.Sensitive = value.Sensitive
+			directValue.ValueType = "direct"
+			directValue.ResourceSelector = value.ResourceSelector
+
+			directValue.Value = api.DeploymentVariableDirectValue_Value{}
+			valueData, err := json.Marshal(*value.Value)
+			if err != nil {
+				log.Error("Failed to marshal direct value", "error", err)
+				continue
+			}
+			directValue.Value.UnmarshalJSON(valueData)
+
+			var varDirect api.VariableValue
+			varDirect.FromDeploymentVariableDirectValue(directValue)
+			vars = append(vars, varDirect)
+		}
+
+		if value.Reference != nil && value.Path != nil {
+			referenceValue := api.DeploymentVariableReferenceValue{}
+			referenceValue.Reference = *value.Reference
+			referenceValue.Path = *value.Path
+			referenceValue.ResourceSelector = value.ResourceSelector
+			referenceValue.ValueType = "reference"
+
+			if value.DefaultValue != nil {
+				referenceValue.DefaultValue = &api.DeploymentVariableReferenceValue_DefaultValue{}
+				valueData, err := json.Marshal(*value.DefaultValue)
+				if err != nil {
+					log.Error("Failed to marshal default value", "error", err)
+					continue
+				}
+				referenceValue.DefaultValue.UnmarshalJSON(valueData)
+			}
+
+			varReference := api.VariableValue{}
+			varReference.FromDeploymentVariableReferenceValue(referenceValue)
+			vars = append(vars, varReference)
+		}
+	}
+
+	log.Info("Creating deployment variable", "key", variable.Key, "values", len(vars))
+
+	body := api.CreateDeploymentVariableJSONRequestBody{
+		Key:         variable.Key,
+		Description: variable.Description,
+		Values:      &vars,
+		Config:      variable.Config,
+	}
+
+	_, err := client.CreateDeploymentVariableWithResponse(ctx, deploymentID, body)
+	if err != nil {
+		log.Error("Failed to create deployment variable", "name", variable.Key, "error", err)
 	}
 }
 
