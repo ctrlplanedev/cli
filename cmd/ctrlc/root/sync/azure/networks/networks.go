@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
+	"strconv"
 	"sync"
 )
 
@@ -186,6 +187,7 @@ func processNetworks(
 					mu.Lock()
 					syncErrors = append(syncErrors, fmt.Errorf("failed to list networks: %w", err))
 					mu.Unlock()
+					return
 				}
 				for _, network := range page.Value {
 					resources, err := processNetwork(ctx, network, resourceGroup, subscriptionID, tenantID)
@@ -293,8 +295,16 @@ func processSubnet(
 }
 
 func initNetworkMetadata(network *armnetwork.VirtualNetwork, resourceGroup, subscriptionID, tenantID string) map[string]string {
+	subnetCount := 0
+	if network.Properties != nil && network.Properties.Subnets != nil {
+		subnetCount = len(network.Properties.Subnets)
+	}
 
 	metadata := map[string]string{
+		"network/type":         "vpc",
+		"network/name":         *network.Name,
+		"network/subnet-count": strconv.Itoa(subnetCount),
+		"network/id":           *network.ID,
 		"azure/subscription":   subscriptionID,
 		"azure/tenant":         tenantID,
 		"azure/resource-group": resourceGroup,
@@ -319,12 +329,24 @@ func initNetworkMetadata(network *armnetwork.VirtualNetwork, resourceGroup, subs
 
 func initSubnetMetadata(network *armnetwork.VirtualNetwork, subnet *armnetwork.Subnet, resourceGroup, subscriptionID, tenantID string) map[string]string {
 
+	privateAccess := false
+	if subnet.Properties != nil {
+		if subnet.Properties.PrivateEndpoints != nil && len(subnet.Properties.PrivateEndpoints) > 0 {
+			privateAccess = true
+		}
+	}
+
 	metadata := map[string]string{
-		"azure/subscription":   subscriptionID,
-		"azure/tenant":         tenantID,
-		"azure/resource-group": resourceGroup,
-		"azure/resource-type":  "Microsoft.Network/virtualNetworks/subnets",
-		"azure/location":       *network.Location,
+		"network/type":           "subnet",
+		"network/name":           *subnet.Name,
+		"network/vpc":            *network.Name,
+		"network/region":         *network.Location,
+		"network/private-access": strconv.FormatBool(privateAccess),
+		"azure/subscription":     subscriptionID,
+		"azure/tenant":           tenantID,
+		"azure/resource-group":   resourceGroup,
+		"azure/resource-type":    "Microsoft.Network/virtualNetworks/subnets",
+		"azure/location":         *network.Location,
 		"azure/status": func() string {
 			if network.Properties != nil {
 				return string(*subnet.Properties.ProvisioningState)
@@ -349,7 +371,7 @@ func getNetworkConsoleUrl(resourceGroup, subscriptionID, networkName string) str
 
 func getNetworkState(network *armnetwork.VirtualNetwork) string {
 	return func() string {
-		if network.Properties != nil {
+		if network.Properties != nil && network.Properties.ProvisioningState != nil {
 			return string(*network.Properties.ProvisioningState)
 		}
 		return ""
@@ -373,14 +395,14 @@ func getSubnetConsoleUrl(resourceGroup, subscriptionID, networkName string) stri
 }
 
 func getSubnetPurpose(subnet *armnetwork.Subnet) *string {
-	if subnet.Properties != nil {
+	if subnet.Properties != nil && subnet.Properties.Purpose != nil {
 		return subnet.Properties.Purpose
 	}
 	return nil
 }
 
 func getSubnetState(subnet *armnetwork.Subnet) string {
-	if subnet.Properties != nil {
+	if subnet.Properties != nil && subnet.Properties.ProvisioningState != nil {
 		return string(*subnet.Properties.ProvisioningState)
 	}
 	return ""

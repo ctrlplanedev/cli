@@ -257,15 +257,15 @@ func processNetwork(
 
 // initNetworkMetadata initializes the base metadata for a network
 func initNetworkMetadata(vpc types.Vpc, region string, subnetCount int) map[string]string {
-	var vpcName = getVpcName(vpc)
-	var consoleUrl = getVpcConsoleUrl(vpc, region)
+	vpcName := getVpcName(vpc)
+	consoleUrl := getVpcConsoleUrl(vpc, region)
 
 	metadata := map[string]string{
-		"vpc/type":         "vpc",
-		"vpc/name":         vpcName,
-		"vpc/subnet-count": strconv.Itoa(subnetCount),
-		"vpc/id":           *vpc.VpcId,
-		"vpc/tenancy":      string(vpc.InstanceTenancy),
+		"network/type":         "vpc",
+		"network/name":         vpcName,
+		"network/subnet-count": strconv.Itoa(subnetCount),
+		"network/id":           *vpc.VpcId,
+		"network/tenancy":      string(vpc.InstanceTenancy),
 
 		"aws/region":        region,
 		"aws/resource-type": "vpc",
