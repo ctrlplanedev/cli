@@ -113,33 +113,10 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 			return nil
 		}
 
-		// Use regions for name if none provided
-		providerRegion := "all-regions"
-		if regions != nil && len(*regions) > 0 {
-			providerRegion = strings.Join(*regions, "-")
-		}
-
-		// If name is not provided, try to get account ID to include in the provider name
-		if *name == "" {
-			// Get AWS account ID for provider name using common package
-			cfg, err := common.InitAWSConfig(ctx, regionsToSync[0])
-			if err != nil {
-				log.Warn("Failed to load AWS config for account ID retrieval", "error", err)
-				*name = fmt.Sprintf("aws-eks-%s", providerRegion)
-			} else {
-				accountID, err := common.GetAccountID(ctx, cfg)
-				if err == nil {
-					log.Info("Retrieved AWS account ID", "account_id", accountID)
-					*name = fmt.Sprintf("aws-eks-%s-%s", accountID, providerRegion)
-				} else {
-					log.Warn("Failed to get AWS account ID", "error", err)
-					*name = fmt.Sprintf("aws-eks-%s", providerRegion)
-				}
-			}
-		}
+		common.EnsureProviderDetails(ctx, "aws-eks", regionsToSync, name)
 
 		// Upsert resources to Ctrlplane
-		return upsertToCtrlplane(ctx, allResources, &providerRegion, name)
+		return upsertToCtrlplane(ctx, allResources, name)
 	}
 }
 
@@ -239,18 +216,18 @@ func initClusterMetadata(cluster *types.Cluster, region string) map[string]strin
 		log.Error("Failed to parse Kubernetes version", "version", *cluster.Version, "error", err)
 	}
 
-	noramlizedStatus := "unknown"
+	normalizedStatus := "unknown"
 	switch cluster.Status {
 	case types.ClusterStatusActive:
-		noramlizedStatus = "running"
+		normalizedStatus = "running"
 	case types.ClusterStatusUpdating:
-		noramlizedStatus = "updating"
+		normalizedStatus = "updating"
 	case types.ClusterStatusCreating:
-		noramlizedStatus = "creating"
+		normalizedStatus = "creating"
 	case types.ClusterStatusDeleting:
-		noramlizedStatus = "deleting"
+		normalizedStatus = "deleting"
 	case types.ClusterStatusFailed:
-		noramlizedStatus = "failed"
+		normalizedStatus = "failed"
 	}
 
 	metadata := map[string]string{
@@ -264,7 +241,7 @@ func initClusterMetadata(cluster *types.Cluster, region string) map[string]strin
 		kinds.K8SMetadataVersionMinor:      strconv.FormatUint(uint64(version.Minor()), 10),
 		kinds.K8SMetadataVersionPatch:      strconv.FormatUint(uint64(version.Patch()), 10),
 		kinds.K8SMetadataVersionPrerelease: version.Prerelease(),
-		kinds.K8SMetadataStatus:            noramlizedStatus,
+		kinds.K8SMetadataStatus:            normalizedStatus,
 
 		"aws/region":           region,
 		"aws/resource-type":    "eks:cluster",
@@ -320,11 +297,7 @@ var relationshipRules = []api.CreateResourceRelationshipRule{
 	},
 }
 
-func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, region, name *string) error {
-	if *name == "" {
-		*name = fmt.Sprintf("aws-eks-%s", *region)
-	}
-
+func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, name *string) error {
 	apiURL := viper.GetString("url")
 	apiKey := viper.GetString("api-key")
 	workspaceId := viper.GetString("workspace")
