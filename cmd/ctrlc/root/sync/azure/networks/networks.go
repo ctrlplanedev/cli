@@ -175,10 +175,11 @@ func processNetworks(
 
 	for _, rg := range resourceGroups {
 		wg.Add(1)
+		rgName := rg.Name
 		go func(resourceGroup string) {
 			defer wg.Done()
 
-			pager := client.NewListPager(rg.Name, nil)
+			pager := client.NewListPager(resourceGroup, nil)
 			for pager.More() {
 				page, err := pager.NextPage(ctx)
 				if err != nil {
@@ -200,7 +201,7 @@ func processNetworks(
 					mu.Unlock()
 				}
 			}
-		}(rg.Name)
+		}(rgName)
 	}
 
 	wg.Wait()
@@ -222,7 +223,7 @@ func processNetwork(
 	metadata := initNetworkMetadata(network, resourceGroup, subscriptionID, tenantID)
 
 	// Build console URL
-	consoleUrl := getVirtualNetworkConsoleUrl(resourceGroup, subscriptionID, *networkName)
+	consoleUrl := getNetworkConsoleUrl(resourceGroup, subscriptionID, *networkName)
 	metadata[kinds.CtrlplaneMetadataLinks] = fmt.Sprintf("{ \"Azure Portal\": \"%s\" }", consoleUrl)
 
 	resources = append(resources, api.CreateResource{
@@ -240,17 +241,19 @@ func processNetwork(
 			"azureVirtualNetwork": map[string]any{
 				"type":        network.Type,
 				"region":      network.Location,
-				"state":       network.Properties.ProvisioningState,
-				"subnetCount": len(network.Properties.Subnets),
+				"state":       getNetworkState(network),
+				"subnetCount": getNetworkSubnetCount(network),
 			},
 		},
 		Metadata: metadata,
 	})
-	for _, subnet := range network.Properties.Subnets {
-		if res, err := processSubnet(network, subnet, resourceGroup, subscriptionID, tenantID); err != nil {
-			return nil, err
-		} else {
-			resources = append(resources, res)
+	if network.Properties != nil && network.Properties.Subnets != nil {
+		for _, subnet := range network.Properties.Subnets {
+			if res, err := processSubnet(network, subnet, resourceGroup, subscriptionID, tenantID); err != nil {
+				return nil, err
+			} else {
+				resources = append(resources, res)
+			}
 		}
 	}
 	return resources, nil
@@ -281,8 +284,8 @@ func processSubnet(
 			// Provider-specific implementation details
 			"azureSubnet": map[string]any{
 				"type":    subnet.Type,
-				"purpose": subnet.Properties.Purpose,
-				"state":   subnet.Properties.ProvisioningState,
+				"purpose": getSubnetPurpose(subnet),
+				"state":   getSubnetState(subnet),
 			},
 		},
 		Metadata: metadata,
@@ -297,9 +300,9 @@ func initNetworkMetadata(network *armnetwork.VirtualNetwork, resourceGroup, subs
 		"azure/resource-group": resourceGroup,
 		"azure/resource-type":  "Microsoft.Network/virtualNetworks/subnets",
 		"azure/location":       *network.Location,
-		"azure/status":         string(*network.Properties.ProvisioningState),
+		"azure/status":         getNetworkState(network),
 		"azure/id":             *network.ID,
-		"azure/console-url":    getVirtualNetworkConsoleUrl(resourceGroup, subscriptionID, *network.Name),
+		"azure/console-url":    getNetworkConsoleUrl(resourceGroup, subscriptionID, *network.Name),
 	}
 
 	// Tags
@@ -322,30 +325,42 @@ func initSubnetMetadata(network *armnetwork.VirtualNetwork, subnet *armnetwork.S
 		"azure/resource-group": resourceGroup,
 		"azure/resource-type":  "Microsoft.Network/virtualNetworks/subnets",
 		"azure/location":       *network.Location,
-		"azure/status":         string(*subnet.Properties.ProvisioningState),
-		"azure/id":             *subnet.ID,
-		"azure/console-url":    getSubnetConsoleUrl(resourceGroup, subscriptionID, *network.Name),
-	}
-
-	// Tags
-	if network.Tags != nil {
-		for key, value := range network.Tags {
-			if value != nil {
-				metadata[fmt.Sprintf("tags/%s", key)] = *value
+		"azure/status": func() string {
+			if network.Properties != nil {
+				return string(*subnet.Properties.ProvisioningState)
 			}
-		}
+			return ""
+		}(),
+		"azure/id":          *subnet.ID,
+		"azure/console-url": getSubnetConsoleUrl(resourceGroup, subscriptionID, *network.Name),
 	}
 
 	return metadata
 }
 
-func getVirtualNetworkConsoleUrl(resourceGroup, subscriptionID, networkName string) string {
+func getNetworkConsoleUrl(resourceGroup, subscriptionID, networkName string) string {
 	return fmt.Sprintf(
 		"https://portal.azure.com/#@/resource/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s",
 		subscriptionID,
 		resourceGroup,
 		networkName,
 	)
+}
+
+func getNetworkState(network *armnetwork.VirtualNetwork) string {
+	return func() string {
+		if network.Properties != nil {
+			return string(*network.Properties.ProvisioningState)
+		}
+		return ""
+	}()
+}
+
+func getNetworkSubnetCount(network *armnetwork.VirtualNetwork) int {
+	if network.Properties != nil && network.Properties.Subnets != nil {
+		return len(network.Properties.Subnets)
+	}
+	return 0
 }
 
 func getSubnetConsoleUrl(resourceGroup, subscriptionID, networkName string) string {
@@ -355,6 +370,20 @@ func getSubnetConsoleUrl(resourceGroup, subscriptionID, networkName string) stri
 		resourceGroup,
 		networkName,
 	)
+}
+
+func getSubnetPurpose(subnet *armnetwork.Subnet) *string {
+	if subnet.Properties != nil {
+		return subnet.Properties.Purpose
+	}
+	return nil
+}
+
+func getSubnetState(subnet *armnetwork.Subnet) string {
+	if subnet.Properties != nil {
+		return string(*subnet.Properties.ProvisioningState)
+	}
+	return ""
 }
 
 func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, subscriptionID, name *string) error {

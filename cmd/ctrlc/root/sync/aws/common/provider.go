@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-// ComputeProviderDetails generates a provider name and region string based on the provided parameters.
+// EnsureProviderDetails generates a provider name and region string based on the provided parameters.
 // The
-func ComputeProviderDetails(
+func EnsureProviderDetails(
 	ctx context.Context, prefix string, regions []string, name *string,
 ) {
 	providerRegion := "all-regions"
@@ -19,6 +19,9 @@ func ComputeProviderDetails(
 	}
 
 	// If name is not provided, try to get account ID to include in the provider name
+	if name == nil {
+		name = new(string)
+	}
 	if *name == "" {
 		// Get AWS account ID for provider name using common package
 		cfg, err := InitAWSConfig(ctx, regions[0])

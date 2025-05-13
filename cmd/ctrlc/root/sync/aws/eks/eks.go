@@ -113,7 +113,7 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 			return nil
 		}
 
-		common.ComputeProviderDetails(ctx, "aws-eks", regionsToSync, name)
+		common.EnsureProviderDetails(ctx, "aws-eks", regionsToSync, name)
 
 		// Upsert resources to Ctrlplane
 		return upsertToCtrlplane(ctx, allResources, name)

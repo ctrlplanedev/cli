@@ -18,7 +18,7 @@ import (
 	"sync"
 )
 
-// NewSyncNetworksCmd creates a new cobra command for syncing Google Networks
+// NewSyncNetworksCmd creates a new cobra command for syncing AWS Networks
 func NewSyncNetworksCmd() *cobra.Command {
 	var name string
 	var regions []string
@@ -131,8 +131,9 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 				}
 			}(region)
 		}
+		wg.Wait()
 
-		common.ComputeProviderDetails(ctx, "aws-networks", regionsToSync, name)
+		common.EnsureProviderDetails(ctx, "aws-networks", regionsToSync, name)
 
 		// Upsert resources to Ctrlplane
 		return upsertToCtrlplane(ctx, allResources, name)
@@ -233,14 +234,14 @@ func processNetwork(
 
 	return api.CreateResource{
 		Version:    "ctrlplane.dev/network/v1",
-		Kind:       "AWSNetwork",
+		Kind:       "AmazonNetwork",
 		Name:       vpcName,
 		Identifier: *vpc.VpcId,
 		Config: map[string]any{
 			// Common cross-provider options
 			"name": vpcName,
 			"type": "vpc",
-			"id":   vpc.VpcId,
+			"id":   *vpc.VpcId,
 
 			// Provider-specific implementation details
 			"awsVpc": map[string]any{
@@ -271,6 +272,13 @@ func initNetworkMetadata(vpc types.Vpc, region string, subnetCount int) map[stri
 		"aws/status":        string(vpc.State),
 		"aws/console-url":   consoleUrl,
 		"aws/id":            *vpc.VpcId,
+	}
+
+	// Tags
+	if vpc.Tags != nil {
+		for _, tag := range vpc.Tags {
+			metadata[fmt.Sprintf("tags/%s", *tag.Key)] = *tag.Value
+		}
 	}
 
 	return metadata
@@ -332,7 +340,7 @@ func processSubnet(subnet types.Subnet, region string) (api.CreateResource, erro
 
 	return api.CreateResource{
 		Version:    "ctrlplane.dev/network/subnet/v1",
-		Kind:       "AWSSubnet",
+		Kind:       "AmazonSubnet",
 		Name:       subnetName,
 		Identifier: *subnet.SubnetArn,
 		Config: map[string]any{
@@ -342,8 +350,8 @@ func processSubnet(subnet types.Subnet, region string) (api.CreateResource, erro
 			"type":     "subnet",
 			"cidr":     subnet.CidrBlock,
 			"region":   region,
-			"id":       subnet.SubnetId,
-			"vpcId":    subnet.VpcId,
+			"id":       *subnet.SubnetId,
+			"vpcId":    *subnet.VpcId,
 		},
 		Metadata: metadata,
 	}, nil
@@ -362,10 +370,17 @@ func initSubnetMetadata(subnet types.Subnet, region string) map[string]string {
 		"network/cidr":                *subnet.CidrBlock,
 		"network/block-public-access": string(subnet.BlockPublicAccessStates.InternetGatewayBlockMode),
 
-		"google/resource-type": "compute.googleapis.com/Subnetwork",
-		"google/console-url":   consoleUrl,
-		"google/region":        region,
-		"google/id":            *subnet.SubnetId,
+		"aws/resource-type": "aws/Subnet",
+		"aws/console-url":   consoleUrl,
+		"aws/region":        region,
+		"aws/id":            *subnet.SubnetId,
+	}
+
+	// Tags
+	if subnet.Tags != nil {
+		for _, tag := range subnet.Tags {
+			metadata[fmt.Sprintf("tags/%s", *tag.Key)] = *tag.Value
+		}
 	}
 
 	return metadata
