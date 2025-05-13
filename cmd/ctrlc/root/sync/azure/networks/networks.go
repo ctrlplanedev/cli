@@ -1,0 +1,363 @@
+package aks
+
+import (
+	"context"
+	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
+	"github.com/MakeNowJust/heredoc/v2"
+	"github.com/charmbracelet/log"
+	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/azure/common"
+	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"os"
+	"sync"
+)
+
+// NewSyncAKSCmd creates a new cobra command for syncing AKS clusters
+func NewSyncAKSCmd() *cobra.Command {
+	var subscriptionID string
+	var name string
+
+	cmd := &cobra.Command{
+		Use:   "aks",
+		Short: "Sync Azure Kubernetes Service networks into Ctrlplane",
+		Example: heredoc.Doc(`
+			# Make sure Azure credentials are configured via environment variables or Azure CLI
+			
+			# Sync all AKS VPCs and subnets from the subscription
+			$ ctrlc sync azure networks
+			
+			# Sync all AKS VPCs and subnets from a specific subscription
+			$ ctrlc sync azure networks --subscription-id 00000000-0000-0000-0000-000000000000
+			
+			# Sync all AKS VPCs and subnets every 5 minutes
+			$ ctrlc sync azure networks --interval 5m
+		`),
+		RunE: runSync(&subscriptionID, &name),
+	}
+
+	cmd.Flags().StringVarP(&name, "provider", "p", "", "Name of the resource provider")
+	cmd.Flags().StringVarP(&subscriptionID, "subscription-id", "s", "", "Azure Subscription ID")
+
+	return cmd
+}
+
+func runSync(subscriptionID, name *string) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+
+		// Initialize Azure credential from environment or CLI
+		cred, err := azidentity.NewDefaultAzureCredential(nil)
+		if err != nil {
+			return fmt.Errorf("failed to obtain Azure credential: %w", err)
+		}
+
+		// If subscription ID is not provided, get the default one
+		if *subscriptionID == "" {
+			defaultSubscriptionID, err := getDefaultSubscriptionID(ctx, cred)
+			if err != nil {
+				return fmt.Errorf("failed to get default subscription ID: %w", err)
+			}
+			*subscriptionID = defaultSubscriptionID
+			log.Info("Using default subscription ID", "subscriptionID", *subscriptionID)
+		}
+
+		// Get tenant ID from the subscription
+		tenantID, err := getTenantIDFromSubscription(ctx, cred, *subscriptionID)
+		if err != nil {
+			log.Warn("Failed to get tenant ID from subscription, falling back to environment variables", "error", err)
+			tenantID = getTenantIDFromEnv()
+		}
+
+		log.Info("Syncing all AKS clusters", "subscriptionID", *subscriptionID, "tenantID", tenantID)
+
+		resources, err := processNetworks(ctx, cred, *subscriptionID, tenantID)
+		if err != nil {
+			return err
+		}
+
+		if len(resources) == 0 {
+			log.Info("No AKS clusters found")
+			return nil
+		}
+
+		// If name is not provided, use subscription ID
+		if *name == "" {
+			*name = fmt.Sprintf("azure-aks-%s", *subscriptionID)
+		}
+
+		// Upsert resources to Ctrlplane
+		return upsertToCtrlplane(ctx, resources, subscriptionID, name)
+	}
+}
+
+func getTenantIDFromSubscription(ctx context.Context, cred azcore.TokenCredential, subscriptionID string) (string, error) {
+	// Create a subscriptions client
+	subsClient, err := armsubscriptions.NewClient(cred, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create subscriptions client: %w", err)
+	}
+
+	// Get the subscription details
+	resp, err := subsClient.Get(ctx, subscriptionID, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to get subscription details: %w", err)
+	}
+
+	// Extract tenant ID from subscription
+	if resp.TenantID == nil || *resp.TenantID == "" {
+		return "", fmt.Errorf("subscription doesn't have a tenant ID")
+	}
+
+	return *resp.TenantID, nil
+}
+
+func getTenantIDFromEnv() string {
+	// Check environment variables
+	if tenantID := os.Getenv("AZURE_TENANT_ID"); tenantID != "" {
+		return tenantID
+	}
+
+	// Check viper config
+	if tenantID := viper.GetString("azure.tenant-id"); tenantID != "" {
+		return tenantID
+	}
+
+	return ""
+}
+
+func getDefaultSubscriptionID(ctx context.Context, cred azcore.TokenCredential) (string, error) {
+	subClient, err := armsubscription.NewSubscriptionsClient(cred, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create subscription client: %w", err)
+	}
+
+	pager := subClient.NewListPager(nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return "", fmt.Errorf("failed to list subscriptions: %w", err)
+		}
+
+		// Return the first subscription as default
+		if len(page.Value) > 0 && page.Value[0].SubscriptionID != nil {
+			return *page.Value[0].SubscriptionID, nil
+		}
+	}
+
+	return "", fmt.Errorf("no subscriptions found")
+}
+
+func processNetworks(
+	ctx context.Context, cred azcore.TokenCredential, subscriptionID string, tenantID string,
+) ([]api.CreateResource, error) {
+	var resources []api.CreateResource
+	var resourceGroups []common.ResourceGroupInfo
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	var err error
+	var syncErrors []error
+
+	if resourceGroups, err = common.GetResourceGroupInfo(ctx, cred, subscriptionID); err != nil {
+		return nil, err
+	}
+
+	// Create virtual network client
+	client, err := armnetwork.NewVirtualNetworksClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Virtual Network client: %w", err)
+	}
+
+	for _, rg := range resourceGroups {
+		wg.Add(1)
+		go func(resourceGroup string) {
+			defer wg.Done()
+
+			pager := client.NewListPager(rg.Name, nil)
+			for pager.More() {
+				page, err := pager.NextPage(ctx)
+				if err != nil {
+					mu.Lock()
+					syncErrors = append(syncErrors, fmt.Errorf("failed to list AKS clusters: %w", err))
+					mu.Unlock()
+				}
+				for _, network := range page.Value {
+					resource, err := processNetwork(ctx, network, resourceGroup, subscriptionID, tenantID)
+					if err != nil {
+						log.Error("Failed to process AKS cluster", "name", *network.Name, "error", err)
+						mu.Lock()
+						syncErrors = append(syncErrors, fmt.Errorf("cluster %s: %w", *network.Name, err))
+						mu.Unlock()
+						return
+					}
+					mu.Lock()
+					resources = append(resources, resource)
+					mu.Unlock()
+				}
+			}
+		}(rg.Name)
+	}
+
+	wg.Wait()
+
+	if len(syncErrors) > 0 {
+		log.Warn("Some clusters failed to sync", "errors", len(syncErrors))
+		// Continue with the clusters that succeeded
+	}
+
+	log.Info("Found AKS clusters", "count", len(resources))
+	return resources, nil
+}
+
+func processNetwork(
+	_ context.Context, network *armnetwork.VirtualNetwork, resourceGroup string, subscriptionID string, tenantID string,
+) ([]api.CreateResource, error) {
+	resources := make([]api.CreateResource, 0)
+	networkName := network.Name
+	metadata := initNetworkMetadata(network, subscriptionID, resourceGroup, tenantID)
+
+	// Build console URL
+	consoleUrl := getVirtualNetworkConsoleUrl(subscriptionID, resourceGroup, *networkName)
+	metadata[kinds.CtrlplaneMetadataLinks] = fmt.Sprintf("{ \"Azure Portal\": \"%s\" }", consoleUrl)
+
+	resources = append(resources, api.CreateResource{
+		Version:    "ctrlplane.dev/vpc/v1",
+		Kind:       "AzureNetwork",
+		Name:       *networkName,
+		Identifier: *network.ID,
+		Config: map[string]any{
+			// Common cross-provider options
+			"name": networkName,
+			"type": "vpc",
+			"id":   network.ID,
+
+			// Provider-specific implementation details
+			"azureVirtualNetwork": map[string]any{
+				"type":        network.Type,
+				"region":      network.Location,
+				"state":       network.Properties.ProvisioningState,
+				"subnetCount": len(network.Properties.Subnets),
+			},
+		},
+		Metadata: metadata,
+	})
+	for _, subnet := range network.Properties.Subnets {
+		if res, err := processSubnet(networkName, subnet, resourceGroup, subscriptionID, tenantID); err != nil {
+			return nil, err
+		} else {
+			resources = append(resources, res)
+		}
+	}
+}
+
+func processSubnet(
+	networkName *string, subnet *armnetwork.Subnet, resourceGroup string, subscriptionID string, tenantID string,
+) (api.CreateResource, error) {
+
+}
+
+func initNetworkMetadata(
+	network *armnetwork.VirtualNetwork, subscriptionID, resourceGroup string, tenantID string,
+) map[string]string {
+
+	metadata := map[string]string{
+		"azure/subscription":   subscriptionID,
+		"azure/tenant":         tenantID,
+		"azure/resource-group": resourceGroup,
+		"azure/resource-type":  "Microsoft.Network/virtualNetworks/subnets",
+		"azure/location":       *network.Location,
+		"azure/status":         string(*network.Properties.ProvisioningState),
+		"azure/id":             *network.ID,
+		"azure/console-url":    getVirtualNetworkConsoleUrl(subscriptionID, resourceGroup, *network.Name),
+	}
+
+	// Tags
+	if network.Tags != nil {
+		for key, value := range network.Tags {
+			if value != nil {
+				metadata[fmt.Sprintf("tags/%s", key)] = *value
+			}
+		}
+	}
+
+	return metadata
+}
+
+func initSubnetMetadata(
+	network *armnetwork.VirtualNetwork, subnet *armnetwork.Subnet, subscriptionID, resourceGroup string, tenantID string,
+) map[string]string {
+
+	metadata := map[string]string{
+		"azure/subscription":   subscriptionID,
+		"azure/tenant":         tenantID,
+		"azure/resource-group": resourceGroup,
+		"azure/resource-type":  "Microsoft.Network/virtualNetworks/subnets",
+		"azure/location":       *network.Location,
+		"azure/status":         string(*subnet.Properties.ProvisioningState),
+		"azure/id":             *subnet.ID,
+		"azure/console-url":    getSubnetConsoleUrl(subscriptionID, resourceGroup, *network.Name),
+	}
+
+	// Tags
+	if network.Tags != nil {
+		for key, value := range network.Tags {
+			if value != nil {
+				metadata[fmt.Sprintf("tags/%s", key)] = *value
+			}
+		}
+	}
+
+	return metadata
+}
+
+func getVirtualNetworkConsoleUrl(subscriptionID, resourceGroup, networkName string) string {
+	return fmt.Sprintf(
+		"https://portal.azure.com/#@/resource/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s",
+		subscriptionID,
+		resourceGroup,
+		networkName,
+	)
+}
+
+func getSubnetConsoleUrl(subscriptionID, resourceGroup, networkName string) string {
+	return fmt.Sprintf(
+		"https://portal.azure.com/#@/resource/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets",
+		subscriptionID,
+		resourceGroup,
+		networkName,
+	)
+}
+
+func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, subscriptionID, name *string) error {
+	if *name == "" {
+		*name = fmt.Sprintf("azure-aks-%s", *subscriptionID)
+	}
+
+	apiURL := viper.GetString("url")
+	apiKey := viper.GetString("api-key")
+	workspaceId := viper.GetString("workspace")
+
+	ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+	if err != nil {
+		return fmt.Errorf("failed to create API client: %w", err)
+	}
+
+	rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, *name)
+	if err != nil {
+		return fmt.Errorf("failed to create resource provider: %w", err)
+	}
+
+	upsertResp, err := rp.UpsertResource(ctx, resources)
+	if err != nil {
+		return fmt.Errorf("failed to upsert resources: %w", err)
+	}
+
+	log.Info("Response from upserting resources", "status", upsertResp.Status)
+	return nil
+}
