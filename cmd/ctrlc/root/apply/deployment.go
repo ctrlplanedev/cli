@@ -62,6 +62,7 @@ func upsertDeploymentVariable(
 	for _, value := range variable.Values {
 		if value.Value != nil {
 			directValue := api.DeploymentVariableDirectValue{}
+			directValue.Default = value.Default
 			directValue.Sensitive = value.Sensitive
 			directValue.ValueType = "direct"
 			directValue.ResourceSelector = value.ResourceSelector
@@ -82,6 +83,7 @@ func upsertDeploymentVariable(
 
 		if value.Reference != nil && value.Path != nil {
 			referenceValue := api.DeploymentVariableReferenceValue{}
+			referenceValue.Default = value.Default
 			referenceValue.Reference = *value.Reference
 			referenceValue.Path = *value.Path
 			referenceValue.ResourceSelector = value.ResourceSelector
