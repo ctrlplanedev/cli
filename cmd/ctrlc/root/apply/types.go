@@ -35,10 +35,10 @@ type DeploymentVariableValue struct {
 }
 
 type DeploymentVariable struct {
-	Key    string                    `yaml:"key"`
-	Config map[string]any            `yaml:"config"`
-	Description *string               `yaml:"description"`
-	Values []DeploymentVariableValue `yaml:"values"`
+	Key         string                    `yaml:"key"`
+	Config      map[string]any            `yaml:"config"`
+	Description *string                   `yaml:"description"`
+	Values      []DeploymentVariableValue `yaml:"values"`
 }
 
 type Deployment struct {
