@@ -232,7 +232,7 @@ func processNetwork(
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"AWS Console\": \"%s\" }", consoleUrl)
 
 	return api.CreateResource{
-		Version:    "ctrlplane.dev/vpc/v1",
+		Version:    "ctrlplane.dev/network/v1",
 		Kind:       "AWSNetwork",
 		Name:       vpcName,
 		Identifier: *vpc.VpcId,

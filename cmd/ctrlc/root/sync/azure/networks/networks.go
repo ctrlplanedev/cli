@@ -1,4 +1,4 @@
-package aks
+package networks
 
 import (
 	"context"
@@ -19,14 +19,13 @@ import (
 	"sync"
 )
 
-// NewSyncAKSCmd creates a new cobra command for syncing AKS clusters
-func NewSyncAKSCmd() *cobra.Command {
+func NewSyncNetworksCmd() *cobra.Command {
 	var subscriptionID string
 	var name string
 
 	cmd := &cobra.Command{
-		Use:   "aks",
-		Short: "Sync Azure Kubernetes Service networks into Ctrlplane",
+		Use:   "networks",
+		Short: "Sync Azure Virtual Networks into Ctrlplane",
 		Example: heredoc.Doc(`
 			# Make sure Azure credentials are configured via environment variables or Azure CLI
 			
@@ -75,7 +74,7 @@ func runSync(subscriptionID, name *string) func(cmd *cobra.Command, args []strin
 			tenantID = getTenantIDFromEnv()
 		}
 
-		log.Info("Syncing all AKS clusters", "subscriptionID", *subscriptionID, "tenantID", tenantID)
+		log.Info("Syncing all Networks", "subscriptionID", *subscriptionID, "tenantID", tenantID)
 
 		resources, err := processNetworks(ctx, cred, *subscriptionID, tenantID)
 		if err != nil {
@@ -83,13 +82,13 @@ func runSync(subscriptionID, name *string) func(cmd *cobra.Command, args []strin
 		}
 
 		if len(resources) == 0 {
-			log.Info("No AKS clusters found")
+			log.Info("No Networks found")
 			return nil
 		}
 
 		// If name is not provided, use subscription ID
 		if *name == "" {
-			*name = fmt.Sprintf("azure-aks-%s", *subscriptionID)
+			*name = fmt.Sprintf("azure-networks-%s", *subscriptionID)
 		}
 
 		// Upsert resources to Ctrlplane
@@ -157,7 +156,7 @@ func getDefaultSubscriptionID(ctx context.Context, cred azcore.TokenCredential) 
 func processNetworks(
 	ctx context.Context, cred azcore.TokenCredential, subscriptionID string, tenantID string,
 ) ([]api.CreateResource, error) {
-	var resources []api.CreateResource
+	var allResources []api.CreateResource
 	var resourceGroups []common.ResourceGroupInfo
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -184,20 +183,20 @@ func processNetworks(
 				page, err := pager.NextPage(ctx)
 				if err != nil {
 					mu.Lock()
-					syncErrors = append(syncErrors, fmt.Errorf("failed to list AKS clusters: %w", err))
+					syncErrors = append(syncErrors, fmt.Errorf("failed to list networks: %w", err))
 					mu.Unlock()
 				}
 				for _, network := range page.Value {
-					resource, err := processNetwork(ctx, network, resourceGroup, subscriptionID, tenantID)
+					resources, err := processNetwork(ctx, network, resourceGroup, subscriptionID, tenantID)
 					if err != nil {
-						log.Error("Failed to process AKS cluster", "name", *network.Name, "error", err)
+						log.Error("Failed to process network", "name", *network.Name, "error", err)
 						mu.Lock()
-						syncErrors = append(syncErrors, fmt.Errorf("cluster %s: %w", *network.Name, err))
+						syncErrors = append(syncErrors, fmt.Errorf("network %s: %w", *network.Name, err))
 						mu.Unlock()
 						return
 					}
 					mu.Lock()
-					resources = append(resources, resource)
+					allResources = append(allResources, resources...)
 					mu.Unlock()
 				}
 			}
@@ -211,8 +210,8 @@ func processNetworks(
 		// Continue with the clusters that succeeded
 	}
 
-	log.Info("Found AKS clusters", "count", len(resources))
-	return resources, nil
+	log.Info("Found network resources", "count", len(allResources))
+	return allResources, nil
 }
 
 func processNetwork(
@@ -220,14 +219,14 @@ func processNetwork(
 ) ([]api.CreateResource, error) {
 	resources := make([]api.CreateResource, 0)
 	networkName := network.Name
-	metadata := initNetworkMetadata(network, subscriptionID, resourceGroup, tenantID)
+	metadata := initNetworkMetadata(network, resourceGroup, subscriptionID, tenantID)
 
 	// Build console URL
-	consoleUrl := getVirtualNetworkConsoleUrl(subscriptionID, resourceGroup, *networkName)
+	consoleUrl := getVirtualNetworkConsoleUrl(resourceGroup, subscriptionID, *networkName)
 	metadata[kinds.CtrlplaneMetadataLinks] = fmt.Sprintf("{ \"Azure Portal\": \"%s\" }", consoleUrl)
 
 	resources = append(resources, api.CreateResource{
-		Version:    "ctrlplane.dev/vpc/v1",
+		Version:    "ctrlplane.dev/network/v1",
 		Kind:       "AzureNetwork",
 		Name:       *networkName,
 		Identifier: *network.ID,
@@ -248,23 +247,49 @@ func processNetwork(
 		Metadata: metadata,
 	})
 	for _, subnet := range network.Properties.Subnets {
-		if res, err := processSubnet(networkName, subnet, resourceGroup, subscriptionID, tenantID); err != nil {
+		if res, err := processSubnet(network, subnet, resourceGroup, subscriptionID, tenantID); err != nil {
 			return nil, err
 		} else {
 			resources = append(resources, res)
 		}
 	}
+	return resources, nil
 }
 
 func processSubnet(
-	networkName *string, subnet *armnetwork.Subnet, resourceGroup string, subscriptionID string, tenantID string,
+	network *armnetwork.VirtualNetwork, subnet *armnetwork.Subnet, resourceGroup string, subscriptionID string, tenantID string,
 ) (api.CreateResource, error) {
+	metadata := initSubnetMetadata(network, subnet, resourceGroup, subscriptionID, tenantID)
+	networkName := network.Name
+	subnetName := subnet.Name
 
+	// Build console URL
+	consoleUrl := getSubnetConsoleUrl(resourceGroup, subscriptionID, *networkName)
+	metadata[kinds.CtrlplaneMetadataLinks] = fmt.Sprintf("{ \"Azure Portal\": \"%s\" }", consoleUrl)
+
+	return api.CreateResource{
+		Version:    "ctrlplane.dev/network/subnet/v1",
+		Kind:       "AzureSubnet",
+		Name:       *subnetName,
+		Identifier: *subnet.ID,
+		Config: map[string]any{
+			// Common cross-provider options
+			"name": subnetName,
+			"type": "subnet",
+			"id":   subnet.ID,
+
+			// Provider-specific implementation details
+			"azureSubnet": map[string]any{
+				"type":    subnet.Type,
+				"purpose": subnet.Properties.Purpose,
+				"state":   subnet.Properties.ProvisioningState,
+			},
+		},
+		Metadata: metadata,
+	}, nil
 }
 
-func initNetworkMetadata(
-	network *armnetwork.VirtualNetwork, subscriptionID, resourceGroup string, tenantID string,
-) map[string]string {
+func initNetworkMetadata(network *armnetwork.VirtualNetwork, resourceGroup, subscriptionID, tenantID string) map[string]string {
 
 	metadata := map[string]string{
 		"azure/subscription":   subscriptionID,
@@ -274,7 +299,7 @@ func initNetworkMetadata(
 		"azure/location":       *network.Location,
 		"azure/status":         string(*network.Properties.ProvisioningState),
 		"azure/id":             *network.ID,
-		"azure/console-url":    getVirtualNetworkConsoleUrl(subscriptionID, resourceGroup, *network.Name),
+		"azure/console-url":    getVirtualNetworkConsoleUrl(resourceGroup, subscriptionID, *network.Name),
 	}
 
 	// Tags
@@ -289,9 +314,7 @@ func initNetworkMetadata(
 	return metadata
 }
 
-func initSubnetMetadata(
-	network *armnetwork.VirtualNetwork, subnet *armnetwork.Subnet, subscriptionID, resourceGroup string, tenantID string,
-) map[string]string {
+func initSubnetMetadata(network *armnetwork.VirtualNetwork, subnet *armnetwork.Subnet, resourceGroup, subscriptionID, tenantID string) map[string]string {
 
 	metadata := map[string]string{
 		"azure/subscription":   subscriptionID,
@@ -301,7 +324,7 @@ func initSubnetMetadata(
 		"azure/location":       *network.Location,
 		"azure/status":         string(*subnet.Properties.ProvisioningState),
 		"azure/id":             *subnet.ID,
-		"azure/console-url":    getSubnetConsoleUrl(subscriptionID, resourceGroup, *network.Name),
+		"azure/console-url":    getSubnetConsoleUrl(resourceGroup, subscriptionID, *network.Name),
 	}
 
 	// Tags
@@ -316,7 +339,7 @@ func initSubnetMetadata(
 	return metadata
 }
 
-func getVirtualNetworkConsoleUrl(subscriptionID, resourceGroup, networkName string) string {
+func getVirtualNetworkConsoleUrl(resourceGroup, subscriptionID, networkName string) string {
 	return fmt.Sprintf(
 		"https://portal.azure.com/#@/resource/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s",
 		subscriptionID,
@@ -325,7 +348,7 @@ func getVirtualNetworkConsoleUrl(subscriptionID, resourceGroup, networkName stri
 	)
 }
 
-func getSubnetConsoleUrl(subscriptionID, resourceGroup, networkName string) string {
+func getSubnetConsoleUrl(resourceGroup, subscriptionID, networkName string) string {
 	return fmt.Sprintf(
 		"https://portal.azure.com/#@/resource/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets",
 		subscriptionID,
@@ -336,7 +359,7 @@ func getSubnetConsoleUrl(subscriptionID, resourceGroup, networkName string) stri
 
 func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, subscriptionID, name *string) error {
 	if *name == "" {
-		*name = fmt.Sprintf("azure-aks-%s", *subscriptionID)
+		*name = fmt.Sprintf("azure-networks-%s", *subscriptionID)
 	}
 
 	apiURL := viper.GetString("url")

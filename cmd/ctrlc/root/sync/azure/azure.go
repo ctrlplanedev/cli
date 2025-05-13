@@ -3,6 +3,7 @@ package azure
 import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/azure/aks"
+	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/azure/networks"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
 	"github.com/spf13/cobra"
 )
@@ -32,6 +33,7 @@ func NewAzureCmd() *cobra.Command {
 
 	// Add all Azure sync subcommands
 	cmd.AddCommand(cliutil.AddIntervalSupport(aks.NewSyncAKSCmd(), ""))
+	cmd.AddCommand(cliutil.AddIntervalSupport(networks.NewSyncNetworksCmd(), ""))
 
 	return cmd
 }
