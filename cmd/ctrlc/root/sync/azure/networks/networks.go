@@ -347,14 +347,9 @@ func initSubnetMetadata(network *armnetwork.VirtualNetwork, subnet *armnetwork.S
 		"azure/resource-group":   resourceGroup,
 		"azure/resource-type":    "Microsoft.Network/virtualNetworks/subnets",
 		"azure/location":         *network.Location,
-		"azure/status": func() string {
-			if network.Properties != nil {
-				return string(*subnet.Properties.ProvisioningState)
-			}
-			return ""
-		}(),
-		"azure/id":          *subnet.ID,
-		"azure/console-url": getSubnetConsoleUrl(resourceGroup, subscriptionID, *network.Name),
+		"azure/status":           getSubnetState(subnet),
+		"azure/id":               *subnet.ID,
+		"azure/console-url":      getSubnetConsoleUrl(resourceGroup, subscriptionID, *network.Name),
 	}
 
 	return metadata
