@@ -480,7 +480,7 @@ type Policy1 struct {
 	Name                      string                     `json:"name"`
 	Priority                  float32                    `json:"priority"`
 	Targets                   []PolicyTarget             `json:"targets"`
-	VersionAnyApprovals       *[]VersionAnyApproval      `json:"versionAnyApprovals,omitempty"`
+	VersionAnyApprovals       *VersionAnyApproval        `json:"versionAnyApprovals,omitempty"`
 	VersionRoleApprovals      []VersionRoleApproval      `json:"versionRoleApprovals"`
 	VersionUserApprovals      []VersionUserApproval      `json:"versionUserApprovals"`
 	WorkspaceId               openapi_types.UUID         `json:"workspaceId"`
@@ -873,10 +873,8 @@ type UpsertPolicyJSONBody struct {
 	Name                      string                     `json:"name"`
 	Priority                  *float32                   `json:"priority,omitempty"`
 	Targets                   []PolicyTarget             `json:"targets"`
-	VersionAnyApprovals       *[]struct {
-		RequiredApprovalsCount *float32 `json:"requiredApprovalsCount,omitempty"`
-	} `json:"versionAnyApprovals,omitempty"`
-	VersionRoleApprovals *[]struct {
+	VersionAnyApprovals       *VersionAnyApproval        `json:"versionAnyApprovals,omitempty"`
+	VersionRoleApprovals      *[]struct {
 		RequiredApprovalsCount *float32 `json:"requiredApprovalsCount,omitempty"`
 		RoleId                 string   `json:"roleId"`
 	} `json:"versionRoleApprovals,omitempty"`

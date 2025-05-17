@@ -1,10 +1,13 @@
 package apply
 
+import "time"
+
 // Config represents the structure of the YAML file
 type Config struct {
 	Systems       []System               `yaml:"systems"`
 	Providers     ResourceProvider       `yaml:"resourceProvider"`
 	Relationships []ResourceRelationship `yaml:"relationshipRules"`
+	Policies      []Policy               `yaml:"policies,omitempty"`
 }
 
 type System struct {
@@ -98,4 +101,50 @@ type ResourceRelationship struct {
 	Source            *SourceResource `yaml:"source,omitempty"`
 	MetadataKeysMatch []string        `yaml:"metadataKeysMatch"`
 	DependencyType    string          `yaml:"dependencyType"`
+}
+
+// Policy structs
+type Policy struct {
+	Name                      string                     `yaml:"name"`
+	Description               *string                    `yaml:"description,omitempty"`
+	Priority                  *float32                   `yaml:"priority,omitempty"`
+	Enabled                   *bool                      `yaml:"enabled,omitempty"`
+	WorkspaceId               string                     `yaml:"workspaceId"`
+	Targets                   []PolicyTarget             `yaml:"targets"`
+	DenyWindows               []DenyWindow               `yaml:"denyWindows,omitempty"`
+	DeploymentVersionSelector *DeploymentVersionSelector `yaml:"deploymentVersionSelector,omitempty"`
+	VersionAnyApprovals       *VersionAnyApproval        `yaml:"versionAnyApprovals,omitempty"`
+	VersionUserApprovals      []VersionUserApproval      `yaml:"versionUserApprovals,omitempty"`
+	VersionRoleApprovals      []VersionRoleApproval      `yaml:"versionRoleApprovals,omitempty"`
+}
+
+type PolicyTarget struct {
+	DeploymentSelector  *map[string]any `yaml:"deploymentSelector,omitempty"`
+	EnvironmentSelector *map[string]any `yaml:"environmentSelector,omitempty"`
+	ResourceSelector    *map[string]any `yaml:"resourceSelector,omitempty"`
+}
+
+type DenyWindow struct {
+	TimeZone string         `yaml:"timeZone"`
+	RRule    map[string]any `yaml:"rrule"`
+	DtEnd    *time.Time     `yaml:"dtend,omitempty"`
+}
+
+type DeploymentVersionSelector struct {
+	Name                      string         `yaml:"name"`
+	DeploymentVersionSelector map[string]any `yaml:"deploymentVersionSelector"`
+	Description               *string        `yaml:"description,omitempty"`
+}
+
+type VersionAnyApproval struct {
+	RequiredApprovalsCount float32 `yaml:"requiredApprovalsCount"`
+}
+
+type VersionUserApproval struct {
+	UserId string `yaml:"userId"`
+}
+
+type VersionRoleApproval struct {
+	RoleId                 string  `yaml:"roleId"`
+	RequiredApprovalsCount float32 `yaml:"requiredApprovalsCount"`
 }
