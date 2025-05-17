@@ -874,12 +874,9 @@ type UpsertPolicyJSONBody struct {
 	Priority                  *float32                   `json:"priority,omitempty"`
 	Targets                   []PolicyTarget             `json:"targets"`
 	VersionAnyApprovals       *VersionAnyApproval        `json:"versionAnyApprovals,omitempty"`
-	VersionRoleApprovals      *[]struct {
-		RequiredApprovalsCount *float32 `json:"requiredApprovalsCount,omitempty"`
-		RoleId                 string   `json:"roleId"`
-	} `json:"versionRoleApprovals,omitempty"`
-	VersionUserApprovals *[]VersionUserApproval `json:"versionUserApprovals,omitempty"`
-	WorkspaceId          string                 `json:"workspaceId"`
+	VersionRoleApprovals      *[]VersionRoleApproval     `json:"versionRoleApprovals,omitempty"`
+	VersionUserApprovals      *[]VersionUserApproval     `json:"versionUserApprovals,omitempty"`
+	WorkspaceId               string                     `json:"workspaceId"`
 }
 
 // UpdatePolicyJSONBody defines parameters for UpdatePolicy.

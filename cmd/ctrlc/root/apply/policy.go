@@ -94,17 +94,11 @@ func createPolicyRequestBody(policy Policy) api.UpsertPolicyJSONRequestBody {
 		}
 	}
 
-	versionRoleApprovals := make([]struct {
-		RequiredApprovalsCount *float32 `json:"requiredApprovalsCount,omitempty"`
-		RoleId                 string   `json:"roleId"`
-	}, len(policy.VersionRoleApprovals))
+	versionRoleApprovals := make([]api.VersionRoleApproval, len(policy.VersionRoleApprovals))
 	for i, approval := range policy.VersionRoleApprovals {
 		count := approval.RequiredApprovalsCount
-		versionRoleApprovals[i] = struct {
-			RequiredApprovalsCount *float32 `json:"requiredApprovalsCount,omitempty"`
-			RoleId                 string   `json:"roleId"`
-		}{
-			RequiredApprovalsCount: &count,
+		versionRoleApprovals[i] = api.VersionRoleApproval{
+			RequiredApprovalsCount: count,
 			RoleId:                 approval.RoleId,
 		}
 	}
