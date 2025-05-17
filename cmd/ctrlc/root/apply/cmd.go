@@ -45,7 +45,7 @@ func runApply(filePath string) error {
 	processAllSystems(ctx, client, workspaceID, config.Systems)
 	processResourceProvider(ctx, client, workspaceID.String(), config.Providers)
 	processResourceRelationships(ctx, client, workspaceID.String(), config.Relationships)
-	processAllPolicies(ctx, client, config.Policies)
+	processAllPolicies(ctx, client, workspaceID.String(), config.Policies)
 
 	return nil
 }

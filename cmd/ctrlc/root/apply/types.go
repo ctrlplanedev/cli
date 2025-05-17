@@ -126,8 +126,8 @@ type PolicyTarget struct {
 
 type DenyWindow struct {
 	TimeZone string         `yaml:"timeZone"`
-	RRule    map[string]any `yaml:"rrule"`
-	DtEnd    *time.Time     `yaml:"dtend,omitempty"`
+	Rrule    map[string]any `yaml:"rrule"`
+	Dtend    *time.Time     `yaml:"dtend,omitempty"`
 }
 
 type DeploymentVersionSelector struct {

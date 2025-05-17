@@ -8,12 +8,12 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
-	"github.com/spf13/viper"
 )
 
 func processAllPolicies(
 	ctx context.Context,
 	client *api.ClientWithResponses,
+	workspaceID string,
 	policies []Policy,
 ) {
 	if len(policies) == 0 {
@@ -23,6 +23,7 @@ func processAllPolicies(
 	var wg sync.WaitGroup
 	for _, policy := range policies {
 		wg.Add(1)
+		policy.WorkspaceId = workspaceID
 		go processPolicy(ctx, client, policy, &wg)
 	}
 	wg.Wait()
@@ -36,6 +37,11 @@ func processPolicy(
 ) {
 	defer policyWg.Done()
 
+	if policy.Name == "" {
+		log.Error("Policy name is required", "policy", policy)
+		return
+	}
+
 	body := createPolicyRequestBody(policy)
 	if _, err := upsertPolicy(ctx, client, body); err != nil {
 		log.Error("Failed to create policy", "name", policy.Name, "error", err)
@@ -44,7 +50,6 @@ func processPolicy(
 }
 
 func createPolicyRequestBody(policy Policy) api.UpsertPolicyJSONRequestBody {
-	workspace := viper.GetString("workspace")
 	// Convert targets
 	targets := make([]api.PolicyTarget, len(policy.Targets))
 	for i, target := range policy.Targets {
@@ -62,22 +67,22 @@ func createPolicyRequestBody(policy Policy) api.UpsertPolicyJSONRequestBody {
 		TimeZone string                  `json:"timeZone"`
 	}, len(policy.DenyWindows))
 	for i, window := range policy.DenyWindows {
-		rrule := window.RRule
+		rrule := window.Rrule
 		denyWindows[i] = struct {
 			Dtend    *time.Time              `json:"dtend,omitempty"`
 			Rrule    *map[string]interface{} `json:"rrule,omitempty"`
 			TimeZone string                  `json:"timeZone"`
 		}{
-			Dtend:    window.DtEnd,
+			Dtend:    window.Dtend,
 			Rrule:    &rrule,
 			TimeZone: window.TimeZone,
 		}
 	}
 
 	// Convert version any approval
-	var versionAnyApprovals api.VersionAnyApproval
+	var versionAnyApprovals *api.VersionAnyApproval
 	if policy.VersionAnyApprovals != nil {
-		versionAnyApprovals = api.VersionAnyApproval{
+		versionAnyApprovals = &api.VersionAnyApproval{
 			RequiredApprovalsCount: policy.VersionAnyApprovals.RequiredApprovalsCount,
 		}
 	}
@@ -119,11 +124,11 @@ func createPolicyRequestBody(policy Policy) api.UpsertPolicyJSONRequestBody {
 		Description:               policy.Description,
 		Priority:                  policy.Priority,
 		Enabled:                   policy.Enabled,
-		WorkspaceId:               workspace,
+		WorkspaceId:               policy.WorkspaceId,
 		Targets:                   targets,
 		DenyWindows:               &denyWindows,
 		DeploymentVersionSelector: deploymentVersionSelector,
-		VersionAnyApprovals:       &versionAnyApprovals,
+		VersionAnyApprovals:       versionAnyApprovals,
 		VersionUserApprovals:      &versionUserApprovals,
 		VersionRoleApprovals:      &versionRoleApprovals,
 	}
