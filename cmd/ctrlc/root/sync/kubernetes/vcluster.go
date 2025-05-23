@@ -115,11 +115,11 @@ func NewSyncVclusterCmd() *cobra.Command {
 			workspaceId := viper.GetString("workspace")
 
 			if clusterIdentifier == "" {
-				clusterIdentifier = viper.GetString("cluster_identifier")
+				clusterIdentifier = viper.GetString("cluster-identifier")
 			}
 
 			if clusterIdentifier == "" {
-				return fmt.Errorf("cluster identifier is required, please set the CLUSTER_IDENTIFIER environment variable or use the --cluster-identifier flag")
+				return fmt.Errorf("cluster identifier is required, please set the CTRLPLANE_CLUSTER_IDENTIFIER environment variable or use the --cluster-identifier flag")
 			}
 
 			ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)

@@ -31,6 +31,8 @@ func init() {
 	cmd.PersistentFlags().String("workspace", "", "Ctrlplane Workspace ID")
 	viper.BindPFlag("workspace", cmd.PersistentFlags().Lookup("workspace"))
 	viper.BindEnv("workspace", "CTRLPLANE_WORKSPACE")
+
+	viper.BindEnv("cluster-identifier", "CTRLPLANE_CLUSTER_IDENTIFIER")
 }
 
 func main() {
