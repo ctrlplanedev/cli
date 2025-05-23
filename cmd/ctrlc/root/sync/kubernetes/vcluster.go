@@ -134,8 +134,8 @@ func NewSyncVclusterCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&clusterIdentifier, "cluster-identifier", "", "The identifier of the parent cluster in ctrlplane (if not provided, will use the CLUSTER_IDENTIFIER environment variable)")
-	cmd.Flags().StringVar(&providerName, "provider", "", "The name of the resource provider (optional)")
+	cmd.Flags().StringVar(&clusterIdentifier, "cluster-identifier", "c", "The identifier of the parent cluster in ctrlplane (if not provided, will use the CLUSTER_IDENTIFIER environment variable)")
+	cmd.Flags().StringVar(&providerName, "provider", "p", "The name of the resource provider (optional)")
 
 	return cmd
 }
