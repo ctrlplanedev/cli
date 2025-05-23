@@ -183,6 +183,7 @@ func NewSyncVclusterCmd() *cobra.Command {
 				return fmt.Errorf("failed to upsert resources: %w", err)
 			}
 			fmt.Printf("Response from upserting resources: %v\n", upsertResp.StatusCode)
+			fmt.Printf("Upserted %d resources\n", len(resourcesToUpsert))
 			return nil
 		},
 	}
