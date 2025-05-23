@@ -90,9 +90,8 @@ func generateVclusterMetadata(vcluster find.VCluster, clusterMetadata api.Metada
 
 func generateVclusterConfig(vcluster find.VCluster, clusterName string, clusterConfig map[string]interface{}) map[string]interface{} {
 	vclusterConfig := make(map[string]interface{})
-	vclusterConfig["name"] = fmt.Sprintf("%s/%s", clusterName, vcluster.Name)
+	vclusterConfig["name"] = vcluster.Name
 	vclusterConfig["namespace"] = vcluster.Namespace
-	vclusterConfig["vcluster"] = vcluster.Name
 	vclusterConfig["status"] = getNormalizedVclusterStatus(vcluster.Status)
 	clusterConfig["vcluster"] = vclusterConfig
 
@@ -169,10 +168,10 @@ func NewSyncVclusterCmd() *cobra.Command {
 				}
 
 				resource := api.CreateResource{
-					Name:       fmt.Sprintf("%s/%s/%s", clusterResource.Name, vcluster.Namespace, vcluster.Name),
+					Name:       vcluster.Name,
 					Identifier: fmt.Sprintf("%s/%s/%s", clusterResource.Name, vcluster.Namespace, vcluster.Name),
 					Kind:       fmt.Sprintf("%s/%s", clusterResource.Kind, vclusterKind),
-					Version:    clusterResource.Version,
+					Version:    "ctrlplane.dev/kubernetes/cluster/v1",
 					Metadata:   metadata,
 					Config:     generateVclusterConfig(vcluster, clusterResource.Name, clonedParentConfig),
 				}
@@ -188,8 +187,8 @@ func NewSyncVclusterCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&clusterIdentifier, "cluster-identifier", "", "The identifier of the parent cluster in ctrlplane (if not provided, will use the CLUSTER_IDENTIFIER environment variable)")
-	cmd.Flags().StringVar(&providerName, "provider", "p", "The name of the resource provider (optional)")
+	cmd.Flags().StringVarP(&clusterIdentifier, "cluster-identifier", "c", "", "The identifier of the parent cluster in ctrlplane (if not provided, will use the CLUSTER_IDENTIFIER environment variable)")
+	cmd.Flags().StringVarP(&providerName, "provider", "p", "", "The name of the resource provider (optional)")
 
 	return cmd
 }
