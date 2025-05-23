@@ -161,13 +161,20 @@ func NewSyncVclusterCmd() *cobra.Command {
 					fmt.Printf("failed to generate vcluster metadata for %s: %v\n", vcluster.Name, err)
 					continue
 				}
+
+				clonedParentConfig, err := deepClone(clusterResource.Config)
+				if err != nil {
+					fmt.Printf("failed to clone parent config for %s: %v\n", vcluster.Name, err)
+					continue
+				}
+
 				resource := api.CreateResource{
 					Name:       fmt.Sprintf("%s/%s/%s", clusterResource.Name, vcluster.Namespace, vcluster.Name),
 					Identifier: fmt.Sprintf("%s/%s/%s", clusterResource.Name, vcluster.Namespace, vcluster.Name),
 					Kind:       fmt.Sprintf("%s/%s", clusterResource.Kind, vclusterKind),
 					Version:    clusterResource.Version,
 					Metadata:   metadata,
-					Config:     generateVclusterConfig(vcluster, clusterResource.Name, clusterResource.Config),
+					Config:     generateVclusterConfig(vcluster, clusterResource.Name, clonedParentConfig),
 				}
 				resourcesToUpsert = append(resourcesToUpsert, resource)
 			}
