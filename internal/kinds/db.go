@@ -70,4 +70,16 @@ const (
 	K8SMetadataAccessModes    = "kubernetes/access-modes"
 	K8SMetadataIngressRules   = "kubernetes/ingress-rules"
 	K8SMetadataIngressClass   = "kubernetes/ingress-class"
+	K8SMetadataFlavor         = "kubernetes/flavor"
+)
+
+const (
+	VClusterMetadataVersion      = "vcluster/version"
+	VClusterMetadataVersionMajor = "vcluster/version-major"
+	VClusterMetadataVersionMinor = "vcluster/version-minor"
+	VClusterMetadataVersionPatch = "vcluster/version-patch"
+	VClusterMetadataName         = "vcluster/name"
+	VClusterMetadataNamespace    = "vcluster/namespace"
+	VClusterMetadataStatus       = "vcluster/status"
+	VClusterMetadataCreated      = "vcluster/created"
 )

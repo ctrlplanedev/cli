@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/Masterminds/semver"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/internal/kinds"
 	"github.com/sirupsen/logrus"
 
 	"github.com/loft-sh/log"
@@ -18,41 +20,83 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	vclusterKind = "VCluster"
+)
+
+func deepClone(src map[string]interface{}) (map[string]interface{}, error) {
+	bytes, err := json.Marshal(src)
+	if err != nil {
+		return nil, err
+	}
+	var clone map[string]interface{}
+	if err := json.Unmarshal(bytes, &clone); err != nil {
+		return nil, err
+	}
+	return clone, nil
+}
+
+func getNormalizedVclusterStatus(status find.Status) string {
+	switch status {
+	case find.StatusRunning:
+		return "running"
+	case find.StatusPaused:
+		return "paused"
+	case find.StatusWorkloadSleeping:
+		return "sleeping"
+	case find.StatusUnknown:
+		return "unknown"
+	default:
+		return "unknown"
+	}
+}
+
 func generateVclusterMetadata(vcluster find.VCluster, clusterMetadata api.MetadataMap) (map[string]string, error) {
 	metadata := make(map[string]string)
 	parsedVersion, err := semver.NewVersion(vcluster.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse vcluster version: %w", err)
 	}
-	metadata["vcluster/version"] = vcluster.Version
-	metadata["vcluster/version-major"] = strconv.FormatInt(parsedVersion.Major(), 10)
-	metadata["vcluster/version-minor"] = strconv.FormatInt(parsedVersion.Minor(), 10)
-	metadata["vcluster/version-patch"] = strconv.FormatInt(parsedVersion.Patch(), 10)
-	metadata["vcluster/name"] = vcluster.Name
-	metadata["vcluster/namespace"] = vcluster.Namespace
-	metadata["vcluster/status"] = string(vcluster.Status)
-	metadata["vcluster/created"] = vcluster.Created.Format(time.RFC3339)
-	metadata["kubernetes/flavor"] = "vcluster"
+	metadata[kinds.VClusterMetadataVersion] = vcluster.Version
+	metadata[kinds.VClusterMetadataVersionMajor] = strconv.FormatInt(parsedVersion.Major(), 10)
+	metadata[kinds.VClusterMetadataVersionMinor] = strconv.FormatInt(parsedVersion.Minor(), 10)
+	metadata[kinds.VClusterMetadataVersionPatch] = strconv.FormatInt(parsedVersion.Patch(), 10)
+	metadata[kinds.VClusterMetadataName] = vcluster.Name
+	metadata[kinds.VClusterMetadataNamespace] = vcluster.Namespace
+	metadata[kinds.VClusterMetadataStatus] = getNormalizedVclusterStatus(vcluster.Status)
+	metadata[kinds.VClusterMetadataCreated] = vcluster.Created.Format(time.RFC3339)
+	metadata[kinds.K8SMetadataFlavor] = vclusterKind
 
-	for key, value := range clusterMetadata {
-		metadata[key] = value
+	if vcluster.Labels != nil {
+		for key, value := range vcluster.Labels {
+			metadata[fmt.Sprintf("tags/%s", key)] = value
+		}
+	}
+
+	if vcluster.Annotations != nil {
+		for key, value := range vcluster.Annotations {
+			metadata[fmt.Sprintf("annotations/%s", key)] = value
+		}
+	}
+
+	if clusterMetadata != nil {
+		for key, value := range clusterMetadata {
+			metadata[key] = value
+		}
 	}
 
 	return metadata, nil
 }
 
 func generateVclusterConfig(vcluster find.VCluster, clusterName string, clusterConfig map[string]interface{}) map[string]interface{} {
-	config := make(map[string]interface{})
-	config["name"] = clusterName
-	config["namespace"] = vcluster.Namespace
-	config["status"] = vcluster.Status
-	config["vcluster"] = vcluster.Name
+	vclusterConfig := make(map[string]interface{})
+	vclusterConfig["name"] = fmt.Sprintf("%s/%s", clusterName, vcluster.Name)
+	vclusterConfig["namespace"] = vcluster.Namespace
+	vclusterConfig["vcluster"] = vcluster.Name
+	vclusterConfig["status"] = getNormalizedVclusterStatus(vcluster.Status)
+	clusterConfig["vcluster"] = vclusterConfig
 
-	for key, value := range clusterConfig {
-		config[key] = value
-	}
-
-	return config
+	return clusterConfig
 }
 
 func NewSyncVclusterCmd() *cobra.Command {
@@ -88,6 +132,9 @@ func NewSyncVclusterCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to get cluster resource: %w", err)
 			}
+			if clusterResourceResponse.StatusCode() != 200 {
+				return fmt.Errorf("failed to get cluster resource: %s", clusterResourceResponse.Status())
+			}
 			clusterResource := clusterResourceResponse.JSON200
 
 			logger := log.NewStdoutLogger(os.Stdout, os.Stdout, os.Stdout, logrus.InfoLevel)
@@ -117,7 +164,7 @@ func NewSyncVclusterCmd() *cobra.Command {
 				resource := api.CreateResource{
 					Name:       fmt.Sprintf("%s/%s/%s", clusterResource.Name, vcluster.Namespace, vcluster.Name),
 					Identifier: fmt.Sprintf("%s/%s/%s", clusterResource.Name, vcluster.Namespace, vcluster.Name),
-					Kind:       "ClusterAPI",
+					Kind:       fmt.Sprintf("%s/%s", clusterResource.Kind, vclusterKind),
 					Version:    clusterResource.Version,
 					Metadata:   metadata,
 					Config:     generateVclusterConfig(vcluster, clusterResource.Name, clusterResource.Config),
@@ -134,7 +181,7 @@ func NewSyncVclusterCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&clusterIdentifier, "cluster-identifier", "c", "The identifier of the parent cluster in ctrlplane (if not provided, will use the CLUSTER_IDENTIFIER environment variable)")
+	cmd.Flags().StringVar(&clusterIdentifier, "cluster-identifier", "", "The identifier of the parent cluster in ctrlplane (if not provided, will use the CLUSTER_IDENTIFIER environment variable)")
 	cmd.Flags().StringVar(&providerName, "provider", "p", "The name of the resource provider (optional)")
 
 	return cmd
