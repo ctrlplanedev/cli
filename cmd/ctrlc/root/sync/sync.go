@@ -36,6 +36,7 @@ func NewSyncCmd() *cobra.Command {
 	cmd.AddCommand(google.NewGoogleCloudCmd())
 	cmd.AddCommand(azure.NewAzureCmd())
 	cmd.AddCommand(kubernetes.NewSyncKubernetesCmd())
+	cmd.AddCommand(kubernetes.NewSyncVclusterCmd())
 	cmd.AddCommand(github.NewSyncGitHubCmd())
 
 	return cmd
