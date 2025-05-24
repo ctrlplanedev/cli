@@ -143,6 +143,8 @@ func NewSyncVclusterCmd() *cobra.Command {
 				return err
 			}
 
+			fmt.Printf("Found %d vclusters in namespace %s\n", len(vclusters), namespace)
+
 			if providerName == "" {
 				providerName = fmt.Sprintf("%s-vcluster-scanner", clusterResource.Name)
 			}
