@@ -26,12 +26,10 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/go-tfe v1.73.1
-	github.com/loft-sh/log v0.0.0-20240219160058-26d83ffb46ac
 	github.com/loft-sh/vcluster v0.25.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/term v0.5.0
 	github.com/oapi-codegen/runtime v1.1.1
-	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/tailscale/tailscale-client-go/v2 v2.0.0-20241217012816-8143c7dc1766
@@ -137,6 +135,7 @@ require (
 	github.com/loft-sh/agentapi/v4 v4.0.0-alpha.6.0.20240614131646-3359da6a4818 // indirect
 	github.com/loft-sh/api/v4 v4.0.0-alpha.6.0.20240614134907-f9ecc1668e9e // indirect
 	github.com/loft-sh/apiserver v0.0.0-20240607231110-634aeeab2b36 // indirect
+	github.com/loft-sh/log v0.0.0-20240219160058-26d83ffb46ac // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -171,6 +170,7 @@ require (
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/samber/lo v1.38.1 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/speakeasy-api/openapi-overlay v0.9.0 // indirect

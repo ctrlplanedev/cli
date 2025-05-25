@@ -3,7 +3,6 @@ package kubernetes
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"time"
 
@@ -11,10 +10,9 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
-	"github.com/sirupsen/logrus"
 
-	"github.com/loft-sh/log"
 	"github.com/loft-sh/vcluster/pkg/cli/find"
+	"github.com/loft-sh/vcluster/pkg/platform/kube"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -136,9 +134,18 @@ func NewSyncVclusterCmd() *cobra.Command {
 			}
 			clusterResource := clusterResourceResponse.JSON200
 
-			logger := log.NewStdoutLogger(os.Stdout, os.Stdout, os.Stdout, logrus.InfoLevel)
+			config, context, err := getKubeConfig()
+			if err != nil {
+				return fmt.Errorf("failed to get kube config: %w", err)
+			}
+
+			clientset, err := kube.NewForConfig(config)
+			if err != nil {
+				return fmt.Errorf("failed to create kube client: %w", err)
+			}
+
 			namespace := metav1.NamespaceAll
-			vclusters, err := find.ListVClusters(cmd.Context(), "", "", namespace, logger)
+			vclusters, err := find.ListOSSVClusters(cmd.Context(), clientset, context, "", namespace)
 			if err != nil {
 				return err
 			}
