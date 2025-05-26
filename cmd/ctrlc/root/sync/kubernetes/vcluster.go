@@ -144,6 +144,21 @@ func NewSyncVclusterCmd() *cobra.Command {
 				return fmt.Errorf("failed to create kube client: %w", err)
 			}
 
+			allNamespaces, err := clientset.CoreV1().Namespaces().List(cmd.Context(), metav1.ListOptions{})
+			if err != nil {
+				return fmt.Errorf("failed to get all namespaces: %w", err)
+			}
+			for _, namespace := range allNamespaces.Items {
+				fmt.Printf("Namespace: %s\n", namespace.Name)
+				statefulSetList, err := clientset.AppsV1().StatefulSets(namespace.Name).List(cmd.Context(), metav1.ListOptions{})
+				if err != nil {
+					return fmt.Errorf("failed to get stateful sets for namespace %s: %w", namespace.Name, err)
+				}
+				for _, p := range statefulSetList.Items {
+					fmt.Printf("StatefulSet: %s\n", p.Name)
+				}
+			}
+
 			namespace := metav1.NamespaceAll
 			vclusters, err := find.ListOSSVClusters(cmd.Context(), clientset, context, "", namespace)
 			if err != nil {
