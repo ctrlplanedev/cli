@@ -192,8 +192,8 @@ func NewSyncVclusterCmd() *cobra.Command {
 				}
 
 				resource := api.CreateResource{
-					Name:       fmt.Sprintf("%s/%s", clusterResource.Name, vcluster.Name),
-					Identifier: fmt.Sprintf("%s/vcluster/%s", clusterResource.Identifier, vcluster.Name),
+					Name:       fmt.Sprintf("%s/%s/%s", clusterResource.Name, vcluster.Namespace, vcluster.Name),
+					Identifier: fmt.Sprintf("%s/%s/vcluster/%s", clusterResource.Identifier, vcluster.Namespace, vcluster.Name),
 					Kind:       fmt.Sprintf("%s/%s", clusterResource.Kind, vclusterKind),
 					Version:    "ctrlplane.dev/kubernetes/cluster/v1",
 					Metadata:   metadata,
