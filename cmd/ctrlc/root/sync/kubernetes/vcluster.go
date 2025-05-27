@@ -9,6 +9,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/Masterminds/semver"
+	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
 
@@ -17,10 +18,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
-const (
-	vclusterKind = "VCluster"
 )
 
 func getParentClusterResource(ctx context.Context, ctrlplaneClient *api.ClientWithResponses, workspaceId string, clusterIdentifier string) (ClusterResource, error) {
@@ -84,7 +81,7 @@ func generateVclusterMetadata(vcluster find.VCluster, clusterMetadata api.Metada
 	metadata[kinds.VClusterMetadataNamespace] = vcluster.Namespace
 	metadata[kinds.VClusterMetadataStatus] = getNormalizedVclusterStatus(vcluster.Status)
 	metadata[kinds.VClusterMetadataCreated] = vcluster.Created.Format(time.RFC3339)
-	metadata[kinds.K8SMetadataFlavor] = vclusterKind
+	metadata[kinds.K8SMetadataFlavor] = "vcluster"
 
 	if vcluster.Labels != nil {
 		for key, value := range vcluster.Labels {
@@ -126,6 +123,10 @@ type ClusterResource struct {
 	Version    string
 }
 
+func generateVclusterKind(clusterResource ClusterResource) string {
+	return fmt.Sprintf("%s/%s", clusterResource.Kind, kinds.KindVCluster)
+}
+
 func getCreateResourceFromVcluster(vcluster find.VCluster, clusterResource ClusterResource) (api.CreateResource, error) {
 	metadata, err := generateVclusterMetadata(vcluster, clusterResource.Metadata)
 	if err != nil {
@@ -140,13 +141,41 @@ func getCreateResourceFromVcluster(vcluster find.VCluster, clusterResource Clust
 	resource := api.CreateResource{
 		Name:       fmt.Sprintf("%s/%s/%s", clusterResource.Name, vcluster.Namespace, vcluster.Name),
 		Identifier: fmt.Sprintf("%s/%s/vcluster/%s", clusterResource.Identifier, vcluster.Namespace, vcluster.Name),
-		Kind:       fmt.Sprintf("%s/%s", clusterResource.Kind, vclusterKind),
+		Kind:       generateVclusterKind(clusterResource),
 		Version:    "ctrlplane.dev/kubernetes/cluster/v1",
 		Metadata:   metadata,
 		Config:     generateVclusterConfig(vcluster, clusterResource.Name, clonedParentConfig),
 	}
 
 	return resource, nil
+}
+
+func createResourceRelationshipRule(ctx context.Context, resourceProvider *api.ResourceProvider, clusterResource ClusterResource) error {
+	var metadataKey string
+	switch clusterResource.Kind {
+	case kinds.KindGoogleKubernetesEngine:
+		metadataKey = kinds.GoogleMetadataSelfLink
+	case kinds.KindAmazonElasticKubernetesService:
+		metadataKey = kinds.AWSMetadataARN
+	case kinds.KindAzureKubernetesService:
+		metadataKey = kinds.AzureMetadataId
+	default:
+		return fmt.Errorf("unsupported cluster kind: %s", clusterResource.Kind)
+	}
+
+	metadataKeysMatches := []string{metadataKey}
+
+	resourceRelationshipRule := api.CreateResourceRelationshipRule{
+		DependencyType:      api.ProvisionedIn,
+		Reference:           "vcluster",
+		TargetKind:          clusterResource.Kind,
+		TargetVersion:       clusterResource.Version,
+		SourceKind:          generateVclusterKind(clusterResource),
+		SourceVersion:       clusterResource.Version,
+		MetadataKeysMatches: &metadataKeysMatches,
+	}
+
+	return resourceProvider.AddResourceRelationshipRule(ctx, []api.CreateResourceRelationshipRule{resourceRelationshipRule})
 }
 
 func NewSyncVclusterCmd() *cobra.Command {
@@ -197,9 +226,6 @@ func NewSyncVclusterCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			fmt.Printf("Found %d vclusters in namespace %s\n", len(vclusters), namespace)
-
 			if providerName == "" {
 				providerName = fmt.Sprintf("%s-vcluster-scanner", clusterResource.Name)
 			}
@@ -218,12 +244,14 @@ func NewSyncVclusterCmd() *cobra.Command {
 				resourcesToUpsert = append(resourcesToUpsert, resource)
 			}
 
-			upsertResp, err := rp.UpsertResource(cmd.Context(), resourcesToUpsert)
-			if err != nil {
+			if _, err := rp.UpsertResource(cmd.Context(), resourcesToUpsert); err != nil {
 				return fmt.Errorf("failed to upsert resources: %w", err)
 			}
-			fmt.Printf("Response from upserting resources: %v\n", upsertResp.StatusCode)
-			fmt.Printf("Upserted %d resources\n", len(resourcesToUpsert))
+			log.Infof("Upserted %d resources", len(resourcesToUpsert))
+
+			if err := createResourceRelationshipRule(cmd.Context(), rp, clusterResource); err != nil {
+				return fmt.Errorf("failed to create resource relationship rule: %w", err)
+			}
 			return nil
 		},
 	}
