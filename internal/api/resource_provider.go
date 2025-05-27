@@ -71,6 +71,10 @@ func (r *ResourceProvider) AddResourceRelationshipRule(ctx context.Context, rule
 	for _, rule := range rules {
 		rule.WorkspaceId = r.workspaceId
 		resp, err := r.client.CreateResourceRelationshipRuleWithResponse(ctx, rule)
+		if resp.StatusCode() == http.StatusConflict {
+			log.Info("Resource relationship rule already exists, skipped creation")
+			return nil
+		}
 		if err != nil {
 			return err
 		}
@@ -78,5 +82,6 @@ func (r *ResourceProvider) AddResourceRelationshipRule(ctx context.Context, rule
 			return fmt.Errorf("failed to upsert resource relationship rule: %s", string(resp.Body))
 		}
 	}
+	log.Info("Successfully created resource relationship rules")
 	return nil
 }

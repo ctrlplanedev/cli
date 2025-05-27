@@ -74,6 +74,18 @@ const (
 )
 
 const (
+	GoogleMetadataSelfLink = "google/self-link"
+)
+
+const (
+	AWSMetadataARN = "aws/arn"
+)
+
+const (
+	AzureMetadataId = "azure/id"
+)
+
+const (
 	VClusterMetadataVersion      = "vcluster/version"
 	VClusterMetadataVersionMajor = "vcluster/version-major"
 	VClusterMetadataVersionMinor = "vcluster/version-minor"
@@ -82,4 +94,11 @@ const (
 	VClusterMetadataNamespace    = "vcluster/namespace"
 	VClusterMetadataStatus       = "vcluster/status"
 	VClusterMetadataCreated      = "vcluster/created"
+)
+
+const (
+	KindAmazonElasticKubernetesService = "AmazonElasticKubernetesService"
+	KindGoogleKubernetesEngine         = "GoogleKubernetesEngine"
+	KindAzureKubernetesService         = "AzureKubernetesService"
+	KindVCluster                       = "VCluster"
 )
