@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -21,6 +22,26 @@ import (
 const (
 	vclusterKind = "VCluster"
 )
+
+func getParentClusterResource(ctx context.Context, ctrlplaneClient *api.ClientWithResponses, workspaceId string, clusterIdentifier string) (ClusterResource, error) {
+	clusterResourceResponse, err := ctrlplaneClient.GetResourceByIdentifierWithResponse(ctx, workspaceId, clusterIdentifier)
+	if err != nil {
+		return ClusterResource{}, fmt.Errorf("failed to get cluster resource: %w", err)
+	}
+	if clusterResourceResponse.StatusCode() != 200 {
+		return ClusterResource{}, fmt.Errorf("failed to get cluster resource: %s", clusterResourceResponse.Status())
+	}
+	clusterResource := ClusterResource{
+		Config:     clusterResourceResponse.JSON200.Config,
+		Metadata:   clusterResourceResponse.JSON200.Metadata,
+		Name:       clusterResourceResponse.JSON200.Name,
+		Identifier: clusterResourceResponse.JSON200.Identifier,
+		Kind:       clusterResourceResponse.JSON200.Kind,
+		Version:    clusterResourceResponse.JSON200.Version,
+	}
+
+	return clusterResource, nil
+}
 
 func deepClone(src map[string]interface{}) (map[string]interface{}, error) {
 	bytes, err := json.Marshal(src)
@@ -96,6 +117,38 @@ func generateVclusterConfig(vcluster find.VCluster, clusterName string, clusterC
 	return clusterConfig
 }
 
+type ClusterResource struct {
+	Config     map[string]interface{}
+	Metadata   api.MetadataMap
+	Name       string
+	Identifier string
+	Kind       string
+	Version    string
+}
+
+func getCreateResourceFromVcluster(vcluster find.VCluster, clusterResource ClusterResource) (api.CreateResource, error) {
+	metadata, err := generateVclusterMetadata(vcluster, clusterResource.Metadata)
+	if err != nil {
+		return api.CreateResource{}, fmt.Errorf("failed to generate vcluster metadata: %w", err)
+	}
+
+	clonedParentConfig, err := deepClone(clusterResource.Config)
+	if err != nil {
+		return api.CreateResource{}, fmt.Errorf("failed to clone parent config: %w", err)
+	}
+
+	resource := api.CreateResource{
+		Name:       fmt.Sprintf("%s/%s/%s", clusterResource.Name, vcluster.Namespace, vcluster.Name),
+		Identifier: fmt.Sprintf("%s/%s/vcluster/%s", clusterResource.Identifier, vcluster.Namespace, vcluster.Name),
+		Kind:       fmt.Sprintf("%s/%s", clusterResource.Kind, vclusterKind),
+		Version:    "ctrlplane.dev/kubernetes/cluster/v1",
+		Metadata:   metadata,
+		Config:     generateVclusterConfig(vcluster, clusterResource.Name, clonedParentConfig),
+	}
+
+	return resource, nil
+}
+
 func NewSyncVclusterCmd() *cobra.Command {
 	var clusterIdentifier string
 	var providerName string
@@ -107,7 +160,6 @@ func NewSyncVclusterCmd() *cobra.Command {
 			$ ctrlc sync vcluster
 		`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			apiURL := viper.GetString("url")
 			apiKey := viper.GetString("api-key")
 			workspaceId := viper.GetString("workspace")
@@ -125,14 +177,10 @@ func NewSyncVclusterCmd() *cobra.Command {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
 
-			clusterResourceResponse, err := ctrlplaneClient.GetResourceByIdentifierWithResponse(cmd.Context(), workspaceId, clusterIdentifier)
+			clusterResource, err := getParentClusterResource(cmd.Context(), ctrlplaneClient, workspaceId, clusterIdentifier)
 			if err != nil {
-				return fmt.Errorf("failed to get cluster resource: %w", err)
+				return fmt.Errorf("failed to get parent cluster resource: %w", err)
 			}
-			if clusterResourceResponse.StatusCode() != 200 {
-				return fmt.Errorf("failed to get cluster resource: %s", clusterResourceResponse.Status())
-			}
-			clusterResource := clusterResourceResponse.JSON200
 
 			config, context, err := getKubeConfig()
 			if err != nil {
@@ -142,21 +190,6 @@ func NewSyncVclusterCmd() *cobra.Command {
 			clientset, err := kube.NewForConfig(config)
 			if err != nil {
 				return fmt.Errorf("failed to create kube client: %w", err)
-			}
-
-			allNamespaces, err := clientset.CoreV1().Namespaces().List(cmd.Context(), metav1.ListOptions{})
-			if err != nil {
-				return fmt.Errorf("failed to get all namespaces: %w", err)
-			}
-			for _, namespace := range allNamespaces.Items {
-				fmt.Printf("Namespace: %s\n", namespace.Name)
-				statefulSetList, err := clientset.AppsV1().StatefulSets(namespace.Name).List(cmd.Context(), metav1.ListOptions{})
-				if err != nil {
-					return fmt.Errorf("failed to get stateful sets for namespace %s: %w", namespace.Name, err)
-				}
-				for _, p := range statefulSetList.Items {
-					fmt.Printf("StatefulSet: %s\n", p.Name)
-				}
 			}
 
 			namespace := metav1.NamespaceAll
@@ -177,27 +210,10 @@ func NewSyncVclusterCmd() *cobra.Command {
 			}
 
 			resourcesToUpsert := []api.CreateResource{}
-
 			for _, vcluster := range vclusters {
-				metadata, err := generateVclusterMetadata(vcluster, clusterResource.Metadata)
+				resource, err := getCreateResourceFromVcluster(vcluster, clusterResource)
 				if err != nil {
-					fmt.Printf("failed to generate vcluster metadata for %s: %v\n", vcluster.Name, err)
-					continue
-				}
-
-				clonedParentConfig, err := deepClone(clusterResource.Config)
-				if err != nil {
-					fmt.Printf("failed to clone parent config for %s: %v\n", vcluster.Name, err)
-					continue
-				}
-
-				resource := api.CreateResource{
-					Name:       fmt.Sprintf("%s/%s/%s", clusterResource.Name, vcluster.Namespace, vcluster.Name),
-					Identifier: fmt.Sprintf("%s/%s/vcluster/%s", clusterResource.Identifier, vcluster.Namespace, vcluster.Name),
-					Kind:       fmt.Sprintf("%s/%s", clusterResource.Kind, vclusterKind),
-					Version:    "ctrlplane.dev/kubernetes/cluster/v1",
-					Metadata:   metadata,
-					Config:     generateVclusterConfig(vcluster, clusterResource.Name, clonedParentConfig),
+					return fmt.Errorf("failed to get create resource from vcluster: %w", err)
 				}
 				resourcesToUpsert = append(resourcesToUpsert, resource)
 			}
