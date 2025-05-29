@@ -44,6 +44,11 @@ type DeploymentVariable struct {
 	Values      []DeploymentVariableValue `yaml:"values"`
 }
 
+type ExitHook struct {
+	Name     string    `yaml:"name"`
+	JobAgent *JobAgent `yaml:"jobAgent"`
+}
+
 type Deployment struct {
 	Slug             string                `yaml:"slug"`
 	Name             string                `yaml:"name"`
@@ -52,6 +57,7 @@ type Deployment struct {
 	ResourceSelector *map[string]any       `yaml:"resourceSelector,omitempty"`
 	Metadata         *map[string]string    `yaml:"metadata,omitempty"`
 	Variables        *[]DeploymentVariable `yaml:"variables,omitempty"`
+	ExitHooks        *[]ExitHook           `yaml:"exitHooks,omitempty"`
 }
 
 type JobAgent struct {

@@ -32,6 +32,23 @@ func processDeployment(
 		body.JobAgentConfig = &deployment.JobAgent.Config
 	}
 
+	if deployment.ExitHooks != nil {
+		exitHooks := []api.ExitHook{}
+		for _, exitHook := range *deployment.ExitHooks {
+			jobAgentUUID, err := uuid.Parse(exitHook.JobAgent.Id)
+			if err != nil {
+				log.Error("Failed to parse job agent ID as UUID", "id", exitHook.JobAgent.Id, "error", err)
+				return
+			}
+			exitHooks = append(exitHooks, api.ExitHook{
+				Name:           exitHook.Name,
+				JobAgentId:     jobAgentUUID,
+				JobAgentConfig: exitHook.JobAgent.Config,
+			})
+		}
+		body.ExitHooks = &exitHooks
+	}
+
 	id, err := upsertDeployment(ctx, client, body)
 	if err != nil {
 		log.Error("Failed to create deployment", "name", deployment.Name, "error", err)

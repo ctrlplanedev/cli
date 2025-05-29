@@ -347,6 +347,18 @@ type Event struct {
 	Payload   map[string]interface{} `json:"payload"`
 }
 
+// ExitHook defines model for ExitHook.
+type ExitHook struct {
+	// JobAgentConfig The configuration for the job agent
+	JobAgentConfig map[string]interface{} `json:"jobAgentConfig"`
+
+	// JobAgentId The ID of the job agent to use for the exit hook
+	JobAgentId openapi_types.UUID `json:"jobAgentId"`
+
+	// Name The name of the exit hook
+	Name string `json:"name"`
+}
+
 // Job defines model for Job.
 type Job struct {
 	CompletedAt *time.Time `json:"completedAt"`
@@ -783,7 +795,8 @@ type UpdateDeploymentVersionJSONBodyStatus string
 // CreateDeploymentJSONBody defines parameters for CreateDeployment.
 type CreateDeploymentJSONBody struct {
 	// Description The description of the deployment
-	Description *string `json:"description,omitempty"`
+	Description *string     `json:"description,omitempty"`
+	ExitHooks   *[]ExitHook `json:"exitHooks,omitempty"`
 
 	// JobAgentConfig The configuration for the job agent
 	JobAgentConfig *map[string]interface{} `json:"jobAgentConfig,omitempty"`
@@ -813,6 +826,7 @@ type CreateDeploymentJSONBody struct {
 // UpdateDeploymentJSONBody defines parameters for UpdateDeployment.
 type UpdateDeploymentJSONBody struct {
 	Description      *string                 `json:"description,omitempty"`
+	ExitHooks        *[]ExitHook             `json:"exitHooks,omitempty"`
 	JobAgentConfig   *map[string]interface{} `json:"jobAgentConfig,omitempty"`
 	JobAgentId       *openapi_types.UUID     `json:"jobAgentId"`
 	Name             *string                 `json:"name,omitempty"`
