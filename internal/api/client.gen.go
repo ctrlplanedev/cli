@@ -410,6 +410,7 @@ type JobWithTrigger struct {
 	Resource       *struct {
 		Config        map[string]interface{} `json:"config"`
 		CreatedAt     time.Time              `json:"createdAt"`
+		DeletedAt     *time.Time             `json:"deletedAt"`
 		Id            openapi_types.UUID     `json:"id"`
 		Identifier    string                 `json:"identifier"`
 		Kind          string                 `json:"kind"`
@@ -483,6 +484,7 @@ type PolicySuccessType string
 
 // Policy1 defines model for Policy1.
 type Policy1 struct {
+	Concurrency               *PolicyConcurrency         `json:"concurrency"`
 	CreatedAt                 time.Time                  `json:"createdAt"`
 	DenyWindows               []DenyWindow               `json:"denyWindows"`
 	DeploymentVersionSelector *DeploymentVersionSelector `json:"deploymentVersionSelector,omitempty"`
@@ -497,6 +499,9 @@ type Policy1 struct {
 	VersionUserApprovals      []VersionUserApproval      `json:"versionUserApprovals"`
 	WorkspaceId               openapi_types.UUID         `json:"workspaceId"`
 }
+
+// PolicyConcurrency defines model for PolicyConcurrency.
+type PolicyConcurrency = float32
 
 // PolicyTarget defines model for PolicyTarget.
 type PolicyTarget struct {
@@ -557,6 +562,7 @@ type ReleaseTarget struct {
 type Resource struct {
 	Config      map[string]interface{} `json:"config"`
 	CreatedAt   time.Time              `json:"createdAt"`
+	DeletedAt   *time.Time             `json:"deletedAt"`
 	Id          openapi_types.UUID     `json:"id"`
 	Identifier  string                 `json:"identifier"`
 	Kind        string                 `json:"kind"`
@@ -595,6 +601,7 @@ type ResourceRelationshipRuleDependencyType string
 type ResourceWithMetadata struct {
 	Config      map[string]interface{} `json:"config"`
 	CreatedAt   time.Time              `json:"createdAt"`
+	DeletedAt   *time.Time             `json:"deletedAt"`
 	Id          openapi_types.UUID     `json:"id"`
 	Identifier  string                 `json:"identifier"`
 	Kind        string                 `json:"kind"`
@@ -610,6 +617,7 @@ type ResourceWithMetadata struct {
 type ResourceWithVariables struct {
 	Config      map[string]interface{} `json:"config"`
 	CreatedAt   time.Time              `json:"createdAt"`
+	DeletedAt   *time.Time             `json:"deletedAt"`
 	Id          openapi_types.UUID     `json:"id"`
 	Identifier  string                 `json:"identifier"`
 	Kind        string                 `json:"kind"`
@@ -626,6 +634,7 @@ type ResourceWithVariables struct {
 type ResourceWithVariablesAndMetadata struct {
 	Config      map[string]interface{} `json:"config"`
 	CreatedAt   time.Time              `json:"createdAt"`
+	DeletedAt   *time.Time             `json:"deletedAt"`
 	Id          openapi_types.UUID     `json:"id"`
 	Identifier  string                 `json:"identifier"`
 	Kind        string                 `json:"kind"`
@@ -876,6 +885,7 @@ type UpdateJobJSONBody struct {
 
 // UpsertPolicyJSONBody defines parameters for UpsertPolicy.
 type UpsertPolicyJSONBody struct {
+	Concurrency *PolicyConcurrency `json:"concurrency"`
 	DenyWindows *[]struct {
 		Dtend    *time.Time              `json:"dtend,omitempty"`
 		Rrule    *map[string]interface{} `json:"rrule,omitempty"`
@@ -895,6 +905,7 @@ type UpsertPolicyJSONBody struct {
 
 // UpdatePolicyJSONBody defines parameters for UpdatePolicy.
 type UpdatePolicyJSONBody struct {
+	Concurrency *PolicyConcurrency `json:"concurrency"`
 	DenyWindows *[]struct {
 		Dtend    *time.Time              `json:"dtend,omitempty"`
 		Rrule    *map[string]interface{} `json:"rrule,omitempty"`
@@ -7694,6 +7705,7 @@ type GetResourceByIdentifierResponse struct {
 	JSON200      *struct {
 		Config        map[string]interface{} `json:"config"`
 		CreatedAt     time.Time              `json:"createdAt"`
+		DeletedAt     *time.Time             `json:"deletedAt"`
 		Id            openapi_types.UUID     `json:"id"`
 		Identifier    string                 `json:"identifier"`
 		Kind          string                 `json:"kind"`
@@ -10912,6 +10924,7 @@ func ParseGetResourceByIdentifierResponse(rsp *http.Response) (*GetResourceByIde
 		var dest struct {
 			Config        map[string]interface{} `json:"config"`
 			CreatedAt     time.Time              `json:"createdAt"`
+			DeletedAt     *time.Time             `json:"deletedAt"`
 			Id            openapi_types.UUID     `json:"id"`
 			Identifier    string                 `json:"identifier"`
 			Kind          string                 `json:"kind"`

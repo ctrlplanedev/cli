@@ -122,6 +122,7 @@ type Policy struct {
 	VersionAnyApprovals       *VersionAnyApproval        `yaml:"versionAnyApprovals,omitempty"`
 	VersionUserApprovals      []VersionUserApproval      `yaml:"versionUserApprovals,omitempty"`
 	VersionRoleApprovals      []VersionRoleApproval      `yaml:"versionRoleApprovals,omitempty"`
+	Concurrency               *int                       `yaml:"concurrency,omitempty"`
 }
 
 type PolicyTarget struct {

@@ -113,6 +113,12 @@ func createPolicyRequestBody(policy Policy) api.UpsertPolicyJSONRequestBody {
 		}
 	}
 
+	var concurrency *api.PolicyConcurrency
+	if policy.Concurrency != nil {
+		floatConcurrency := api.PolicyConcurrency(*policy.Concurrency)
+		concurrency = &floatConcurrency
+	}
+
 	return api.UpsertPolicyJSONRequestBody{
 		Name:                      policy.Name,
 		Description:               policy.Description,
@@ -125,6 +131,7 @@ func createPolicyRequestBody(policy Policy) api.UpsertPolicyJSONRequestBody {
 		VersionAnyApprovals:       versionAnyApprovals,
 		VersionUserApprovals:      &versionUserApprovals,
 		VersionRoleApprovals:      &versionRoleApprovals,
+		Concurrency:               concurrency,
 	}
 }
 
