@@ -82,7 +82,10 @@ func getDirectDeploymentVariableValue(value DirectDeploymentVariableValue) (api.
 		log.Error("Failed to marshal direct value", "error", err)
 		return api.DirectDeploymentVariableValue{}, err
 	}
-	directValue.Value.UnmarshalJSON(valueData)
+	if err := directValue.Value.UnmarshalJSON(valueData); err != nil {
+		log.Error("Failed to unmarshal direct value", "error", err)
+		return api.DirectDeploymentVariableValue{}, err
+	}
 	return directValue, nil
 }
 
@@ -101,7 +104,10 @@ func getReferenceDeploymentVariableValue(value ReferenceDeploymentVariableValue)
 			log.Error("Failed to marshal default value", "error", err)
 			return api.ReferenceDeploymentVariableValue{}, err
 		}
-		referenceValue.DefaultValue.UnmarshalJSON(valueData)
+		if err := referenceValue.DefaultValue.UnmarshalJSON(valueData); err != nil {
+			log.Error("Failed to unmarshal default value", "error", err)
+			return api.ReferenceDeploymentVariableValue{}, err
+		}
 	}
 
 	return referenceValue, nil
