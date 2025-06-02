@@ -74,6 +74,7 @@ func getDirectDeploymentVariableValue(value DirectDeploymentVariableValue) (api.
 		IsDefault:        value.IsDefault,
 		Sensitive:        value.Sensitive,
 		ResourceSelector: value.ResourceSelector,
+		Value:            &api.DirectDeploymentVariableValue_Value{},
 	}
 
 	valueData, err := json.Marshal(value.Value)
@@ -94,6 +95,7 @@ func getReferenceDeploymentVariableValue(value ReferenceDeploymentVariableValue)
 	}
 
 	if value.DefaultValue != nil {
+		referenceValue.DefaultValue = &api.ReferenceDeploymentVariableValue_DefaultValue{}
 		valueData, err := json.Marshal(value.DefaultValue)
 		if err != nil {
 			log.Error("Failed to marshal default value", "error", err)
