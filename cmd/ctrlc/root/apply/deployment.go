@@ -69,69 +69,78 @@ func processDeployment(
 	}
 }
 
+func getDirectDeploymentVariableValue(value DirectDeploymentVariableValue) (api.DirectDeploymentVariableValue, error) {
+	directValue := api.DirectDeploymentVariableValue{
+		IsDefault:        value.IsDefault,
+		Sensitive:        value.Sensitive,
+		ResourceSelector: value.ResourceSelector,
+		Value:            &api.DirectDeploymentVariableValue_Value{},
+	}
+
+	valueData, err := json.Marshal(value.Value)
+	if err != nil {
+		return api.DirectDeploymentVariableValue{}, err
+	}
+	if err := directValue.Value.UnmarshalJSON(valueData); err != nil {
+		return api.DirectDeploymentVariableValue{}, err
+	}
+	return directValue, nil
+}
+
+func getReferenceDeploymentVariableValue(value ReferenceDeploymentVariableValue) (api.ReferenceDeploymentVariableValue, error) {
+	referenceValue := api.ReferenceDeploymentVariableValue{
+		IsDefault:        value.IsDefault,
+		ResourceSelector: value.ResourceSelector,
+		Path:             value.Path,
+		Reference:        value.Reference,
+	}
+
+	if value.DefaultValue != nil {
+		referenceValue.DefaultValue = &api.ReferenceDeploymentVariableValue_DefaultValue{}
+		valueData, err := json.Marshal(value.DefaultValue)
+		if err != nil {
+			return api.ReferenceDeploymentVariableValue{}, err
+		}
+		if err := referenceValue.DefaultValue.UnmarshalJSON(valueData); err != nil {
+			return api.ReferenceDeploymentVariableValue{}, err
+		}
+	}
+
+	return referenceValue, nil
+}
+
 func upsertDeploymentVariable(
 	ctx context.Context,
 	client *api.ClientWithResponses,
 	deploymentID uuid.UUID,
 	variable DeploymentVariable,
 ) {
-	vars := []api.VariableValue{}
-	for _, value := range variable.Values {
-		if value.Value != nil {
-			directValue := api.DeploymentVariableDirectValue{}
-			directValue.Default = value.Default
-			directValue.Sensitive = value.Sensitive
-			directValue.ValueType = "direct"
-			directValue.ResourceSelector = value.ResourceSelector
-
-			directValue.Value = api.DeploymentVariableDirectValue_Value{}
-			valueData, err := json.Marshal(*value.Value)
-			if err != nil {
-				log.Error("Failed to marshal direct value", "error", err)
-				continue
-			}
-			directValue.Value.UnmarshalJSON(valueData)
-
-			var varDirect api.VariableValue
-			varDirect.FromDeploymentVariableDirectValue(directValue)
-			vars = append(vars, varDirect)
+	directValues := []api.DirectDeploymentVariableValue{}
+	for _, value := range variable.DirectValues {
+		directValue, err := getDirectDeploymentVariableValue(value)
+		if err != nil {
+			log.Error("Failed to get direct deployment variable value", "error", err)
 			continue
 		}
-
-		if value.Reference != nil && value.Path != nil {
-			referenceValue := api.DeploymentVariableReferenceValue{}
-			referenceValue.Default = value.Default
-			referenceValue.Reference = *value.Reference
-			referenceValue.Path = *value.Path
-			referenceValue.ResourceSelector = value.ResourceSelector
-			referenceValue.ValueType = "reference"
-
-			if value.DefaultValue != nil {
-				referenceValue.DefaultValue = &api.DeploymentVariableReferenceValue_DefaultValue{}
-				valueData, err := json.Marshal(*value.DefaultValue)
-				if err != nil {
-					log.Error("Failed to marshal default value", "error", err)
-					continue
-				}
-				referenceValue.DefaultValue.UnmarshalJSON(valueData)
-			}
-
-			varReference := api.VariableValue{}
-			varReference.FromDeploymentVariableReferenceValue(referenceValue)
-			vars = append(vars, varReference)
-			continue
-		}
-
-		log.Error("Unsupported variable value type", "type", variable.Values)
+		directValues = append(directValues, directValue)
 	}
 
-	log.Info("Creating deployment variable", "key", variable.Key, "values", len(vars))
+	referenceValues := []api.ReferenceDeploymentVariableValue{}
+	for _, value := range variable.ReferenceValues {
+		referenceValue, err := getReferenceDeploymentVariableValue(value)
+		if err != nil {
+			log.Error("Failed to get reference deployment variable value", "error", err)
+			continue
+		}
+		referenceValues = append(referenceValues, referenceValue)
+	}
 
 	body := api.CreateDeploymentVariableJSONRequestBody{
-		Key:         variable.Key,
-		Description: variable.Description,
-		Values:      &vars,
-		Config:      variable.Config,
+		Key:             variable.Key,
+		Description:     variable.Description,
+		DirectValues:    &directValues,
+		ReferenceValues: &referenceValues,
+		Config:          variable.Config,
 	}
 
 	_, err := client.CreateDeploymentVariableWithResponse(ctx, deploymentID, body)
