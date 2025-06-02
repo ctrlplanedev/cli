@@ -25,23 +25,29 @@ type Environment struct {
 	Metadata         *map[string]string `yaml:"metadata,omitempty"`
 }
 
-type DeploymentVariableValue struct {
-	Value     *any  `yaml:"value,omitempty"`
+type DirectDeploymentVariableValue struct {
+	Value     any   `yaml:"value"`
 	Sensitive *bool `yaml:"sensitive,omitempty"`
 
-	DefaultValue *any      `yaml:"defaultValue,omitempty"`
-	Reference    *string   `yaml:"reference,omitempty"`
-	Path         *[]string `yaml:"path,omitempty"`
+	IsDefault        *bool           `yaml:"isDefault,omitempty"`
+	ResourceSelector *map[string]any `yaml:"resourceSelector,omitempty"`
+}
 
-	Default          *bool           `yaml:"default,omitempty"`
+type ReferenceDeploymentVariableValue struct {
+	Reference    string   `yaml:"reference"`
+	Path         []string `yaml:"path"`
+	DefaultValue *any     `yaml:"defaultValue,omitempty"`
+
+	IsDefault        *bool           `yaml:"isDefault,omitempty"`
 	ResourceSelector *map[string]any `yaml:"resourceSelector,omitempty"`
 }
 
 type DeploymentVariable struct {
-	Key         string                    `yaml:"key"`
-	Config      map[string]any            `yaml:"config"`
-	Description *string                   `yaml:"description"`
-	Values      []DeploymentVariableValue `yaml:"values"`
+	Key             string                             `yaml:"key"`
+	Config          map[string]any                     `yaml:"config"`
+	Description     *string                            `yaml:"description"`
+	DirectValues    []DirectDeploymentVariableValue    `yaml:"directValues"`
+	ReferenceValues []ReferenceDeploymentVariableValue `yaml:"referenceValues"`
 }
 
 type ExitHook struct {

@@ -22,16 +22,6 @@ const (
 	BearerAuthScopes = "bearerAuth.Scopes"
 )
 
-// Defines values for DeploymentVariableDirectValueValueType.
-const (
-	Direct DeploymentVariableDirectValueValueType = "direct"
-)
-
-// Defines values for DeploymentVariableReferenceValueValueType.
-const (
-	Reference DeploymentVariableReferenceValueValueType = "reference"
-)
-
 // Defines values for DeploymentVersionStatus.
 const (
 	DeploymentVersionStatusBuilding DeploymentVersionStatus = "building"
@@ -124,9 +114,9 @@ const (
 	Ready    UpdateReleaseJSONBodyStatus = "ready"
 )
 
-// BaseVariableValue defines model for BaseVariableValue.
-type BaseVariableValue struct {
-	Default          *bool                   `json:"default,omitempty"`
+// BaseDeploymentVariableValue defines model for BaseDeploymentVariableValue.
+type BaseDeploymentVariableValue struct {
+	IsDefault        *bool                   `json:"isDefault,omitempty"`
 	ResourceSelector *map[string]interface{} `json:"resourceSelector"`
 }
 
@@ -194,82 +184,17 @@ type Deployment struct {
 
 // DeploymentVariable defines model for DeploymentVariable.
 type DeploymentVariable struct {
-	Config       map[string]interface{}    `json:"config"`
-	DefaultValue *DeploymentVariableValue  `json:"defaultValue,omitempty"`
-	Description  string                    `json:"description"`
-	Id           openapi_types.UUID        `json:"id"`
-	Key          string                    `json:"key"`
-	Values       []DeploymentVariableValue `json:"values"`
+	Config          map[string]interface{}                   `json:"config"`
+	DefaultValue    *DeploymentVariable_DefaultValue         `json:"defaultValue,omitempty"`
+	Description     string                                   `json:"description"`
+	DirectValues    []DirectDeploymentVariableValueWithId    `json:"directValues"`
+	Id              openapi_types.UUID                       `json:"id"`
+	Key             string                                   `json:"key"`
+	ReferenceValues []ReferenceDeploymentVariableValueWithId `json:"referenceValues"`
 }
 
-// DeploymentVariableDirectValue defines model for DeploymentVariableDirectValue.
-type DeploymentVariableDirectValue struct {
-	Default          *bool                                  `json:"default,omitempty"`
-	ResourceSelector *map[string]interface{}                `json:"resourceSelector"`
-	Sensitive        *bool                                  `json:"sensitive,omitempty"`
-	Value            DeploymentVariableDirectValue_Value    `json:"value"`
-	ValueType        DeploymentVariableDirectValueValueType `json:"valueType"`
-}
-
-// DeploymentVariableDirectValueValue0 defines model for .
-type DeploymentVariableDirectValueValue0 = string
-
-// DeploymentVariableDirectValueValue1 defines model for .
-type DeploymentVariableDirectValueValue1 = float32
-
-// DeploymentVariableDirectValueValue2 defines model for .
-type DeploymentVariableDirectValueValue2 = bool
-
-// DeploymentVariableDirectValueValue3 defines model for .
-type DeploymentVariableDirectValueValue3 = map[string]interface{}
-
-// DeploymentVariableDirectValueValue4 defines model for .
-type DeploymentVariableDirectValueValue4 = []interface{}
-
-// DeploymentVariableDirectValue_Value defines model for DeploymentVariableDirectValue.Value.
-type DeploymentVariableDirectValue_Value struct {
-	union json.RawMessage
-}
-
-// DeploymentVariableDirectValueValueType defines model for DeploymentVariableDirectValue.ValueType.
-type DeploymentVariableDirectValueValueType string
-
-// DeploymentVariableReferenceValue defines model for DeploymentVariableReferenceValue.
-type DeploymentVariableReferenceValue struct {
-	Default          *bool                                          `json:"default,omitempty"`
-	DefaultValue     *DeploymentVariableReferenceValue_DefaultValue `json:"defaultValue,omitempty"`
-	Path             []string                                       `json:"path"`
-	Reference        string                                         `json:"reference"`
-	ResourceSelector *map[string]interface{}                        `json:"resourceSelector"`
-	ValueType        DeploymentVariableReferenceValueValueType      `json:"valueType"`
-}
-
-// DeploymentVariableReferenceValueDefaultValue0 defines model for .
-type DeploymentVariableReferenceValueDefaultValue0 = string
-
-// DeploymentVariableReferenceValueDefaultValue1 defines model for .
-type DeploymentVariableReferenceValueDefaultValue1 = float32
-
-// DeploymentVariableReferenceValueDefaultValue2 defines model for .
-type DeploymentVariableReferenceValueDefaultValue2 = bool
-
-// DeploymentVariableReferenceValueDefaultValue3 defines model for .
-type DeploymentVariableReferenceValueDefaultValue3 = map[string]interface{}
-
-// DeploymentVariableReferenceValueDefaultValue4 defines model for .
-type DeploymentVariableReferenceValueDefaultValue4 = []interface{}
-
-// DeploymentVariableReferenceValue_DefaultValue defines model for DeploymentVariableReferenceValue.DefaultValue.
-type DeploymentVariableReferenceValue_DefaultValue struct {
-	union json.RawMessage
-}
-
-// DeploymentVariableReferenceValueValueType defines model for DeploymentVariableReferenceValue.ValueType.
-type DeploymentVariableReferenceValueValueType string
-
-// DeploymentVariableValue defines model for DeploymentVariableValue.
-type DeploymentVariableValue struct {
-	Id    openapi_types.UUID `json:"id"`
+// DeploymentVariable_DefaultValue defines model for DeploymentVariable.DefaultValue.
+type DeploymentVariable_DefaultValue struct {
 	union json.RawMessage
 }
 
@@ -294,6 +219,63 @@ type DeploymentVersionSelector struct {
 	DeploymentVersionSelector map[string]interface{} `json:"deploymentVersionSelector"`
 	Description               *string                `json:"description,omitempty"`
 	Name                      string                 `json:"name"`
+}
+
+// DirectDeploymentVariableValue defines model for DirectDeploymentVariableValue.
+type DirectDeploymentVariableValue struct {
+	IsDefault        *bool                                `json:"isDefault,omitempty"`
+	ResourceSelector *map[string]interface{}              `json:"resourceSelector"`
+	Sensitive        *bool                                `json:"sensitive,omitempty"`
+	Value            *DirectDeploymentVariableValue_Value `json:"value"`
+}
+
+// DirectDeploymentVariableValueValue0 defines model for .
+type DirectDeploymentVariableValueValue0 = string
+
+// DirectDeploymentVariableValueValue1 defines model for .
+type DirectDeploymentVariableValueValue1 = float32
+
+// DirectDeploymentVariableValueValue2 defines model for .
+type DirectDeploymentVariableValueValue2 = bool
+
+// DirectDeploymentVariableValueValue3 defines model for .
+type DirectDeploymentVariableValueValue3 = map[string]interface{}
+
+// DirectDeploymentVariableValueValue4 defines model for .
+type DirectDeploymentVariableValueValue4 = []interface{}
+
+// DirectDeploymentVariableValue_Value defines model for DirectDeploymentVariableValue.Value.
+type DirectDeploymentVariableValue_Value struct {
+	union json.RawMessage
+}
+
+// DirectDeploymentVariableValueWithId defines model for DirectDeploymentVariableValueWithId.
+type DirectDeploymentVariableValueWithId struct {
+	Id               openapi_types.UUID                         `json:"id"`
+	IsDefault        *bool                                      `json:"isDefault,omitempty"`
+	ResourceSelector *map[string]interface{}                    `json:"resourceSelector"`
+	Sensitive        *bool                                      `json:"sensitive,omitempty"`
+	Value            *DirectDeploymentVariableValueWithId_Value `json:"value"`
+}
+
+// DirectDeploymentVariableValueWithIdValue0 defines model for .
+type DirectDeploymentVariableValueWithIdValue0 = string
+
+// DirectDeploymentVariableValueWithIdValue1 defines model for .
+type DirectDeploymentVariableValueWithIdValue1 = float32
+
+// DirectDeploymentVariableValueWithIdValue2 defines model for .
+type DirectDeploymentVariableValueWithIdValue2 = bool
+
+// DirectDeploymentVariableValueWithIdValue3 defines model for .
+type DirectDeploymentVariableValueWithIdValue3 = map[string]interface{}
+
+// DirectDeploymentVariableValueWithIdValue4 defines model for .
+type DirectDeploymentVariableValueWithIdValue4 = []interface{}
+
+// DirectDeploymentVariableValueWithId_Value defines model for DirectDeploymentVariableValueWithId.Value.
+type DirectDeploymentVariableValueWithId_Value struct {
+	union json.RawMessage
 }
 
 // DirectVariable defines model for DirectVariable.
@@ -501,13 +483,72 @@ type Policy1 struct {
 }
 
 // PolicyConcurrency defines model for PolicyConcurrency.
-type PolicyConcurrency = float32
+type PolicyConcurrency = int32
 
 // PolicyTarget defines model for PolicyTarget.
 type PolicyTarget struct {
 	DeploymentSelector  *map[string]interface{} `json:"deploymentSelector"`
 	EnvironmentSelector *map[string]interface{} `json:"environmentSelector"`
 	ResourceSelector    *map[string]interface{} `json:"resourceSelector"`
+}
+
+// ReferenceDeploymentVariableValue defines model for ReferenceDeploymentVariableValue.
+type ReferenceDeploymentVariableValue struct {
+	DefaultValue     *ReferenceDeploymentVariableValue_DefaultValue `json:"defaultValue"`
+	IsDefault        *bool                                          `json:"isDefault,omitempty"`
+	Path             []string                                       `json:"path"`
+	Reference        string                                         `json:"reference"`
+	ResourceSelector *map[string]interface{}                        `json:"resourceSelector"`
+}
+
+// ReferenceDeploymentVariableValueDefaultValue0 defines model for .
+type ReferenceDeploymentVariableValueDefaultValue0 = string
+
+// ReferenceDeploymentVariableValueDefaultValue1 defines model for .
+type ReferenceDeploymentVariableValueDefaultValue1 = float32
+
+// ReferenceDeploymentVariableValueDefaultValue2 defines model for .
+type ReferenceDeploymentVariableValueDefaultValue2 = bool
+
+// ReferenceDeploymentVariableValueDefaultValue3 defines model for .
+type ReferenceDeploymentVariableValueDefaultValue3 = map[string]interface{}
+
+// ReferenceDeploymentVariableValueDefaultValue4 defines model for .
+type ReferenceDeploymentVariableValueDefaultValue4 = []interface{}
+
+// ReferenceDeploymentVariableValue_DefaultValue defines model for ReferenceDeploymentVariableValue.DefaultValue.
+type ReferenceDeploymentVariableValue_DefaultValue struct {
+	union json.RawMessage
+}
+
+// ReferenceDeploymentVariableValueWithId defines model for ReferenceDeploymentVariableValueWithId.
+type ReferenceDeploymentVariableValueWithId struct {
+	DefaultValue     *ReferenceDeploymentVariableValueWithId_DefaultValue `json:"defaultValue"`
+	Id               openapi_types.UUID                                   `json:"id"`
+	IsDefault        *bool                                                `json:"isDefault,omitempty"`
+	Path             []string                                             `json:"path"`
+	Reference        string                                               `json:"reference"`
+	ResourceSelector *map[string]interface{}                              `json:"resourceSelector"`
+}
+
+// ReferenceDeploymentVariableValueWithIdDefaultValue0 defines model for .
+type ReferenceDeploymentVariableValueWithIdDefaultValue0 = string
+
+// ReferenceDeploymentVariableValueWithIdDefaultValue1 defines model for .
+type ReferenceDeploymentVariableValueWithIdDefaultValue1 = float32
+
+// ReferenceDeploymentVariableValueWithIdDefaultValue2 defines model for .
+type ReferenceDeploymentVariableValueWithIdDefaultValue2 = bool
+
+// ReferenceDeploymentVariableValueWithIdDefaultValue3 defines model for .
+type ReferenceDeploymentVariableValueWithIdDefaultValue3 = map[string]interface{}
+
+// ReferenceDeploymentVariableValueWithIdDefaultValue4 defines model for .
+type ReferenceDeploymentVariableValueWithIdDefaultValue4 = []interface{}
+
+// ReferenceDeploymentVariableValueWithId_DefaultValue defines model for ReferenceDeploymentVariableValueWithId.DefaultValue.
+type ReferenceDeploymentVariableValueWithId_DefaultValue struct {
+	union json.RawMessage
 }
 
 // ReferenceVariable defines model for ReferenceVariable.
@@ -719,11 +760,6 @@ type VariableMap_AdditionalProperties struct {
 	union json.RawMessage
 }
 
-// VariableValue defines model for VariableValue.
-type VariableValue struct {
-	union json.RawMessage
-}
-
 // VersionAnyApproval defines model for VersionAnyApproval.
 type VersionAnyApproval struct {
 	RequiredApprovalsCount float32 `json:"requiredApprovalsCount"`
@@ -848,10 +884,11 @@ type UpdateDeploymentJSONBody struct {
 
 // CreateDeploymentVariableJSONBody defines parameters for CreateDeploymentVariable.
 type CreateDeploymentVariableJSONBody struct {
-	Config      map[string]interface{} `json:"config"`
-	Description *string                `json:"description,omitempty"`
-	Key         string                 `json:"key"`
-	Values      *[]VariableValue       `json:"values,omitempty"`
+	Config          map[string]interface{}              `json:"config"`
+	Description     *string                             `json:"description,omitempty"`
+	DirectValues    *[]DirectDeploymentVariableValue    `json:"directValues,omitempty"`
+	Key             string                              `json:"key"`
+	ReferenceValues *[]ReferenceDeploymentVariableValue `json:"referenceValues,omitempty"`
 }
 
 // CreateEnvironmentJSONBody defines parameters for CreateEnvironment.
@@ -1146,22 +1183,22 @@ type UpdateSystemJSONRequestBody UpdateSystemJSONBody
 // GetGroupedCountsJSONRequestBody defines body for GetGroupedCounts for application/json ContentType.
 type GetGroupedCountsJSONRequestBody GetGroupedCountsJSONBody
 
-// AsDeploymentVariableDirectValueValue0 returns the union data inside the DeploymentVariableDirectValue_Value as a DeploymentVariableDirectValueValue0
-func (t DeploymentVariableDirectValue_Value) AsDeploymentVariableDirectValueValue0() (DeploymentVariableDirectValueValue0, error) {
-	var body DeploymentVariableDirectValueValue0
+// AsDirectDeploymentVariableValueWithId returns the union data inside the DeploymentVariable_DefaultValue as a DirectDeploymentVariableValueWithId
+func (t DeploymentVariable_DefaultValue) AsDirectDeploymentVariableValueWithId() (DirectDeploymentVariableValueWithId, error) {
+	var body DirectDeploymentVariableValueWithId
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDeploymentVariableDirectValueValue0 overwrites any union data inside the DeploymentVariableDirectValue_Value as the provided DeploymentVariableDirectValueValue0
-func (t *DeploymentVariableDirectValue_Value) FromDeploymentVariableDirectValueValue0(v DeploymentVariableDirectValueValue0) error {
+// FromDirectDeploymentVariableValueWithId overwrites any union data inside the DeploymentVariable_DefaultValue as the provided DirectDeploymentVariableValueWithId
+func (t *DeploymentVariable_DefaultValue) FromDirectDeploymentVariableValueWithId(v DirectDeploymentVariableValueWithId) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDeploymentVariableDirectValueValue0 performs a merge with any union data inside the DeploymentVariableDirectValue_Value, using the provided DeploymentVariableDirectValueValue0
-func (t *DeploymentVariableDirectValue_Value) MergeDeploymentVariableDirectValueValue0(v DeploymentVariableDirectValueValue0) error {
+// MergeDirectDeploymentVariableValueWithId performs a merge with any union data inside the DeploymentVariable_DefaultValue, using the provided DirectDeploymentVariableValueWithId
+func (t *DeploymentVariable_DefaultValue) MergeDirectDeploymentVariableValueWithId(v DirectDeploymentVariableValueWithId) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1172,22 +1209,22 @@ func (t *DeploymentVariableDirectValue_Value) MergeDeploymentVariableDirectValue
 	return err
 }
 
-// AsDeploymentVariableDirectValueValue1 returns the union data inside the DeploymentVariableDirectValue_Value as a DeploymentVariableDirectValueValue1
-func (t DeploymentVariableDirectValue_Value) AsDeploymentVariableDirectValueValue1() (DeploymentVariableDirectValueValue1, error) {
-	var body DeploymentVariableDirectValueValue1
+// AsReferenceDeploymentVariableValueWithId returns the union data inside the DeploymentVariable_DefaultValue as a ReferenceDeploymentVariableValueWithId
+func (t DeploymentVariable_DefaultValue) AsReferenceDeploymentVariableValueWithId() (ReferenceDeploymentVariableValueWithId, error) {
+	var body ReferenceDeploymentVariableValueWithId
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDeploymentVariableDirectValueValue1 overwrites any union data inside the DeploymentVariableDirectValue_Value as the provided DeploymentVariableDirectValueValue1
-func (t *DeploymentVariableDirectValue_Value) FromDeploymentVariableDirectValueValue1(v DeploymentVariableDirectValueValue1) error {
+// FromReferenceDeploymentVariableValueWithId overwrites any union data inside the DeploymentVariable_DefaultValue as the provided ReferenceDeploymentVariableValueWithId
+func (t *DeploymentVariable_DefaultValue) FromReferenceDeploymentVariableValueWithId(v ReferenceDeploymentVariableValueWithId) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDeploymentVariableDirectValueValue1 performs a merge with any union data inside the DeploymentVariableDirectValue_Value, using the provided DeploymentVariableDirectValueValue1
-func (t *DeploymentVariableDirectValue_Value) MergeDeploymentVariableDirectValueValue1(v DeploymentVariableDirectValueValue1) error {
+// MergeReferenceDeploymentVariableValueWithId performs a merge with any union data inside the DeploymentVariable_DefaultValue, using the provided ReferenceDeploymentVariableValueWithId
+func (t *DeploymentVariable_DefaultValue) MergeReferenceDeploymentVariableValueWithId(v ReferenceDeploymentVariableValueWithId) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1198,110 +1235,32 @@ func (t *DeploymentVariableDirectValue_Value) MergeDeploymentVariableDirectValue
 	return err
 }
 
-// AsDeploymentVariableDirectValueValue2 returns the union data inside the DeploymentVariableDirectValue_Value as a DeploymentVariableDirectValueValue2
-func (t DeploymentVariableDirectValue_Value) AsDeploymentVariableDirectValueValue2() (DeploymentVariableDirectValueValue2, error) {
-	var body DeploymentVariableDirectValueValue2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDeploymentVariableDirectValueValue2 overwrites any union data inside the DeploymentVariableDirectValue_Value as the provided DeploymentVariableDirectValueValue2
-func (t *DeploymentVariableDirectValue_Value) FromDeploymentVariableDirectValueValue2(v DeploymentVariableDirectValueValue2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDeploymentVariableDirectValueValue2 performs a merge with any union data inside the DeploymentVariableDirectValue_Value, using the provided DeploymentVariableDirectValueValue2
-func (t *DeploymentVariableDirectValue_Value) MergeDeploymentVariableDirectValueValue2(v DeploymentVariableDirectValueValue2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsDeploymentVariableDirectValueValue3 returns the union data inside the DeploymentVariableDirectValue_Value as a DeploymentVariableDirectValueValue3
-func (t DeploymentVariableDirectValue_Value) AsDeploymentVariableDirectValueValue3() (DeploymentVariableDirectValueValue3, error) {
-	var body DeploymentVariableDirectValueValue3
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDeploymentVariableDirectValueValue3 overwrites any union data inside the DeploymentVariableDirectValue_Value as the provided DeploymentVariableDirectValueValue3
-func (t *DeploymentVariableDirectValue_Value) FromDeploymentVariableDirectValueValue3(v DeploymentVariableDirectValueValue3) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDeploymentVariableDirectValueValue3 performs a merge with any union data inside the DeploymentVariableDirectValue_Value, using the provided DeploymentVariableDirectValueValue3
-func (t *DeploymentVariableDirectValue_Value) MergeDeploymentVariableDirectValueValue3(v DeploymentVariableDirectValueValue3) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsDeploymentVariableDirectValueValue4 returns the union data inside the DeploymentVariableDirectValue_Value as a DeploymentVariableDirectValueValue4
-func (t DeploymentVariableDirectValue_Value) AsDeploymentVariableDirectValueValue4() (DeploymentVariableDirectValueValue4, error) {
-	var body DeploymentVariableDirectValueValue4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDeploymentVariableDirectValueValue4 overwrites any union data inside the DeploymentVariableDirectValue_Value as the provided DeploymentVariableDirectValueValue4
-func (t *DeploymentVariableDirectValue_Value) FromDeploymentVariableDirectValueValue4(v DeploymentVariableDirectValueValue4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDeploymentVariableDirectValueValue4 performs a merge with any union data inside the DeploymentVariableDirectValue_Value, using the provided DeploymentVariableDirectValueValue4
-func (t *DeploymentVariableDirectValue_Value) MergeDeploymentVariableDirectValueValue4(v DeploymentVariableDirectValueValue4) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t DeploymentVariableDirectValue_Value) MarshalJSON() ([]byte, error) {
+func (t DeploymentVariable_DefaultValue) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *DeploymentVariableDirectValue_Value) UnmarshalJSON(b []byte) error {
+func (t *DeploymentVariable_DefaultValue) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
 
-// AsDeploymentVariableReferenceValueDefaultValue0 returns the union data inside the DeploymentVariableReferenceValue_DefaultValue as a DeploymentVariableReferenceValueDefaultValue0
-func (t DeploymentVariableReferenceValue_DefaultValue) AsDeploymentVariableReferenceValueDefaultValue0() (DeploymentVariableReferenceValueDefaultValue0, error) {
-	var body DeploymentVariableReferenceValueDefaultValue0
+// AsDirectDeploymentVariableValueValue0 returns the union data inside the DirectDeploymentVariableValue_Value as a DirectDeploymentVariableValueValue0
+func (t DirectDeploymentVariableValue_Value) AsDirectDeploymentVariableValueValue0() (DirectDeploymentVariableValueValue0, error) {
+	var body DirectDeploymentVariableValueValue0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDeploymentVariableReferenceValueDefaultValue0 overwrites any union data inside the DeploymentVariableReferenceValue_DefaultValue as the provided DeploymentVariableReferenceValueDefaultValue0
-func (t *DeploymentVariableReferenceValue_DefaultValue) FromDeploymentVariableReferenceValueDefaultValue0(v DeploymentVariableReferenceValueDefaultValue0) error {
+// FromDirectDeploymentVariableValueValue0 overwrites any union data inside the DirectDeploymentVariableValue_Value as the provided DirectDeploymentVariableValueValue0
+func (t *DirectDeploymentVariableValue_Value) FromDirectDeploymentVariableValueValue0(v DirectDeploymentVariableValueValue0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDeploymentVariableReferenceValueDefaultValue0 performs a merge with any union data inside the DeploymentVariableReferenceValue_DefaultValue, using the provided DeploymentVariableReferenceValueDefaultValue0
-func (t *DeploymentVariableReferenceValue_DefaultValue) MergeDeploymentVariableReferenceValueDefaultValue0(v DeploymentVariableReferenceValueDefaultValue0) error {
+// MergeDirectDeploymentVariableValueValue0 performs a merge with any union data inside the DirectDeploymentVariableValue_Value, using the provided DirectDeploymentVariableValueValue0
+func (t *DirectDeploymentVariableValue_Value) MergeDirectDeploymentVariableValueValue0(v DirectDeploymentVariableValueValue0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1312,22 +1271,22 @@ func (t *DeploymentVariableReferenceValue_DefaultValue) MergeDeploymentVariableR
 	return err
 }
 
-// AsDeploymentVariableReferenceValueDefaultValue1 returns the union data inside the DeploymentVariableReferenceValue_DefaultValue as a DeploymentVariableReferenceValueDefaultValue1
-func (t DeploymentVariableReferenceValue_DefaultValue) AsDeploymentVariableReferenceValueDefaultValue1() (DeploymentVariableReferenceValueDefaultValue1, error) {
-	var body DeploymentVariableReferenceValueDefaultValue1
+// AsDirectDeploymentVariableValueValue1 returns the union data inside the DirectDeploymentVariableValue_Value as a DirectDeploymentVariableValueValue1
+func (t DirectDeploymentVariableValue_Value) AsDirectDeploymentVariableValueValue1() (DirectDeploymentVariableValueValue1, error) {
+	var body DirectDeploymentVariableValueValue1
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDeploymentVariableReferenceValueDefaultValue1 overwrites any union data inside the DeploymentVariableReferenceValue_DefaultValue as the provided DeploymentVariableReferenceValueDefaultValue1
-func (t *DeploymentVariableReferenceValue_DefaultValue) FromDeploymentVariableReferenceValueDefaultValue1(v DeploymentVariableReferenceValueDefaultValue1) error {
+// FromDirectDeploymentVariableValueValue1 overwrites any union data inside the DirectDeploymentVariableValue_Value as the provided DirectDeploymentVariableValueValue1
+func (t *DirectDeploymentVariableValue_Value) FromDirectDeploymentVariableValueValue1(v DirectDeploymentVariableValueValue1) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDeploymentVariableReferenceValueDefaultValue1 performs a merge with any union data inside the DeploymentVariableReferenceValue_DefaultValue, using the provided DeploymentVariableReferenceValueDefaultValue1
-func (t *DeploymentVariableReferenceValue_DefaultValue) MergeDeploymentVariableReferenceValueDefaultValue1(v DeploymentVariableReferenceValueDefaultValue1) error {
+// MergeDirectDeploymentVariableValueValue1 performs a merge with any union data inside the DirectDeploymentVariableValue_Value, using the provided DirectDeploymentVariableValueValue1
+func (t *DirectDeploymentVariableValue_Value) MergeDirectDeploymentVariableValueValue1(v DirectDeploymentVariableValueValue1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1338,22 +1297,22 @@ func (t *DeploymentVariableReferenceValue_DefaultValue) MergeDeploymentVariableR
 	return err
 }
 
-// AsDeploymentVariableReferenceValueDefaultValue2 returns the union data inside the DeploymentVariableReferenceValue_DefaultValue as a DeploymentVariableReferenceValueDefaultValue2
-func (t DeploymentVariableReferenceValue_DefaultValue) AsDeploymentVariableReferenceValueDefaultValue2() (DeploymentVariableReferenceValueDefaultValue2, error) {
-	var body DeploymentVariableReferenceValueDefaultValue2
+// AsDirectDeploymentVariableValueValue2 returns the union data inside the DirectDeploymentVariableValue_Value as a DirectDeploymentVariableValueValue2
+func (t DirectDeploymentVariableValue_Value) AsDirectDeploymentVariableValueValue2() (DirectDeploymentVariableValueValue2, error) {
+	var body DirectDeploymentVariableValueValue2
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDeploymentVariableReferenceValueDefaultValue2 overwrites any union data inside the DeploymentVariableReferenceValue_DefaultValue as the provided DeploymentVariableReferenceValueDefaultValue2
-func (t *DeploymentVariableReferenceValue_DefaultValue) FromDeploymentVariableReferenceValueDefaultValue2(v DeploymentVariableReferenceValueDefaultValue2) error {
+// FromDirectDeploymentVariableValueValue2 overwrites any union data inside the DirectDeploymentVariableValue_Value as the provided DirectDeploymentVariableValueValue2
+func (t *DirectDeploymentVariableValue_Value) FromDirectDeploymentVariableValueValue2(v DirectDeploymentVariableValueValue2) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDeploymentVariableReferenceValueDefaultValue2 performs a merge with any union data inside the DeploymentVariableReferenceValue_DefaultValue, using the provided DeploymentVariableReferenceValueDefaultValue2
-func (t *DeploymentVariableReferenceValue_DefaultValue) MergeDeploymentVariableReferenceValueDefaultValue2(v DeploymentVariableReferenceValueDefaultValue2) error {
+// MergeDirectDeploymentVariableValueValue2 performs a merge with any union data inside the DirectDeploymentVariableValue_Value, using the provided DirectDeploymentVariableValueValue2
+func (t *DirectDeploymentVariableValue_Value) MergeDirectDeploymentVariableValueValue2(v DirectDeploymentVariableValueValue2) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1364,22 +1323,22 @@ func (t *DeploymentVariableReferenceValue_DefaultValue) MergeDeploymentVariableR
 	return err
 }
 
-// AsDeploymentVariableReferenceValueDefaultValue3 returns the union data inside the DeploymentVariableReferenceValue_DefaultValue as a DeploymentVariableReferenceValueDefaultValue3
-func (t DeploymentVariableReferenceValue_DefaultValue) AsDeploymentVariableReferenceValueDefaultValue3() (DeploymentVariableReferenceValueDefaultValue3, error) {
-	var body DeploymentVariableReferenceValueDefaultValue3
+// AsDirectDeploymentVariableValueValue3 returns the union data inside the DirectDeploymentVariableValue_Value as a DirectDeploymentVariableValueValue3
+func (t DirectDeploymentVariableValue_Value) AsDirectDeploymentVariableValueValue3() (DirectDeploymentVariableValueValue3, error) {
+	var body DirectDeploymentVariableValueValue3
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDeploymentVariableReferenceValueDefaultValue3 overwrites any union data inside the DeploymentVariableReferenceValue_DefaultValue as the provided DeploymentVariableReferenceValueDefaultValue3
-func (t *DeploymentVariableReferenceValue_DefaultValue) FromDeploymentVariableReferenceValueDefaultValue3(v DeploymentVariableReferenceValueDefaultValue3) error {
+// FromDirectDeploymentVariableValueValue3 overwrites any union data inside the DirectDeploymentVariableValue_Value as the provided DirectDeploymentVariableValueValue3
+func (t *DirectDeploymentVariableValue_Value) FromDirectDeploymentVariableValueValue3(v DirectDeploymentVariableValueValue3) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDeploymentVariableReferenceValueDefaultValue3 performs a merge with any union data inside the DeploymentVariableReferenceValue_DefaultValue, using the provided DeploymentVariableReferenceValueDefaultValue3
-func (t *DeploymentVariableReferenceValue_DefaultValue) MergeDeploymentVariableReferenceValueDefaultValue3(v DeploymentVariableReferenceValueDefaultValue3) error {
+// MergeDirectDeploymentVariableValueValue3 performs a merge with any union data inside the DirectDeploymentVariableValue_Value, using the provided DirectDeploymentVariableValueValue3
+func (t *DirectDeploymentVariableValue_Value) MergeDirectDeploymentVariableValueValue3(v DirectDeploymentVariableValueValue3) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1390,22 +1349,22 @@ func (t *DeploymentVariableReferenceValue_DefaultValue) MergeDeploymentVariableR
 	return err
 }
 
-// AsDeploymentVariableReferenceValueDefaultValue4 returns the union data inside the DeploymentVariableReferenceValue_DefaultValue as a DeploymentVariableReferenceValueDefaultValue4
-func (t DeploymentVariableReferenceValue_DefaultValue) AsDeploymentVariableReferenceValueDefaultValue4() (DeploymentVariableReferenceValueDefaultValue4, error) {
-	var body DeploymentVariableReferenceValueDefaultValue4
+// AsDirectDeploymentVariableValueValue4 returns the union data inside the DirectDeploymentVariableValue_Value as a DirectDeploymentVariableValueValue4
+func (t DirectDeploymentVariableValue_Value) AsDirectDeploymentVariableValueValue4() (DirectDeploymentVariableValueValue4, error) {
+	var body DirectDeploymentVariableValueValue4
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDeploymentVariableReferenceValueDefaultValue4 overwrites any union data inside the DeploymentVariableReferenceValue_DefaultValue as the provided DeploymentVariableReferenceValueDefaultValue4
-func (t *DeploymentVariableReferenceValue_DefaultValue) FromDeploymentVariableReferenceValueDefaultValue4(v DeploymentVariableReferenceValueDefaultValue4) error {
+// FromDirectDeploymentVariableValueValue4 overwrites any union data inside the DirectDeploymentVariableValue_Value as the provided DirectDeploymentVariableValueValue4
+func (t *DirectDeploymentVariableValue_Value) FromDirectDeploymentVariableValueValue4(v DirectDeploymentVariableValueValue4) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDeploymentVariableReferenceValueDefaultValue4 performs a merge with any union data inside the DeploymentVariableReferenceValue_DefaultValue, using the provided DeploymentVariableReferenceValueDefaultValue4
-func (t *DeploymentVariableReferenceValue_DefaultValue) MergeDeploymentVariableReferenceValueDefaultValue4(v DeploymentVariableReferenceValueDefaultValue4) error {
+// MergeDirectDeploymentVariableValueValue4 performs a merge with any union data inside the DirectDeploymentVariableValue_Value, using the provided DirectDeploymentVariableValueValue4
+func (t *DirectDeploymentVariableValue_Value) MergeDirectDeploymentVariableValueValue4(v DirectDeploymentVariableValueValue4) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1416,32 +1375,32 @@ func (t *DeploymentVariableReferenceValue_DefaultValue) MergeDeploymentVariableR
 	return err
 }
 
-func (t DeploymentVariableReferenceValue_DefaultValue) MarshalJSON() ([]byte, error) {
+func (t DirectDeploymentVariableValue_Value) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *DeploymentVariableReferenceValue_DefaultValue) UnmarshalJSON(b []byte) error {
+func (t *DirectDeploymentVariableValue_Value) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
 
-// AsDeploymentVariableDirectValue returns the union data inside the DeploymentVariableValue as a DeploymentVariableDirectValue
-func (t DeploymentVariableValue) AsDeploymentVariableDirectValue() (DeploymentVariableDirectValue, error) {
-	var body DeploymentVariableDirectValue
+// AsDirectDeploymentVariableValueWithIdValue0 returns the union data inside the DirectDeploymentVariableValueWithId_Value as a DirectDeploymentVariableValueWithIdValue0
+func (t DirectDeploymentVariableValueWithId_Value) AsDirectDeploymentVariableValueWithIdValue0() (DirectDeploymentVariableValueWithIdValue0, error) {
+	var body DirectDeploymentVariableValueWithIdValue0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDeploymentVariableDirectValue overwrites any union data inside the DeploymentVariableValue as the provided DeploymentVariableDirectValue
-func (t *DeploymentVariableValue) FromDeploymentVariableDirectValue(v DeploymentVariableDirectValue) error {
+// FromDirectDeploymentVariableValueWithIdValue0 overwrites any union data inside the DirectDeploymentVariableValueWithId_Value as the provided DirectDeploymentVariableValueWithIdValue0
+func (t *DirectDeploymentVariableValueWithId_Value) FromDirectDeploymentVariableValueWithIdValue0(v DirectDeploymentVariableValueWithIdValue0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDeploymentVariableDirectValue performs a merge with any union data inside the DeploymentVariableValue, using the provided DeploymentVariableDirectValue
-func (t *DeploymentVariableValue) MergeDeploymentVariableDirectValue(v DeploymentVariableDirectValue) error {
+// MergeDirectDeploymentVariableValueWithIdValue0 performs a merge with any union data inside the DirectDeploymentVariableValueWithId_Value, using the provided DirectDeploymentVariableValueWithIdValue0
+func (t *DirectDeploymentVariableValueWithId_Value) MergeDirectDeploymentVariableValueWithIdValue0(v DirectDeploymentVariableValueWithIdValue0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1452,22 +1411,22 @@ func (t *DeploymentVariableValue) MergeDeploymentVariableDirectValue(v Deploymen
 	return err
 }
 
-// AsDeploymentVariableReferenceValue returns the union data inside the DeploymentVariableValue as a DeploymentVariableReferenceValue
-func (t DeploymentVariableValue) AsDeploymentVariableReferenceValue() (DeploymentVariableReferenceValue, error) {
-	var body DeploymentVariableReferenceValue
+// AsDirectDeploymentVariableValueWithIdValue1 returns the union data inside the DirectDeploymentVariableValueWithId_Value as a DirectDeploymentVariableValueWithIdValue1
+func (t DirectDeploymentVariableValueWithId_Value) AsDirectDeploymentVariableValueWithIdValue1() (DirectDeploymentVariableValueWithIdValue1, error) {
+	var body DirectDeploymentVariableValueWithIdValue1
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDeploymentVariableReferenceValue overwrites any union data inside the DeploymentVariableValue as the provided DeploymentVariableReferenceValue
-func (t *DeploymentVariableValue) FromDeploymentVariableReferenceValue(v DeploymentVariableReferenceValue) error {
+// FromDirectDeploymentVariableValueWithIdValue1 overwrites any union data inside the DirectDeploymentVariableValueWithId_Value as the provided DirectDeploymentVariableValueWithIdValue1
+func (t *DirectDeploymentVariableValueWithId_Value) FromDirectDeploymentVariableValueWithIdValue1(v DirectDeploymentVariableValueWithIdValue1) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDeploymentVariableReferenceValue performs a merge with any union data inside the DeploymentVariableValue, using the provided DeploymentVariableReferenceValue
-func (t *DeploymentVariableValue) MergeDeploymentVariableReferenceValue(v DeploymentVariableReferenceValue) error {
+// MergeDirectDeploymentVariableValueWithIdValue1 performs a merge with any union data inside the DirectDeploymentVariableValueWithId_Value, using the provided DirectDeploymentVariableValueWithIdValue1
+func (t *DirectDeploymentVariableValueWithId_Value) MergeDirectDeploymentVariableValueWithIdValue1(v DirectDeploymentVariableValueWithIdValue1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1478,46 +1437,91 @@ func (t *DeploymentVariableValue) MergeDeploymentVariableReferenceValue(v Deploy
 	return err
 }
 
-func (t DeploymentVariableValue) MarshalJSON() ([]byte, error) {
+// AsDirectDeploymentVariableValueWithIdValue2 returns the union data inside the DirectDeploymentVariableValueWithId_Value as a DirectDeploymentVariableValueWithIdValue2
+func (t DirectDeploymentVariableValueWithId_Value) AsDirectDeploymentVariableValueWithIdValue2() (DirectDeploymentVariableValueWithIdValue2, error) {
+	var body DirectDeploymentVariableValueWithIdValue2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDirectDeploymentVariableValueWithIdValue2 overwrites any union data inside the DirectDeploymentVariableValueWithId_Value as the provided DirectDeploymentVariableValueWithIdValue2
+func (t *DirectDeploymentVariableValueWithId_Value) FromDirectDeploymentVariableValueWithIdValue2(v DirectDeploymentVariableValueWithIdValue2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDirectDeploymentVariableValueWithIdValue2 performs a merge with any union data inside the DirectDeploymentVariableValueWithId_Value, using the provided DirectDeploymentVariableValueWithIdValue2
+func (t *DirectDeploymentVariableValueWithId_Value) MergeDirectDeploymentVariableValueWithIdValue2(v DirectDeploymentVariableValueWithIdValue2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDirectDeploymentVariableValueWithIdValue3 returns the union data inside the DirectDeploymentVariableValueWithId_Value as a DirectDeploymentVariableValueWithIdValue3
+func (t DirectDeploymentVariableValueWithId_Value) AsDirectDeploymentVariableValueWithIdValue3() (DirectDeploymentVariableValueWithIdValue3, error) {
+	var body DirectDeploymentVariableValueWithIdValue3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDirectDeploymentVariableValueWithIdValue3 overwrites any union data inside the DirectDeploymentVariableValueWithId_Value as the provided DirectDeploymentVariableValueWithIdValue3
+func (t *DirectDeploymentVariableValueWithId_Value) FromDirectDeploymentVariableValueWithIdValue3(v DirectDeploymentVariableValueWithIdValue3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDirectDeploymentVariableValueWithIdValue3 performs a merge with any union data inside the DirectDeploymentVariableValueWithId_Value, using the provided DirectDeploymentVariableValueWithIdValue3
+func (t *DirectDeploymentVariableValueWithId_Value) MergeDirectDeploymentVariableValueWithIdValue3(v DirectDeploymentVariableValueWithIdValue3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDirectDeploymentVariableValueWithIdValue4 returns the union data inside the DirectDeploymentVariableValueWithId_Value as a DirectDeploymentVariableValueWithIdValue4
+func (t DirectDeploymentVariableValueWithId_Value) AsDirectDeploymentVariableValueWithIdValue4() (DirectDeploymentVariableValueWithIdValue4, error) {
+	var body DirectDeploymentVariableValueWithIdValue4
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDirectDeploymentVariableValueWithIdValue4 overwrites any union data inside the DirectDeploymentVariableValueWithId_Value as the provided DirectDeploymentVariableValueWithIdValue4
+func (t *DirectDeploymentVariableValueWithId_Value) FromDirectDeploymentVariableValueWithIdValue4(v DirectDeploymentVariableValueWithIdValue4) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDirectDeploymentVariableValueWithIdValue4 performs a merge with any union data inside the DirectDeploymentVariableValueWithId_Value, using the provided DirectDeploymentVariableValueWithIdValue4
+func (t *DirectDeploymentVariableValueWithId_Value) MergeDirectDeploymentVariableValueWithIdValue4(v DirectDeploymentVariableValueWithIdValue4) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t DirectDeploymentVariableValueWithId_Value) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	object := make(map[string]json.RawMessage)
-	if t.union != nil {
-		err = json.Unmarshal(b, &object)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	object["id"], err = json.Marshal(t.Id)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'id': %w", err)
-	}
-
-	b, err = json.Marshal(object)
 	return b, err
 }
 
-func (t *DeploymentVariableValue) UnmarshalJSON(b []byte) error {
+func (t *DirectDeploymentVariableValueWithId_Value) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
-	if err != nil {
-		return err
-	}
-	object := make(map[string]json.RawMessage)
-	err = json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["id"]; found {
-		err = json.Unmarshal(raw, &t.Id)
-		if err != nil {
-			return fmt.Errorf("error reading 'id': %w", err)
-		}
-	}
-
 	return err
 }
 
@@ -1657,6 +1661,286 @@ func (t DirectVariable_Value) MarshalJSON() ([]byte, error) {
 }
 
 func (t *DirectVariable_Value) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsReferenceDeploymentVariableValueDefaultValue0 returns the union data inside the ReferenceDeploymentVariableValue_DefaultValue as a ReferenceDeploymentVariableValueDefaultValue0
+func (t ReferenceDeploymentVariableValue_DefaultValue) AsReferenceDeploymentVariableValueDefaultValue0() (ReferenceDeploymentVariableValueDefaultValue0, error) {
+	var body ReferenceDeploymentVariableValueDefaultValue0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromReferenceDeploymentVariableValueDefaultValue0 overwrites any union data inside the ReferenceDeploymentVariableValue_DefaultValue as the provided ReferenceDeploymentVariableValueDefaultValue0
+func (t *ReferenceDeploymentVariableValue_DefaultValue) FromReferenceDeploymentVariableValueDefaultValue0(v ReferenceDeploymentVariableValueDefaultValue0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeReferenceDeploymentVariableValueDefaultValue0 performs a merge with any union data inside the ReferenceDeploymentVariableValue_DefaultValue, using the provided ReferenceDeploymentVariableValueDefaultValue0
+func (t *ReferenceDeploymentVariableValue_DefaultValue) MergeReferenceDeploymentVariableValueDefaultValue0(v ReferenceDeploymentVariableValueDefaultValue0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsReferenceDeploymentVariableValueDefaultValue1 returns the union data inside the ReferenceDeploymentVariableValue_DefaultValue as a ReferenceDeploymentVariableValueDefaultValue1
+func (t ReferenceDeploymentVariableValue_DefaultValue) AsReferenceDeploymentVariableValueDefaultValue1() (ReferenceDeploymentVariableValueDefaultValue1, error) {
+	var body ReferenceDeploymentVariableValueDefaultValue1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromReferenceDeploymentVariableValueDefaultValue1 overwrites any union data inside the ReferenceDeploymentVariableValue_DefaultValue as the provided ReferenceDeploymentVariableValueDefaultValue1
+func (t *ReferenceDeploymentVariableValue_DefaultValue) FromReferenceDeploymentVariableValueDefaultValue1(v ReferenceDeploymentVariableValueDefaultValue1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeReferenceDeploymentVariableValueDefaultValue1 performs a merge with any union data inside the ReferenceDeploymentVariableValue_DefaultValue, using the provided ReferenceDeploymentVariableValueDefaultValue1
+func (t *ReferenceDeploymentVariableValue_DefaultValue) MergeReferenceDeploymentVariableValueDefaultValue1(v ReferenceDeploymentVariableValueDefaultValue1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsReferenceDeploymentVariableValueDefaultValue2 returns the union data inside the ReferenceDeploymentVariableValue_DefaultValue as a ReferenceDeploymentVariableValueDefaultValue2
+func (t ReferenceDeploymentVariableValue_DefaultValue) AsReferenceDeploymentVariableValueDefaultValue2() (ReferenceDeploymentVariableValueDefaultValue2, error) {
+	var body ReferenceDeploymentVariableValueDefaultValue2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromReferenceDeploymentVariableValueDefaultValue2 overwrites any union data inside the ReferenceDeploymentVariableValue_DefaultValue as the provided ReferenceDeploymentVariableValueDefaultValue2
+func (t *ReferenceDeploymentVariableValue_DefaultValue) FromReferenceDeploymentVariableValueDefaultValue2(v ReferenceDeploymentVariableValueDefaultValue2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeReferenceDeploymentVariableValueDefaultValue2 performs a merge with any union data inside the ReferenceDeploymentVariableValue_DefaultValue, using the provided ReferenceDeploymentVariableValueDefaultValue2
+func (t *ReferenceDeploymentVariableValue_DefaultValue) MergeReferenceDeploymentVariableValueDefaultValue2(v ReferenceDeploymentVariableValueDefaultValue2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsReferenceDeploymentVariableValueDefaultValue3 returns the union data inside the ReferenceDeploymentVariableValue_DefaultValue as a ReferenceDeploymentVariableValueDefaultValue3
+func (t ReferenceDeploymentVariableValue_DefaultValue) AsReferenceDeploymentVariableValueDefaultValue3() (ReferenceDeploymentVariableValueDefaultValue3, error) {
+	var body ReferenceDeploymentVariableValueDefaultValue3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromReferenceDeploymentVariableValueDefaultValue3 overwrites any union data inside the ReferenceDeploymentVariableValue_DefaultValue as the provided ReferenceDeploymentVariableValueDefaultValue3
+func (t *ReferenceDeploymentVariableValue_DefaultValue) FromReferenceDeploymentVariableValueDefaultValue3(v ReferenceDeploymentVariableValueDefaultValue3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeReferenceDeploymentVariableValueDefaultValue3 performs a merge with any union data inside the ReferenceDeploymentVariableValue_DefaultValue, using the provided ReferenceDeploymentVariableValueDefaultValue3
+func (t *ReferenceDeploymentVariableValue_DefaultValue) MergeReferenceDeploymentVariableValueDefaultValue3(v ReferenceDeploymentVariableValueDefaultValue3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsReferenceDeploymentVariableValueDefaultValue4 returns the union data inside the ReferenceDeploymentVariableValue_DefaultValue as a ReferenceDeploymentVariableValueDefaultValue4
+func (t ReferenceDeploymentVariableValue_DefaultValue) AsReferenceDeploymentVariableValueDefaultValue4() (ReferenceDeploymentVariableValueDefaultValue4, error) {
+	var body ReferenceDeploymentVariableValueDefaultValue4
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromReferenceDeploymentVariableValueDefaultValue4 overwrites any union data inside the ReferenceDeploymentVariableValue_DefaultValue as the provided ReferenceDeploymentVariableValueDefaultValue4
+func (t *ReferenceDeploymentVariableValue_DefaultValue) FromReferenceDeploymentVariableValueDefaultValue4(v ReferenceDeploymentVariableValueDefaultValue4) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeReferenceDeploymentVariableValueDefaultValue4 performs a merge with any union data inside the ReferenceDeploymentVariableValue_DefaultValue, using the provided ReferenceDeploymentVariableValueDefaultValue4
+func (t *ReferenceDeploymentVariableValue_DefaultValue) MergeReferenceDeploymentVariableValueDefaultValue4(v ReferenceDeploymentVariableValueDefaultValue4) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ReferenceDeploymentVariableValue_DefaultValue) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ReferenceDeploymentVariableValue_DefaultValue) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsReferenceDeploymentVariableValueWithIdDefaultValue0 returns the union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as a ReferenceDeploymentVariableValueWithIdDefaultValue0
+func (t ReferenceDeploymentVariableValueWithId_DefaultValue) AsReferenceDeploymentVariableValueWithIdDefaultValue0() (ReferenceDeploymentVariableValueWithIdDefaultValue0, error) {
+	var body ReferenceDeploymentVariableValueWithIdDefaultValue0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromReferenceDeploymentVariableValueWithIdDefaultValue0 overwrites any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as the provided ReferenceDeploymentVariableValueWithIdDefaultValue0
+func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) FromReferenceDeploymentVariableValueWithIdDefaultValue0(v ReferenceDeploymentVariableValueWithIdDefaultValue0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeReferenceDeploymentVariableValueWithIdDefaultValue0 performs a merge with any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue, using the provided ReferenceDeploymentVariableValueWithIdDefaultValue0
+func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) MergeReferenceDeploymentVariableValueWithIdDefaultValue0(v ReferenceDeploymentVariableValueWithIdDefaultValue0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsReferenceDeploymentVariableValueWithIdDefaultValue1 returns the union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as a ReferenceDeploymentVariableValueWithIdDefaultValue1
+func (t ReferenceDeploymentVariableValueWithId_DefaultValue) AsReferenceDeploymentVariableValueWithIdDefaultValue1() (ReferenceDeploymentVariableValueWithIdDefaultValue1, error) {
+	var body ReferenceDeploymentVariableValueWithIdDefaultValue1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromReferenceDeploymentVariableValueWithIdDefaultValue1 overwrites any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as the provided ReferenceDeploymentVariableValueWithIdDefaultValue1
+func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) FromReferenceDeploymentVariableValueWithIdDefaultValue1(v ReferenceDeploymentVariableValueWithIdDefaultValue1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeReferenceDeploymentVariableValueWithIdDefaultValue1 performs a merge with any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue, using the provided ReferenceDeploymentVariableValueWithIdDefaultValue1
+func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) MergeReferenceDeploymentVariableValueWithIdDefaultValue1(v ReferenceDeploymentVariableValueWithIdDefaultValue1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsReferenceDeploymentVariableValueWithIdDefaultValue2 returns the union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as a ReferenceDeploymentVariableValueWithIdDefaultValue2
+func (t ReferenceDeploymentVariableValueWithId_DefaultValue) AsReferenceDeploymentVariableValueWithIdDefaultValue2() (ReferenceDeploymentVariableValueWithIdDefaultValue2, error) {
+	var body ReferenceDeploymentVariableValueWithIdDefaultValue2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromReferenceDeploymentVariableValueWithIdDefaultValue2 overwrites any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as the provided ReferenceDeploymentVariableValueWithIdDefaultValue2
+func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) FromReferenceDeploymentVariableValueWithIdDefaultValue2(v ReferenceDeploymentVariableValueWithIdDefaultValue2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeReferenceDeploymentVariableValueWithIdDefaultValue2 performs a merge with any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue, using the provided ReferenceDeploymentVariableValueWithIdDefaultValue2
+func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) MergeReferenceDeploymentVariableValueWithIdDefaultValue2(v ReferenceDeploymentVariableValueWithIdDefaultValue2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsReferenceDeploymentVariableValueWithIdDefaultValue3 returns the union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as a ReferenceDeploymentVariableValueWithIdDefaultValue3
+func (t ReferenceDeploymentVariableValueWithId_DefaultValue) AsReferenceDeploymentVariableValueWithIdDefaultValue3() (ReferenceDeploymentVariableValueWithIdDefaultValue3, error) {
+	var body ReferenceDeploymentVariableValueWithIdDefaultValue3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromReferenceDeploymentVariableValueWithIdDefaultValue3 overwrites any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as the provided ReferenceDeploymentVariableValueWithIdDefaultValue3
+func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) FromReferenceDeploymentVariableValueWithIdDefaultValue3(v ReferenceDeploymentVariableValueWithIdDefaultValue3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeReferenceDeploymentVariableValueWithIdDefaultValue3 performs a merge with any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue, using the provided ReferenceDeploymentVariableValueWithIdDefaultValue3
+func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) MergeReferenceDeploymentVariableValueWithIdDefaultValue3(v ReferenceDeploymentVariableValueWithIdDefaultValue3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsReferenceDeploymentVariableValueWithIdDefaultValue4 returns the union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as a ReferenceDeploymentVariableValueWithIdDefaultValue4
+func (t ReferenceDeploymentVariableValueWithId_DefaultValue) AsReferenceDeploymentVariableValueWithIdDefaultValue4() (ReferenceDeploymentVariableValueWithIdDefaultValue4, error) {
+	var body ReferenceDeploymentVariableValueWithIdDefaultValue4
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromReferenceDeploymentVariableValueWithIdDefaultValue4 overwrites any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as the provided ReferenceDeploymentVariableValueWithIdDefaultValue4
+func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) FromReferenceDeploymentVariableValueWithIdDefaultValue4(v ReferenceDeploymentVariableValueWithIdDefaultValue4) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeReferenceDeploymentVariableValueWithIdDefaultValue4 performs a merge with any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue, using the provided ReferenceDeploymentVariableValueWithIdDefaultValue4
+func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) MergeReferenceDeploymentVariableValueWithIdDefaultValue4(v ReferenceDeploymentVariableValueWithIdDefaultValue4) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ReferenceDeploymentVariableValueWithId_DefaultValue) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -1999,68 +2283,6 @@ func (t VariableMap_AdditionalProperties) MarshalJSON() ([]byte, error) {
 }
 
 func (t *VariableMap_AdditionalProperties) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsDeploymentVariableDirectValue returns the union data inside the VariableValue as a DeploymentVariableDirectValue
-func (t VariableValue) AsDeploymentVariableDirectValue() (DeploymentVariableDirectValue, error) {
-	var body DeploymentVariableDirectValue
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDeploymentVariableDirectValue overwrites any union data inside the VariableValue as the provided DeploymentVariableDirectValue
-func (t *VariableValue) FromDeploymentVariableDirectValue(v DeploymentVariableDirectValue) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDeploymentVariableDirectValue performs a merge with any union data inside the VariableValue, using the provided DeploymentVariableDirectValue
-func (t *VariableValue) MergeDeploymentVariableDirectValue(v DeploymentVariableDirectValue) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsDeploymentVariableReferenceValue returns the union data inside the VariableValue as a DeploymentVariableReferenceValue
-func (t VariableValue) AsDeploymentVariableReferenceValue() (DeploymentVariableReferenceValue, error) {
-	var body DeploymentVariableReferenceValue
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDeploymentVariableReferenceValue overwrites any union data inside the VariableValue as the provided DeploymentVariableReferenceValue
-func (t *VariableValue) FromDeploymentVariableReferenceValue(v DeploymentVariableReferenceValue) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDeploymentVariableReferenceValue performs a merge with any union data inside the VariableValue, using the provided DeploymentVariableReferenceValue
-func (t *VariableValue) MergeDeploymentVariableReferenceValue(v DeploymentVariableReferenceValue) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t VariableValue) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *VariableValue) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
