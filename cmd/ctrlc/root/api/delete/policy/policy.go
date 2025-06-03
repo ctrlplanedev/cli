@@ -13,6 +13,7 @@ import (
 
 func NewDeletePolicyCmd() *cobra.Command {
 	var policyId string
+	var workspaceId string
 	var name string
 
 	cmd := &cobra.Command{
@@ -21,14 +22,18 @@ func NewDeletePolicyCmd() *cobra.Command {
 		Long:  `Delete a policy by specifying a policy ID or name.`,
 		Example: heredoc.Doc(`
 			$ ctrlc delete policy --id 123e4567-e89b-12d3-a456-426614174000
-			$ ctrlc delete policy --name "My Policy"
+			$ ctrlc delete policy --name "My Policy" --workspace 123e4567-e89b-12d3-a456-426614174000
 		`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if policyId == "" && name == "" {
 				return fmt.Errorf("either --id or --name must be provided")
 			}
 
-			workspace := viper.GetString("workspace")
+			workspace := workspaceId
+			if workspace == "" {
+				workspace = viper.GetString("workspace")
+			}
+
 			if name != "" && workspace == "" {
 				return fmt.Errorf("workspace is required when using --name")
 			}
@@ -55,6 +60,7 @@ func NewDeletePolicyCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&policyId, "id", "", "Policy ID")
 	cmd.Flags().StringVar(&name, "name", "", "Policy name")
+	cmd.Flags().StringVar(&workspaceId, "workspace", "", "Workspace ID")
 
 	return cmd
 }
