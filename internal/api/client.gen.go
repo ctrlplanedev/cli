@@ -22,6 +22,12 @@ const (
 	BearerAuthScopes = "bearerAuth.Scopes"
 )
 
+// Defines values for ApprovalRecordStatus.
+const (
+	ApprovalRecordStatusApproved ApprovalRecordStatus = "approved"
+	ApprovalRecordStatusRejected ApprovalRecordStatus = "rejected"
+)
+
 // Defines values for DeploymentVersionStatus.
 const (
 	DeploymentVersionStatusBuilding DeploymentVersionStatus = "building"
@@ -29,18 +35,26 @@ const (
 	DeploymentVersionStatusReady    DeploymentVersionStatus = "ready"
 )
 
+// Defines values for EnvironmentVersionRolloutRolloutType.
+const (
+	Exponential           EnvironmentVersionRolloutRolloutType = "exponential"
+	ExponentialNormalized EnvironmentVersionRolloutRolloutType = "exponential-normalized"
+	Linear                EnvironmentVersionRolloutRolloutType = "linear"
+	LinearNormalized      EnvironmentVersionRolloutRolloutType = "linear-normalized"
+)
+
 // Defines values for JobStatus.
 const (
-	JobStatusActionRequired      JobStatus = "action_required"
-	JobStatusCancelled           JobStatus = "cancelled"
-	JobStatusExternalRunNotFound JobStatus = "external_run_not_found"
-	JobStatusFailure             JobStatus = "failure"
-	JobStatusInProgress          JobStatus = "in_progress"
-	JobStatusInvalidIntegration  JobStatus = "invalid_integration"
-	JobStatusInvalidJobAgent     JobStatus = "invalid_job_agent"
-	JobStatusPending             JobStatus = "pending"
-	JobStatusSkipped             JobStatus = "skipped"
-	JobStatusSuccessful          JobStatus = "successful"
+	ActionRequired      JobStatus = "action_required"
+	Cancelled           JobStatus = "cancelled"
+	ExternalRunNotFound JobStatus = "external_run_not_found"
+	Failure             JobStatus = "failure"
+	InProgress          JobStatus = "in_progress"
+	InvalidIntegration  JobStatus = "invalid_integration"
+	InvalidJobAgent     JobStatus = "invalid_job_agent"
+	Pending             JobStatus = "pending"
+	Skipped             JobStatus = "skipped"
+	Successful          JobStatus = "successful"
 )
 
 // Defines values for JobWithTriggerApprovalStatus.
@@ -48,25 +62,6 @@ const (
 	JobWithTriggerApprovalStatusApproved JobWithTriggerApprovalStatus = "approved"
 	JobWithTriggerApprovalStatusPending  JobWithTriggerApprovalStatus = "pending"
 	JobWithTriggerApprovalStatusRejected JobWithTriggerApprovalStatus = "rejected"
-)
-
-// Defines values for PolicyApprovalRequirement.
-const (
-	Automatic PolicyApprovalRequirement = "automatic"
-	Manual    PolicyApprovalRequirement = "manual"
-)
-
-// Defines values for PolicyReleaseSequencing.
-const (
-	Cancel PolicyReleaseSequencing = "cancel"
-	Wait   PolicyReleaseSequencing = "wait"
-)
-
-// Defines values for PolicySuccessType.
-const (
-	All      PolicySuccessType = "all"
-	Optional PolicySuccessType = "optional"
-	Some     PolicySuccessType = "some"
 )
 
 // Defines values for ResourceRelationshipRuleDependencyType.
@@ -113,6 +108,21 @@ const (
 	Failed   UpdateReleaseJSONBodyStatus = "failed"
 	Ready    UpdateReleaseJSONBodyStatus = "ready"
 )
+
+// ApprovalRecord defines model for ApprovalRecord.
+type ApprovalRecord struct {
+	ApprovedAt          *time.Time           `json:"approvedAt"`
+	CreatedAt           time.Time            `json:"createdAt"`
+	DeploymentVersionId openapi_types.UUID   `json:"deploymentVersionId"`
+	Id                  openapi_types.UUID   `json:"id"`
+	Reason              *string              `json:"reason,omitempty"`
+	Status              ApprovalRecordStatus `json:"status"`
+	UpdatedAt           time.Time            `json:"updatedAt"`
+	UserId              openapi_types.UUID   `json:"userId"`
+}
+
+// ApprovalRecordStatus defines model for ApprovalRecord.Status.
+type ApprovalRecordStatus string
 
 // BaseDeploymentVariableValue defines model for BaseDeploymentVariableValue.
 type BaseDeploymentVariableValue struct {
@@ -321,6 +331,21 @@ type Environment struct {
 	SystemId         openapi_types.UUID      `json:"systemId"`
 }
 
+// EnvironmentVersionRollout defines model for EnvironmentVersionRollout.
+type EnvironmentVersionRollout struct {
+	// PositionGrowthFactor Controls how strongly queue position influences delay — higher values result in a smoother, slower rollout curve.
+	PositionGrowthFactor float32 `json:"positionGrowthFactor"`
+
+	// RolloutType Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval.
+	RolloutType EnvironmentVersionRolloutRolloutType `json:"rolloutType"`
+
+	// TimeScaleInterval Defines the base time interval that each unit of rollout progression is scaled by — larger values stretch the deployment timeline.
+	TimeScaleInterval float32 `json:"timeScaleInterval"`
+}
+
+// EnvironmentVersionRolloutRolloutType Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval.
+type EnvironmentVersionRolloutRolloutType string
+
 // Event defines model for Event.
 type Event struct {
 	Action    string                 `json:"action"`
@@ -421,57 +446,13 @@ type MetadataMap map[string]string
 
 // Policy defines model for Policy.
 type Policy struct {
-	// ApprovalRequirement The approval requirement of the policy
-	ApprovalRequirement PolicyApprovalRequirement `json:"approvalRequirement"`
-
-	// ConcurrencyLimit The maximum number of concurrent releases in the environment
-	ConcurrencyLimit *float32 `json:"concurrencyLimit"`
-
-	// Description The description of the policy
-	Description *string `json:"description"`
-
-	// Id The policy ID
-	Id openapi_types.UUID `json:"id"`
-
-	// MinimumReleaseInterval The minimum interval between releases in milliseconds
-	MinimumReleaseInterval float32 `json:"minimumReleaseInterval"`
-
-	// Name The name of the policy
-	Name string `json:"name"`
-
-	// ReleaseSequencing If a new release is created, whether it will wait for the current release to finish before starting, or cancel the current release
-	ReleaseSequencing PolicyReleaseSequencing `json:"releaseSequencing"`
-
-	// RolloutDuration The duration of the rollout in milliseconds
-	RolloutDuration float32 `json:"rolloutDuration"`
-
-	// SuccessMinimum If a policy depends on an environment, the minimum number of successful releases in the environment
-	SuccessMinimum float32 `json:"successMinimum"`
-
-	// SuccessType If a policy depends on an environment, whether or not the policy requires all, some, or optional successful releases in the environment
-	SuccessType PolicySuccessType `json:"successType"`
-
-	// SystemId The system ID
-	SystemId openapi_types.UUID `json:"systemId"`
-}
-
-// PolicyApprovalRequirement The approval requirement of the policy
-type PolicyApprovalRequirement string
-
-// PolicyReleaseSequencing If a new release is created, whether it will wait for the current release to finish before starting, or cancel the current release
-type PolicyReleaseSequencing string
-
-// PolicySuccessType If a policy depends on an environment, whether or not the policy requires all, some, or optional successful releases in the environment
-type PolicySuccessType string
-
-// Policy1 defines model for Policy1.
-type Policy1 struct {
 	Concurrency               *PolicyConcurrency         `json:"concurrency"`
 	CreatedAt                 time.Time                  `json:"createdAt"`
 	DenyWindows               []DenyWindow               `json:"denyWindows"`
 	DeploymentVersionSelector *DeploymentVersionSelector `json:"deploymentVersionSelector,omitempty"`
 	Description               *string                    `json:"description,omitempty"`
 	Enabled                   bool                       `json:"enabled"`
+	EnvironmentVersionRollout *EnvironmentVersionRollout `json:"environmentVersionRollout,omitempty"`
 	Id                        openapi_types.UUID         `json:"id"`
 	Name                      string                     `json:"name"`
 	Priority                  float32                    `json:"priority"`
@@ -837,6 +818,17 @@ type UpdateDeploymentVersionJSONBody struct {
 // UpdateDeploymentVersionJSONBodyStatus defines parameters for UpdateDeploymentVersion.
 type UpdateDeploymentVersionJSONBodyStatus string
 
+// ApproveDeploymentVersionJSONBody defines parameters for ApproveDeploymentVersion.
+type ApproveDeploymentVersionJSONBody struct {
+	ApprovedAt *time.Time `json:"approvedAt"`
+	Reason     *string    `json:"reason,omitempty"`
+}
+
+// RejectDeploymentVersionJSONBody defines parameters for RejectDeploymentVersion.
+type RejectDeploymentVersionJSONBody struct {
+	Reason *string `json:"reason,omitempty"`
+}
+
 // CreateDeploymentJSONBody defines parameters for CreateDeployment.
 type CreateDeploymentJSONBody struct {
 	// Description The description of the deployment
@@ -951,6 +943,7 @@ type UpdatePolicyJSONBody struct {
 	DeploymentVersionSelector *DeploymentVersionSelector `json:"deploymentVersionSelector,omitempty"`
 	Description               *string                    `json:"description,omitempty"`
 	Enabled                   *bool                      `json:"enabled,omitempty"`
+	EnvironmentVersionRollout *EnvironmentVersionRollout `json:"environmentVersionRollout,omitempty"`
 	Name                      *string                    `json:"name,omitempty"`
 	Priority                  *float32                   `json:"priority,omitempty"`
 	Targets                   *[]PolicyTarget            `json:"targets,omitempty"`
@@ -1116,6 +1109,12 @@ type UpsertDeploymentVersionJSONRequestBody UpsertDeploymentVersionJSONBody
 
 // UpdateDeploymentVersionJSONRequestBody defines body for UpdateDeploymentVersion for application/json ContentType.
 type UpdateDeploymentVersionJSONRequestBody UpdateDeploymentVersionJSONBody
+
+// ApproveDeploymentVersionJSONRequestBody defines body for ApproveDeploymentVersion for application/json ContentType.
+type ApproveDeploymentVersionJSONRequestBody ApproveDeploymentVersionJSONBody
+
+// RejectDeploymentVersionJSONRequestBody defines body for RejectDeploymentVersion for application/json ContentType.
+type RejectDeploymentVersionJSONRequestBody RejectDeploymentVersionJSONBody
 
 // CreateDeploymentJSONRequestBody defines body for CreateDeployment for application/json ContentType.
 type CreateDeploymentJSONRequestBody CreateDeploymentJSONBody
@@ -2378,6 +2377,19 @@ type ClientInterface interface {
 
 	UpdateDeploymentVersion(ctx context.Context, deploymentVersionId string, body UpdateDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ApproveDeploymentVersionWithBody request with any body
+	ApproveDeploymentVersionWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ApproveDeploymentVersion(ctx context.Context, deploymentVersionId openapi_types.UUID, body ApproveDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetRolloutInfo request
+	GetRolloutInfo(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RejectDeploymentVersionWithBody request with any body
+	RejectDeploymentVersionWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RejectDeploymentVersion(ctx context.Context, deploymentVersionId openapi_types.UUID, body RejectDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CreateDeploymentWithBody request with any body
 	CreateDeploymentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -2457,6 +2469,9 @@ type ClientInterface interface {
 
 	// DeletePolicy request
 	DeletePolicy(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetPolicy request
+	GetPolicy(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdatePolicyWithBody request with any body
 	UpdatePolicyWithBody(ctx context.Context, policyId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2668,6 +2683,66 @@ func (c *Client) UpdateDeploymentVersionWithBody(ctx context.Context, deployment
 
 func (c *Client) UpdateDeploymentVersion(ctx context.Context, deploymentVersionId string, body UpdateDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateDeploymentVersionRequest(c.Server, deploymentVersionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ApproveDeploymentVersionWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveDeploymentVersionRequestWithBody(c.Server, deploymentVersionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ApproveDeploymentVersion(ctx context.Context, deploymentVersionId openapi_types.UUID, body ApproveDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveDeploymentVersionRequest(c.Server, deploymentVersionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetRolloutInfo(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRolloutInfoRequest(c.Server, deploymentVersionId, environmentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RejectDeploymentVersionWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRejectDeploymentVersionRequestWithBody(c.Server, deploymentVersionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RejectDeploymentVersion(ctx context.Context, deploymentVersionId openapi_types.UUID, body RejectDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRejectDeploymentVersionRequest(c.Server, deploymentVersionId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3016,6 +3091,18 @@ func (c *Client) UpsertPolicy(ctx context.Context, body UpsertPolicyJSONRequestB
 
 func (c *Client) DeletePolicy(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeletePolicyRequest(c.Server, policyId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetPolicy(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPolicyRequest(c.Server, policyId)
 	if err != nil {
 		return nil, err
 	}
@@ -3778,6 +3865,141 @@ func NewUpdateDeploymentVersionRequestWithBody(server string, deploymentVersionI
 	}
 
 	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewApproveDeploymentVersionRequest calls the generic ApproveDeploymentVersion builder with application/json body
+func NewApproveDeploymentVersionRequest(server string, deploymentVersionId openapi_types.UUID, body ApproveDeploymentVersionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewApproveDeploymentVersionRequestWithBody(server, deploymentVersionId, "application/json", bodyReader)
+}
+
+// NewApproveDeploymentVersionRequestWithBody generates requests for ApproveDeploymentVersion with any type of body
+func NewApproveDeploymentVersionRequestWithBody(server string, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/deployment-versions/%s/approve", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetRolloutInfoRequest generates requests for GetRolloutInfo
+func NewGetRolloutInfoRequest(server string, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "environmentId", runtime.ParamLocationPath, environmentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/deployment-versions/%s/environments/%s/rollout", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRejectDeploymentVersionRequest calls the generic RejectDeploymentVersion builder with application/json body
+func NewRejectDeploymentVersionRequest(server string, deploymentVersionId openapi_types.UUID, body RejectDeploymentVersionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRejectDeploymentVersionRequestWithBody(server, deploymentVersionId, "application/json", bodyReader)
+}
+
+// NewRejectDeploymentVersionRequestWithBody generates requests for RejectDeploymentVersion with any type of body
+func NewRejectDeploymentVersionRequestWithBody(server string, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/deployment-versions/%s/reject", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -4605,6 +4827,40 @@ func NewDeletePolicyRequest(server string, policyId openapi_types.UUID) (*http.R
 	}
 
 	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetPolicyRequest generates requests for GetPolicy
+func NewGetPolicyRequest(server string, policyId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "policyId", runtime.ParamLocationPath, policyId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/policies/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -6044,6 +6300,19 @@ type ClientWithResponsesInterface interface {
 
 	UpdateDeploymentVersionWithResponse(ctx context.Context, deploymentVersionId string, body UpdateDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDeploymentVersionResponse, error)
 
+	// ApproveDeploymentVersionWithBodyWithResponse request with any body
+	ApproveDeploymentVersionWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionResponse, error)
+
+	ApproveDeploymentVersionWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, body ApproveDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionResponse, error)
+
+	// GetRolloutInfoWithResponse request
+	GetRolloutInfoWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetRolloutInfoResponse, error)
+
+	// RejectDeploymentVersionWithBodyWithResponse request with any body
+	RejectDeploymentVersionWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionResponse, error)
+
+	RejectDeploymentVersionWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, body RejectDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionResponse, error)
+
 	// CreateDeploymentWithBodyWithResponse request with any body
 	CreateDeploymentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeploymentResponse, error)
 
@@ -6123,6 +6392,9 @@ type ClientWithResponsesInterface interface {
 
 	// DeletePolicyWithResponse request
 	DeletePolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePolicyResponse, error)
+
+	// GetPolicyWithResponse request
+	GetPolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetPolicyResponse, error)
 
 	// UpdatePolicyWithBodyWithResponse request with any body
 	UpdatePolicyWithBodyWithResponse(ctx context.Context, policyId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error)
@@ -6374,6 +6646,103 @@ func (r UpdateDeploymentVersionResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UpdateDeploymentVersionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ApproveDeploymentVersionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ApprovalRecord
+	JSON403      *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON404 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON500 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r ApproveDeploymentVersionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ApproveDeploymentVersionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetRolloutInfoResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]struct {
+		Deployment      Deployment         `json:"deployment"`
+		Environment     Environment        `json:"environment"`
+		Id              openapi_types.UUID `json:"id"`
+		Resource        Resource           `json:"resource"`
+		RolloutPosition float32            `json:"rolloutPosition"`
+		RolloutTime     *time.Time         `json:"rolloutTime"`
+	}
+	JSON404 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON500 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetRolloutInfoResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetRolloutInfoResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RejectDeploymentVersionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ApprovalRecord
+	JSON403      *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON404 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON500 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r RejectDeploymentVersionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RejectDeploymentVersionResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -6930,7 +7299,7 @@ func (r AcknowledgeJobResponse) StatusCode() int {
 type UpsertPolicyResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *Policy1
+	JSON200      *Policy
 	JSON500      *struct {
 		Error *string `json:"error,omitempty"`
 	}
@@ -6973,6 +7342,34 @@ func (r DeletePolicyResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r DeletePolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Policy
+	JSON404      *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON500 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPolicyResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -8078,6 +8475,49 @@ func (c *ClientWithResponses) UpdateDeploymentVersionWithResponse(ctx context.Co
 	return ParseUpdateDeploymentVersionResponse(rsp)
 }
 
+// ApproveDeploymentVersionWithBodyWithResponse request with arbitrary body returning *ApproveDeploymentVersionResponse
+func (c *ClientWithResponses) ApproveDeploymentVersionWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionResponse, error) {
+	rsp, err := c.ApproveDeploymentVersionWithBody(ctx, deploymentVersionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApproveDeploymentVersionResponse(rsp)
+}
+
+func (c *ClientWithResponses) ApproveDeploymentVersionWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, body ApproveDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionResponse, error) {
+	rsp, err := c.ApproveDeploymentVersion(ctx, deploymentVersionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApproveDeploymentVersionResponse(rsp)
+}
+
+// GetRolloutInfoWithResponse request returning *GetRolloutInfoResponse
+func (c *ClientWithResponses) GetRolloutInfoWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetRolloutInfoResponse, error) {
+	rsp, err := c.GetRolloutInfo(ctx, deploymentVersionId, environmentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRolloutInfoResponse(rsp)
+}
+
+// RejectDeploymentVersionWithBodyWithResponse request with arbitrary body returning *RejectDeploymentVersionResponse
+func (c *ClientWithResponses) RejectDeploymentVersionWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionResponse, error) {
+	rsp, err := c.RejectDeploymentVersionWithBody(ctx, deploymentVersionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRejectDeploymentVersionResponse(rsp)
+}
+
+func (c *ClientWithResponses) RejectDeploymentVersionWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, body RejectDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionResponse, error) {
+	rsp, err := c.RejectDeploymentVersion(ctx, deploymentVersionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRejectDeploymentVersionResponse(rsp)
+}
+
 // CreateDeploymentWithBodyWithResponse request with arbitrary body returning *CreateDeploymentResponse
 func (c *ClientWithResponses) CreateDeploymentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeploymentResponse, error) {
 	rsp, err := c.CreateDeploymentWithBody(ctx, contentType, body, reqEditors...)
@@ -8330,6 +8770,15 @@ func (c *ClientWithResponses) DeletePolicyWithResponse(ctx context.Context, poli
 		return nil, err
 	}
 	return ParseDeletePolicyResponse(rsp)
+}
+
+// GetPolicyWithResponse request returning *GetPolicyResponse
+func (c *ClientWithResponses) GetPolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetPolicyResponse, error) {
+	rsp, err := c.GetPolicy(ctx, policyId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPolicyResponse(rsp)
 }
 
 // UpdatePolicyWithBodyWithResponse request with arbitrary body returning *UpdatePolicyResponse
@@ -8927,6 +9376,163 @@ func ParseUpdateDeploymentVersionResponse(rsp *http.Response) (*UpdateDeployment
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseApproveDeploymentVersionResponse parses an HTTP response from a ApproveDeploymentVersionWithResponse call
+func ParseApproveDeploymentVersionResponse(rsp *http.Response) (*ApproveDeploymentVersionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ApproveDeploymentVersionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApprovalRecord
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetRolloutInfoResponse parses an HTTP response from a GetRolloutInfoWithResponse call
+func ParseGetRolloutInfoResponse(rsp *http.Response) (*GetRolloutInfoResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetRolloutInfoResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []struct {
+			Deployment      Deployment         `json:"deployment"`
+			Environment     Environment        `json:"environment"`
+			Id              openapi_types.UUID `json:"id"`
+			Resource        Resource           `json:"resource"`
+			RolloutPosition float32            `json:"rolloutPosition"`
+			RolloutTime     *time.Time         `json:"rolloutTime"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRejectDeploymentVersionResponse parses an HTTP response from a RejectDeploymentVersionWithResponse call
+func ParseRejectDeploymentVersionResponse(rsp *http.Response) (*RejectDeploymentVersionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RejectDeploymentVersionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApprovalRecord
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest struct {
@@ -9752,7 +10358,7 @@ func ParseUpsertPolicyResponse(rsp *http.Response) (*UpsertPolicyResponse, error
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Policy1
+		var dest Policy
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -9794,6 +10400,50 @@ func ParseDeletePolicyResponse(rsp *http.Response) (*DeletePolicyResponse, error
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetPolicyResponse parses an HTTP response from a GetPolicyWithResponse call
+func ParseGetPolicyResponse(rsp *http.Response) (*GetPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Policy
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest struct {

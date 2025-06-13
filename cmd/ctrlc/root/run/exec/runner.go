@@ -29,27 +29,27 @@ type ExecConfig struct {
 
 func (r *ExecRunner) Status(job api.Job) (api.JobStatus, string) {
 	if job.ExternalId == nil {
-		return api.JobStatusInProgress, "no external id"
+		return api.InProgress, "no external id"
 	}
 
 	externalId, err := strconv.Atoi(*job.ExternalId)
 	if err != nil {
-		return api.JobStatusExternalRunNotFound, fmt.Sprintf("invalid process id: %v", err)
+		return api.ExternalRunNotFound, fmt.Sprintf("invalid process id: %v", err)
 	}
 
 	process, err := os.FindProcess(externalId)
 	if err != nil {
-		return api.JobStatusExternalRunNotFound, fmt.Sprintf("failed to find process: %v", err)
+		return api.ExternalRunNotFound, fmt.Sprintf("failed to find process: %v", err)
 	}
 
 	// On Unix systems, FindProcess always succeeds, so we need to send signal 0
 	// to check if process exists
 	err = process.Signal(syscall.Signal(0))
 	if err != nil {
-		return api.JobStatusFailure, fmt.Sprintf("process not running: %v", err)
+		return api.Failure, fmt.Sprintf("process not running: %v", err)
 	}
 
-	return api.JobStatusInProgress, fmt.Sprintf("process running with pid %d", externalId)
+	return api.InProgress, fmt.Sprintf("process running with pid %d", externalId)
 }
 
 func (r *ExecRunner) Start(client *api.ClientWithResponses, job api.JobWithTrigger) (string, error) {
@@ -122,10 +122,10 @@ func (r *ExecRunner) Start(client *api.ClientWithResponses, job api.JobWithTrigg
 		// Wait for the process to complete
 		err := cmd.Wait()
 
-		status := api.JobStatusSuccessful
+		status := api.Successful
 		message := "Process completed successfully"
 		if err != nil {
-			status = api.JobStatusFailure
+			status = api.Failure
 			message = fmt.Sprintf("Process failed: %v", err)
 		}
 
