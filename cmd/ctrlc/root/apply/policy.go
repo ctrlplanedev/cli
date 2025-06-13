@@ -119,6 +119,15 @@ func createPolicyRequestBody(policy Policy) api.UpsertPolicyJSONRequestBody {
 		concurrency = &floatConcurrency
 	}
 
+	var environmentVersionRollout *api.EnvironmentVersionRollout
+	if policy.EnvironmentVersionRollout != nil {
+		environmentVersionRollout = &api.EnvironmentVersionRollout{
+			RolloutType:          api.EnvironmentVersionRolloutRolloutType(policy.EnvironmentVersionRollout.RolloutType),
+			PositionGrowthFactor: policy.EnvironmentVersionRollout.PositionGrowthFactor,
+			TimeScaleInterval:    policy.EnvironmentVersionRollout.TimeScaleInterval,
+		}
+	}
+
 	return api.UpsertPolicyJSONRequestBody{
 		Name:                      policy.Name,
 		Description:               policy.Description,
@@ -132,6 +141,7 @@ func createPolicyRequestBody(policy Policy) api.UpsertPolicyJSONRequestBody {
 		VersionUserApprovals:      &versionUserApprovals,
 		VersionRoleApprovals:      &versionRoleApprovals,
 		Concurrency:               concurrency,
+		EnvironmentVersionRollout: environmentVersionRollout,
 	}
 }
 

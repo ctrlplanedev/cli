@@ -86,6 +86,7 @@ const (
 	UpsertDeploymentVersionJSONBodyStatusBuilding UpsertDeploymentVersionJSONBodyStatus = "building"
 	UpsertDeploymentVersionJSONBodyStatusFailed   UpsertDeploymentVersionJSONBodyStatus = "failed"
 	UpsertDeploymentVersionJSONBodyStatusReady    UpsertDeploymentVersionJSONBodyStatus = "ready"
+	UpsertDeploymentVersionJSONBodyStatusRejected UpsertDeploymentVersionJSONBodyStatus = "rejected"
 )
 
 // Defines values for UpdateDeploymentVersionJSONBodyStatus.
@@ -93,6 +94,7 @@ const (
 	UpdateDeploymentVersionJSONBodyStatusBuilding UpdateDeploymentVersionJSONBodyStatus = "building"
 	UpdateDeploymentVersionJSONBodyStatusFailed   UpdateDeploymentVersionJSONBodyStatus = "failed"
 	UpdateDeploymentVersionJSONBodyStatusReady    UpdateDeploymentVersionJSONBodyStatus = "ready"
+	UpdateDeploymentVersionJSONBodyStatusRejected UpdateDeploymentVersionJSONBodyStatus = "rejected"
 )
 
 // Defines values for UpsertReleaseJSONBodyStatus.
@@ -100,6 +102,7 @@ const (
 	UpsertReleaseJSONBodyStatusBuilding UpsertReleaseJSONBodyStatus = "building"
 	UpsertReleaseJSONBodyStatusFailed   UpsertReleaseJSONBodyStatus = "failed"
 	UpsertReleaseJSONBodyStatusReady    UpsertReleaseJSONBodyStatus = "ready"
+	UpsertReleaseJSONBodyStatusRejected UpsertReleaseJSONBodyStatus = "rejected"
 )
 
 // Defines values for UpdateReleaseJSONBodyStatus.
@@ -107,6 +110,7 @@ const (
 	Building UpdateReleaseJSONBodyStatus = "building"
 	Failed   UpdateReleaseJSONBodyStatus = "failed"
 	Ready    UpdateReleaseJSONBodyStatus = "ready"
+	Rejected UpdateReleaseJSONBodyStatus = "rejected"
 )
 
 // ApprovalRecord defines model for ApprovalRecord.
@@ -923,6 +927,7 @@ type UpsertPolicyJSONBody struct {
 	DeploymentVersionSelector *DeploymentVersionSelector `json:"deploymentVersionSelector,omitempty"`
 	Description               *string                    `json:"description,omitempty"`
 	Enabled                   *bool                      `json:"enabled,omitempty"`
+	EnvironmentVersionRollout *EnvironmentVersionRollout `json:"environmentVersionRollout,omitempty"`
 	Name                      string                     `json:"name"`
 	Priority                  *float32                   `json:"priority,omitempty"`
 	Targets                   []PolicyTarget             `json:"targets"`

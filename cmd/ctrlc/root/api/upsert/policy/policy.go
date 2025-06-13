@@ -21,6 +21,7 @@ func NewUpsertPolicyCmd() *cobra.Command {
 	var resourceTargetSelector string
 	var deploymentVersionSelector string
 	var concurrency int
+	var environmentVersionRollout string
 
 	cmd := &cobra.Command{
 		Use:   "policy [flags]",
@@ -105,6 +106,21 @@ func NewUpsertPolicyCmd() *cobra.Command {
 				parsedConcurrency = &floatConcurrency
 			}
 
+			var parsedEnvironmentVersionRollout *api.EnvironmentVersionRollout
+			if environmentVersionRollout != "" {
+				if err := json.Unmarshal([]byte(environmentVersionRollout), &parsedEnvironmentVersionRollout); err != nil {
+					return fmt.Errorf("invalid environment version rollout JSON: %w", err)
+				}
+
+				// Validate numeric fields are positive
+				if parsedEnvironmentVersionRollout.PositionGrowthFactor <= 0 {
+					return fmt.Errorf("position growth factor must be greater than 0")
+				}
+				if parsedEnvironmentVersionRollout.TimeScaleInterval <= 0 {
+					return fmt.Errorf("time scale interval must be greater than 0")
+				}
+			}
+
 			// Create policy request
 			body := api.UpsertPolicyJSONRequestBody{
 				Name:        name,
@@ -121,6 +137,7 @@ func NewUpsertPolicyCmd() *cobra.Command {
 				},
 				DeploymentVersionSelector: parsedDeploymentVersionSelector,
 				Concurrency:               parsedConcurrency,
+				EnvironmentVersionRollout: parsedEnvironmentVersionRollout,
 			}
 
 			resp, err := client.UpsertPolicy(cmd.Context(), body)
@@ -142,6 +159,7 @@ func NewUpsertPolicyCmd() *cobra.Command {
 	cmd.Flags().StringVar(&resourceTargetSelector, "resource-selector", "", "JSON string for resource target selector")
 	cmd.Flags().IntVarP(&concurrency, "concurrency", "c", 0, "Concurrency of the policy")
 	cmd.Flags().StringVar(&deploymentVersionSelector, "version-selector", "", "JSON string for version selector")
+	cmd.Flags().StringVarP(&environmentVersionRollout, "environment-version-rollout", "r", "", "JSON string for environment version rollout")
 
 	// Mark required flags
 	cmd.MarkFlagRequired("name")
