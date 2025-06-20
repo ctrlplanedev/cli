@@ -45,7 +45,7 @@ runs:
         echo "BINARY_NAME: $BINARY_NAME"
 
         if [ "${{ inputs.version }}" = "latest" ]; then
-          VERSION=$(curl -s https://api.github.com/repos/${{ inputs.repo }}/releases/latest | jq -r .tag_name)
+          VERSION=$(curl -sfSL https://api.github.com/repos/${{ inputs.repo }}/releases/latest | jq -e -r .tag_name)
         else
           VERSION=${{ inputs.version }}
         fi
@@ -53,7 +53,7 @@ runs:
         DOWNLOAD_URL="https://github.com/${{ inputs.repo }}/releases/download/${VERSION}/$BINARY_NAME.tar.gz"
         echo "DOWNLOAD_URL: $DOWNLOAD_URL"
 
-        curl -L $DOWNLOAD_URL -o binary.tar.gz
+        curl -fSL $DOWNLOAD_URL -o binary.tar.gz
         tar xzf binary.tar.gz
         chmod +x ctrlc
         sudo mv ctrlc /usr/local/bin/
