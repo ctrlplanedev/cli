@@ -25,12 +25,14 @@ runs:
   steps:
     - name: Cache CLI binary
       if: inputs.version != 'latest'
+      id: cache-cli
       uses: actions/cache@v4
       with:
         path: "/usr/local/bin/ctrlc"
         key: "ctrlplane-cli-${{ inputs.repo }}-${{ inputs.version }}-${{ runner.os }}-${{ runner.arch }}"
 
     - name: Download binary
+      if: steps.cache-cli.outputs.cache-hit != 'true'
       shell: bash
       run: |
         OS=$(uname -s)
