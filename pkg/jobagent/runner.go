@@ -92,7 +92,7 @@ func (a *JobAgent) RunQueuedJobs() error {
 			data := resolvedJob.JSON200
 			externalId, err := a.runner.Start(a.client, *data)
 			if err != nil {
-				status := api.JobStatusFailure
+				status := api.Failure
 				message := fmt.Sprintf("Failed to start job: %s", err.Error())
 				log.Error("Failed to start job", "error", err, "jobId", job.Id.String())
 				a.client.UpdateJobWithResponse(
@@ -106,7 +106,7 @@ func (a *JobAgent) RunQueuedJobs() error {
 				return
 			}
 			if externalId != "" {
-				status := api.JobStatusInProgress
+				status := api.InProgress
 				a.client.UpdateJobWithResponse(
 					context.Background(),
 					job.Id.String(),
