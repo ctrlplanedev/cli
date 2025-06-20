@@ -23,9 +23,20 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Cache CLI binary
+      if: inputs.version != 'latest'
+      id: cache-cli
+      uses: actions/cache@v4
+      with:
+        path: "${{ runner.tool_cache }}/ctrlc/${{ inputs.version }}"
+        key: "ctrlplane-cli-${{ inputs.repo }}-${{ inputs.version }}-${{ runner.os }}-${{ runner.arch }}"
+
     - name: Download binary
+      if: steps.cache-cli.outputs.cache-hit != 'true'
       shell: bash
       run: |
+        set -u # bail when referencing unset variables
+
         OS=$(uname -s)
         ARCH=$(uname -m)
         if [ "$ARCH" = "x86_64" ]; then
@@ -38,18 +49,26 @@ runs:
         echo "BINARY_NAME: $BINARY_NAME"
 
         if [ "${{ inputs.version }}" = "latest" ]; then
-          VERSION=$(curl -s https://api.github.com/repos/${{ inputs.repo }}/releases/latest | jq -r .tag_name)
+          VERSION=$(curl -sfSL https://api.github.com/repos/${{ inputs.repo }}/releases/latest | jq -e -r .tag_name)
         else
           VERSION=${{ inputs.version }}
         fi
 
-        DOWNLOAD_URL="https://github.com/${{ inputs.repo }}/releases/download/${VERSION}/$BINARY_NAME.tar.gz"
+        DOWNLOAD_URL="https://github.com/${{ inputs.repo }}/releases/download/${VERSION}/${BINARY_NAME}.tar.gz"
         echo "DOWNLOAD_URL: $DOWNLOAD_URL"
 
-        curl -L $DOWNLOAD_URL -o binary.tar.gz
+        curl -sfSL "${DOWNLOAD_URL}" -o binary.tar.gz
         tar xzf binary.tar.gz
         chmod +x ctrlc
-        sudo mv ctrlc /usr/local/bin/
+
+        cache_dir="${{ runner.tool_cache }}/ctrlc/${{ inputs.version }}"
+        mkdir -p "${cache_dir}"
+        mv ctrlc "${cache_dir}"
+
+    - name: Add ctrlc to path
+      shell: bash
+      run: |
+        echo "${{ runner.tool_cache }}/ctrlc/${{ inputs.version }}" >> "${GITHUB_PATH}"
 
     - name: Set Ctrlplane URL
       shell: bash
