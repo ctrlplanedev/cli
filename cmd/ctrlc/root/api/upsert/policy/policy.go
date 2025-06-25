@@ -11,6 +11,51 @@ import (
 	"github.com/spf13/viper"
 )
 
+func parseEnvironmentVersionRollout(rollout string) (*api.InsertEnvironmentVersionRollout, error) {
+	if rollout == "" {
+		return nil, nil
+	}
+
+	var selector map[string]any
+	if err := json.Unmarshal([]byte(rollout), &selector); err != nil {
+		return nil, fmt.Errorf("invalid environment version rollout JSON: %w", err)
+	}
+
+	var parsedRolloutType *api.InsertEnvironmentVersionRolloutRolloutType
+	if selector["rolloutType"] != nil {
+		rolloutTypeString, ok := selector["rolloutType"].(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid rollout type: %v", selector["rolloutType"])
+		}
+		castedRollout := api.InsertEnvironmentVersionRolloutRolloutType(rolloutTypeString)
+		parsedRolloutType = &castedRollout
+	}
+
+	var parsedPositionGrowthFactor *float32
+	if selector["positionGrowthFactor"] != nil {
+		floatPositionGrowthFactor, ok := selector["positionGrowthFactor"].(float32)
+		if !ok {
+			return nil, fmt.Errorf("invalid position growth factor: %v", selector["positionGrowthFactor"])
+		}
+		parsedPositionGrowthFactor = &floatPositionGrowthFactor
+	}
+
+	var parsedTimeScaleInterval float32
+	if selector["timeScaleInterval"] != nil {
+		floatTimeScaleInterval, ok := selector["timeScaleInterval"].(float32)
+		if !ok {
+			return nil, fmt.Errorf("invalid time scale interval: %v", selector["timeScaleInterval"])
+		}
+		parsedTimeScaleInterval = floatTimeScaleInterval
+	}
+
+	return &api.InsertEnvironmentVersionRollout{
+		PositionGrowthFactor: parsedPositionGrowthFactor,
+		TimeScaleInterval:    parsedTimeScaleInterval,
+		RolloutType:          parsedRolloutType,
+	}, nil
+}
+
 func NewUpsertPolicyCmd() *cobra.Command {
 	var name string
 	var description string
@@ -106,46 +151,9 @@ func NewUpsertPolicyCmd() *cobra.Command {
 				parsedConcurrency = &floatConcurrency
 			}
 
-			var parsedEnvironmentVersionRollout *api.InsertEnvironmentVersionRollout
-			if environmentVersionRollout != "" {
-				var selector map[string]any
-				if err := json.Unmarshal([]byte(environmentVersionRollout), &selector); err != nil {
-					return fmt.Errorf("invalid environment version rollout JSON: %w", err)
-				}
-
-				var parsedRolloutType *api.InsertEnvironmentVersionRolloutRolloutType
-				if selector["rolloutType"] != nil {
-					rolloutTypeString, ok := selector["rolloutType"].(string)
-					if !ok {
-						return fmt.Errorf("invalid rollout type: %v", selector["rolloutType"])
-					}
-					castedRollout := api.InsertEnvironmentVersionRolloutRolloutType(rolloutTypeString)
-					parsedRolloutType = &castedRollout
-				}
-
-				var parsedPositionGrowthFactor *float32
-				if selector["positionGrowthFactor"] != nil {
-					floatPositionGrowthFactor, ok := selector["positionGrowthFactor"].(float32)
-					if !ok {
-						return fmt.Errorf("invalid position growth factor: %v", selector["positionGrowthFactor"])
-					}
-					parsedPositionGrowthFactor = &floatPositionGrowthFactor
-				}
-
-				var parsedTimeScaleInterval float32
-				if selector["timeScaleInterval"] != nil {
-					floatTimeScaleInterval, ok := selector["timeScaleInterval"].(float32)
-					if !ok {
-						return fmt.Errorf("invalid time scale interval: %v", selector["timeScaleInterval"])
-					}
-					parsedTimeScaleInterval = floatTimeScaleInterval
-				}
-
-				parsedEnvironmentVersionRollout = &api.InsertEnvironmentVersionRollout{
-					PositionGrowthFactor: parsedPositionGrowthFactor,
-					TimeScaleInterval:    parsedTimeScaleInterval,
-					RolloutType:          parsedRolloutType,
-				}
+			parsedEnvironmentVersionRollout, err := parseEnvironmentVersionRollout(environmentVersionRollout)
+			if err != nil {
+				return fmt.Errorf("invalid environment version rollout JSON: %w", err)
 			}
 
 			// Create policy request
