@@ -11,6 +11,52 @@ import (
 	"github.com/spf13/viper"
 )
 
+func parseEnvironmentVersionRollout(rollout string) (*api.InsertEnvironmentVersionRollout, error) {
+	if rollout == "" {
+		return nil, nil
+	}
+
+	var selector map[string]any
+	if err := json.Unmarshal([]byte(rollout), &selector); err != nil {
+		return nil, fmt.Errorf("invalid environment version rollout JSON: %w", err)
+	}
+
+	var parsedRolloutType *api.InsertEnvironmentVersionRolloutRolloutType
+	if selector["rolloutType"] != nil {
+		rolloutTypeString, ok := selector["rolloutType"].(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid rollout type: %v", selector["rolloutType"])
+		}
+		castedRollout := api.InsertEnvironmentVersionRolloutRolloutType(rolloutTypeString)
+		parsedRolloutType = &castedRollout
+	}
+
+	var parsedPositionGrowthFactor *float32
+	if selector["positionGrowthFactor"] != nil {
+		float64PositionGrowthFactor, ok := selector["positionGrowthFactor"].(float64)
+		if !ok {
+			return nil, fmt.Errorf("invalid position growth factor: %v", selector["positionGrowthFactor"])
+		}
+		float32PositionGrowthFactor := float32(float64PositionGrowthFactor)
+		parsedPositionGrowthFactor = &float32PositionGrowthFactor
+	}
+
+	var parsedTimeScaleInterval float32
+	if selector["timeScaleInterval"] != nil {
+		float64TimeScaleInterval, ok := selector["timeScaleInterval"].(float64)
+		if !ok {
+			return nil, fmt.Errorf("invalid time scale interval: %v", selector["timeScaleInterval"])
+		}
+		parsedTimeScaleInterval = float32(float64TimeScaleInterval)
+	}
+
+	return &api.InsertEnvironmentVersionRollout{
+		PositionGrowthFactor: parsedPositionGrowthFactor,
+		TimeScaleInterval:    parsedTimeScaleInterval,
+		RolloutType:          parsedRolloutType,
+	}, nil
+}
+
 func NewUpsertPolicyCmd() *cobra.Command {
 	var name string
 	var description string
@@ -21,6 +67,7 @@ func NewUpsertPolicyCmd() *cobra.Command {
 	var resourceTargetSelector string
 	var deploymentVersionSelector string
 	var concurrency int
+	var environmentVersionRollout string
 
 	cmd := &cobra.Command{
 		Use:   "policy [flags]",
@@ -105,6 +152,11 @@ func NewUpsertPolicyCmd() *cobra.Command {
 				parsedConcurrency = &floatConcurrency
 			}
 
+			parsedEnvironmentVersionRollout, err := parseEnvironmentVersionRollout(environmentVersionRollout)
+			if err != nil {
+				return fmt.Errorf("invalid environment version rollout JSON: %w", err)
+			}
+
 			// Create policy request
 			body := api.UpsertPolicyJSONRequestBody{
 				Name:        name,
@@ -121,6 +173,7 @@ func NewUpsertPolicyCmd() *cobra.Command {
 				},
 				DeploymentVersionSelector: parsedDeploymentVersionSelector,
 				Concurrency:               parsedConcurrency,
+				EnvironmentVersionRollout: parsedEnvironmentVersionRollout,
 			}
 
 			resp, err := client.UpsertPolicy(cmd.Context(), body)
@@ -142,6 +195,7 @@ func NewUpsertPolicyCmd() *cobra.Command {
 	cmd.Flags().StringVar(&resourceTargetSelector, "resource-selector", "", "JSON string for resource target selector")
 	cmd.Flags().IntVarP(&concurrency, "concurrency", "c", 0, "Concurrency of the policy")
 	cmd.Flags().StringVar(&deploymentVersionSelector, "version-selector", "", "JSON string for version selector")
+	cmd.Flags().StringVar(&environmentVersionRollout, "environment-version-rollout", "", "JSON string for environment version rollout")
 
 	// Mark required flags
 	cmd.MarkFlagRequired("name")

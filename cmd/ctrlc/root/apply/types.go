@@ -129,6 +129,7 @@ type Policy struct {
 	VersionUserApprovals      []VersionUserApproval      `yaml:"versionUserApprovals,omitempty"`
 	VersionRoleApprovals      []VersionRoleApproval      `yaml:"versionRoleApprovals,omitempty"`
 	Concurrency               *int                       `yaml:"concurrency,omitempty"`
+	EnvironmentVersionRollout *EnvironmentVersionRollout `yaml:"environmentVersionRollout,omitempty"`
 }
 
 type PolicyTarget struct {
@@ -160,4 +161,10 @@ type VersionUserApproval struct {
 type VersionRoleApproval struct {
 	RoleId                 string  `yaml:"roleId"`
 	RequiredApprovalsCount float32 `yaml:"requiredApprovalsCount"`
+}
+
+type EnvironmentVersionRollout struct {
+	PositionGrowthFactor *float32 `yaml:"positionGrowthFactor,omitempty"`
+	TimeScaleInterval    float32  `yaml:"timeScaleInterval"`
+	RolloutType          *string  `yaml:"rolloutType,omitempty"`
 }

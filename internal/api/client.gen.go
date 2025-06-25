@@ -37,10 +37,18 @@ const (
 
 // Defines values for EnvironmentVersionRolloutRolloutType.
 const (
-	Exponential           EnvironmentVersionRolloutRolloutType = "exponential"
-	ExponentialNormalized EnvironmentVersionRolloutRolloutType = "exponential-normalized"
-	Linear                EnvironmentVersionRolloutRolloutType = "linear"
-	LinearNormalized      EnvironmentVersionRolloutRolloutType = "linear-normalized"
+	EnvironmentVersionRolloutRolloutTypeExponential           EnvironmentVersionRolloutRolloutType = "exponential"
+	EnvironmentVersionRolloutRolloutTypeExponentialNormalized EnvironmentVersionRolloutRolloutType = "exponential-normalized"
+	EnvironmentVersionRolloutRolloutTypeLinear                EnvironmentVersionRolloutRolloutType = "linear"
+	EnvironmentVersionRolloutRolloutTypeLinearNormalized      EnvironmentVersionRolloutRolloutType = "linear-normalized"
+)
+
+// Defines values for InsertEnvironmentVersionRolloutRolloutType.
+const (
+	InsertEnvironmentVersionRolloutRolloutTypeExponential           InsertEnvironmentVersionRolloutRolloutType = "exponential"
+	InsertEnvironmentVersionRolloutRolloutTypeExponentialNormalized InsertEnvironmentVersionRolloutRolloutType = "exponential-normalized"
+	InsertEnvironmentVersionRolloutRolloutTypeLinear                InsertEnvironmentVersionRolloutRolloutType = "linear"
+	InsertEnvironmentVersionRolloutRolloutTypeLinearNormalized      InsertEnvironmentVersionRolloutRolloutType = "linear-normalized"
 )
 
 // Defines values for JobStatus.
@@ -86,6 +94,7 @@ const (
 	UpsertDeploymentVersionJSONBodyStatusBuilding UpsertDeploymentVersionJSONBodyStatus = "building"
 	UpsertDeploymentVersionJSONBodyStatusFailed   UpsertDeploymentVersionJSONBodyStatus = "failed"
 	UpsertDeploymentVersionJSONBodyStatusReady    UpsertDeploymentVersionJSONBodyStatus = "ready"
+	UpsertDeploymentVersionJSONBodyStatusRejected UpsertDeploymentVersionJSONBodyStatus = "rejected"
 )
 
 // Defines values for UpdateDeploymentVersionJSONBodyStatus.
@@ -93,6 +102,7 @@ const (
 	UpdateDeploymentVersionJSONBodyStatusBuilding UpdateDeploymentVersionJSONBodyStatus = "building"
 	UpdateDeploymentVersionJSONBodyStatusFailed   UpdateDeploymentVersionJSONBodyStatus = "failed"
 	UpdateDeploymentVersionJSONBodyStatusReady    UpdateDeploymentVersionJSONBodyStatus = "ready"
+	UpdateDeploymentVersionJSONBodyStatusRejected UpdateDeploymentVersionJSONBodyStatus = "rejected"
 )
 
 // Defines values for UpsertReleaseJSONBodyStatus.
@@ -100,6 +110,7 @@ const (
 	UpsertReleaseJSONBodyStatusBuilding UpsertReleaseJSONBodyStatus = "building"
 	UpsertReleaseJSONBodyStatusFailed   UpsertReleaseJSONBodyStatus = "failed"
 	UpsertReleaseJSONBodyStatusReady    UpsertReleaseJSONBodyStatus = "ready"
+	UpsertReleaseJSONBodyStatusRejected UpsertReleaseJSONBodyStatus = "rejected"
 )
 
 // Defines values for UpdateReleaseJSONBodyStatus.
@@ -107,6 +118,7 @@ const (
 	Building UpdateReleaseJSONBodyStatus = "building"
 	Failed   UpdateReleaseJSONBodyStatus = "failed"
 	Ready    UpdateReleaseJSONBodyStatus = "ready"
+	Rejected UpdateReleaseJSONBodyStatus = "rejected"
 )
 
 // ApprovalRecord defines model for ApprovalRecord.
@@ -114,6 +126,7 @@ type ApprovalRecord struct {
 	ApprovedAt          *time.Time           `json:"approvedAt"`
 	CreatedAt           time.Time            `json:"createdAt"`
 	DeploymentVersionId openapi_types.UUID   `json:"deploymentVersionId"`
+	EnvironmentId       openapi_types.UUID   `json:"environmentId"`
 	Id                  openapi_types.UUID   `json:"id"`
 	Reason              *string              `json:"reason,omitempty"`
 	Status              ApprovalRecordStatus `json:"status"`
@@ -366,6 +379,21 @@ type ExitHook struct {
 	Name string `json:"name"`
 }
 
+// InsertEnvironmentVersionRollout defines model for InsertEnvironmentVersionRollout.
+type InsertEnvironmentVersionRollout struct {
+	// PositionGrowthFactor Controls how strongly queue position influences delay — higher values result in a smoother, slower rollout curve. Defaults to 1 if not specified.
+	PositionGrowthFactor *float32 `json:"positionGrowthFactor,omitempty"`
+
+	// RolloutType Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval. Defaults to a linear rollout if not specified.
+	RolloutType *InsertEnvironmentVersionRolloutRolloutType `json:"rolloutType,omitempty"`
+
+	// TimeScaleInterval Defines the base time interval that each unit of rollout progression is scaled by — larger values stretch the deployment timeline.
+	TimeScaleInterval float32 `json:"timeScaleInterval"`
+}
+
+// InsertEnvironmentVersionRolloutRolloutType Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval. Defaults to a linear rollout if not specified.
+type InsertEnvironmentVersionRolloutRolloutType string
+
 // Job defines model for Job.
 type Job struct {
 	CompletedAt *time.Time `json:"completedAt"`
@@ -441,6 +469,9 @@ type JobWithTrigger struct {
 // JobWithTriggerApprovalStatus defines model for JobWithTrigger.Approval.Status.
 type JobWithTriggerApprovalStatus string
 
+// MaxRetries defines model for MaxRetries.
+type MaxRetries = int32
+
 // MetadataMap defines model for MetadataMap.
 type MetadataMap map[string]string
 
@@ -454,6 +485,7 @@ type Policy struct {
 	Enabled                   bool                       `json:"enabled"`
 	EnvironmentVersionRollout *EnvironmentVersionRollout `json:"environmentVersionRollout,omitempty"`
 	Id                        openapi_types.UUID         `json:"id"`
+	MaxRetries                *MaxRetries                `json:"maxRetries"`
 	Name                      string                     `json:"name"`
 	Priority                  float32                    `json:"priority"`
 	Targets                   []PolicyTarget             `json:"targets"`
@@ -578,6 +610,19 @@ type ReleaseTarget struct {
 	Environment Environment        `json:"environment"`
 	Id          openapi_types.UUID `json:"id"`
 	Resource    Resource           `json:"resource"`
+}
+
+// ReleaseTargetLockRecord defines model for ReleaseTargetLockRecord.
+type ReleaseTargetLockRecord struct {
+	Id       openapi_types.UUID `json:"id"`
+	LockedAt time.Time          `json:"lockedAt"`
+	LockedBy struct {
+		Email string             `json:"email"`
+		Id    openapi_types.UUID `json:"id"`
+		Name  *string            `json:"name,omitempty"`
+	} `json:"lockedBy"`
+	ReleaseTargetId openapi_types.UUID `json:"releaseTargetId"`
+	UnlockedAt      *time.Time         `json:"unlockedAt"`
 }
 
 // Resource defines model for Resource.
@@ -824,8 +869,19 @@ type ApproveDeploymentVersionJSONBody struct {
 	Reason     *string    `json:"reason,omitempty"`
 }
 
+// ApproveDeploymentVersionForEnvironmentJSONBody defines parameters for ApproveDeploymentVersionForEnvironment.
+type ApproveDeploymentVersionForEnvironmentJSONBody struct {
+	ApprovedAt *time.Time `json:"approvedAt,omitempty"`
+	Reason     *string    `json:"reason,omitempty"`
+}
+
 // RejectDeploymentVersionJSONBody defines parameters for RejectDeploymentVersion.
 type RejectDeploymentVersionJSONBody struct {
+	Reason *string `json:"reason,omitempty"`
+}
+
+// RejectDeploymentVersionForEnvironmentJSONBody defines parameters for RejectDeploymentVersionForEnvironment.
+type RejectDeploymentVersionForEnvironmentJSONBody struct {
 	Reason *string `json:"reason,omitempty"`
 }
 
@@ -920,16 +976,18 @@ type UpsertPolicyJSONBody struct {
 		Rrule    *map[string]interface{} `json:"rrule,omitempty"`
 		TimeZone string                  `json:"timeZone"`
 	} `json:"denyWindows,omitempty"`
-	DeploymentVersionSelector *DeploymentVersionSelector `json:"deploymentVersionSelector,omitempty"`
-	Description               *string                    `json:"description,omitempty"`
-	Enabled                   *bool                      `json:"enabled,omitempty"`
-	Name                      string                     `json:"name"`
-	Priority                  *float32                   `json:"priority,omitempty"`
-	Targets                   []PolicyTarget             `json:"targets"`
-	VersionAnyApprovals       *VersionAnyApproval        `json:"versionAnyApprovals,omitempty"`
-	VersionRoleApprovals      *[]VersionRoleApproval     `json:"versionRoleApprovals,omitempty"`
-	VersionUserApprovals      *[]VersionUserApproval     `json:"versionUserApprovals,omitempty"`
-	WorkspaceId               string                     `json:"workspaceId"`
+	DeploymentVersionSelector *DeploymentVersionSelector       `json:"deploymentVersionSelector,omitempty"`
+	Description               *string                          `json:"description,omitempty"`
+	Enabled                   *bool                            `json:"enabled,omitempty"`
+	EnvironmentVersionRollout *InsertEnvironmentVersionRollout `json:"environmentVersionRollout,omitempty"`
+	MaxRetries                *MaxRetries                      `json:"maxRetries"`
+	Name                      string                           `json:"name"`
+	Priority                  *float32                         `json:"priority,omitempty"`
+	Targets                   []PolicyTarget                   `json:"targets"`
+	VersionAnyApprovals       *VersionAnyApproval              `json:"versionAnyApprovals,omitempty"`
+	VersionRoleApprovals      *[]VersionRoleApproval           `json:"versionRoleApprovals,omitempty"`
+	VersionUserApprovals      *[]VersionUserApproval           `json:"versionUserApprovals,omitempty"`
+	WorkspaceId               string                           `json:"workspaceId"`
 }
 
 // UpdatePolicyJSONBody defines parameters for UpdatePolicy.
@@ -940,13 +998,14 @@ type UpdatePolicyJSONBody struct {
 		Rrule    *map[string]interface{} `json:"rrule,omitempty"`
 		TimeZone string                  `json:"timeZone"`
 	} `json:"denyWindows,omitempty"`
-	DeploymentVersionSelector *DeploymentVersionSelector `json:"deploymentVersionSelector,omitempty"`
-	Description               *string                    `json:"description,omitempty"`
-	Enabled                   *bool                      `json:"enabled,omitempty"`
-	EnvironmentVersionRollout *EnvironmentVersionRollout `json:"environmentVersionRollout,omitempty"`
-	Name                      *string                    `json:"name,omitempty"`
-	Priority                  *float32                   `json:"priority,omitempty"`
-	Targets                   *[]PolicyTarget            `json:"targets,omitempty"`
+	DeploymentVersionSelector *DeploymentVersionSelector       `json:"deploymentVersionSelector,omitempty"`
+	Description               *string                          `json:"description,omitempty"`
+	Enabled                   *bool                            `json:"enabled,omitempty"`
+	EnvironmentVersionRollout *InsertEnvironmentVersionRollout `json:"environmentVersionRollout,omitempty"`
+	MaxRetries                *MaxRetries                      `json:"maxRetries"`
+	Name                      *string                          `json:"name,omitempty"`
+	Priority                  *float32                         `json:"priority,omitempty"`
+	Targets                   *[]PolicyTarget                  `json:"targets,omitempty"`
 	VersionAnyApprovals       *[]struct {
 		RequiredApprovalsCount *float32 `json:"requiredApprovalsCount,omitempty"`
 	} `json:"versionAnyApprovals,omitempty"`
@@ -1113,8 +1172,14 @@ type UpdateDeploymentVersionJSONRequestBody UpdateDeploymentVersionJSONBody
 // ApproveDeploymentVersionJSONRequestBody defines body for ApproveDeploymentVersion for application/json ContentType.
 type ApproveDeploymentVersionJSONRequestBody ApproveDeploymentVersionJSONBody
 
+// ApproveDeploymentVersionForEnvironmentJSONRequestBody defines body for ApproveDeploymentVersionForEnvironment for application/json ContentType.
+type ApproveDeploymentVersionForEnvironmentJSONRequestBody ApproveDeploymentVersionForEnvironmentJSONBody
+
 // RejectDeploymentVersionJSONRequestBody defines body for RejectDeploymentVersion for application/json ContentType.
 type RejectDeploymentVersionJSONRequestBody RejectDeploymentVersionJSONBody
+
+// RejectDeploymentVersionForEnvironmentJSONRequestBody defines body for RejectDeploymentVersionForEnvironment for application/json ContentType.
+type RejectDeploymentVersionForEnvironmentJSONRequestBody RejectDeploymentVersionForEnvironmentJSONBody
 
 // CreateDeploymentJSONRequestBody defines body for CreateDeployment for application/json ContentType.
 type CreateDeploymentJSONRequestBody CreateDeploymentJSONBody
@@ -2382,6 +2447,11 @@ type ClientInterface interface {
 
 	ApproveDeploymentVersion(ctx context.Context, deploymentVersionId openapi_types.UUID, body ApproveDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ApproveDeploymentVersionForEnvironmentWithBody request with any body
+	ApproveDeploymentVersionForEnvironmentWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ApproveDeploymentVersionForEnvironment(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body ApproveDeploymentVersionForEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetRolloutInfo request
 	GetRolloutInfo(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -2389,6 +2459,11 @@ type ClientInterface interface {
 	RejectDeploymentVersionWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	RejectDeploymentVersion(ctx context.Context, deploymentVersionId openapi_types.UUID, body RejectDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RejectDeploymentVersionForEnvironmentWithBody request with any body
+	RejectDeploymentVersionForEnvironmentWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RejectDeploymentVersionForEnvironment(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body RejectDeploymentVersionForEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateDeploymentWithBody request with any body
 	CreateDeploymentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2496,8 +2571,14 @@ type ClientInterface interface {
 
 	CreateReleaseChannel(ctx context.Context, body CreateReleaseChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// LockReleaseTarget request
+	LockReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetReleaseTargetReleases request
 	GetReleaseTargetReleases(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UnlockReleaseTarget request
+	UnlockReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpsertReleaseWithBody request with any body
 	UpsertReleaseWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2717,6 +2798,30 @@ func (c *Client) ApproveDeploymentVersion(ctx context.Context, deploymentVersion
 	return c.Client.Do(req)
 }
 
+func (c *Client) ApproveDeploymentVersionForEnvironmentWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveDeploymentVersionForEnvironmentRequestWithBody(c.Server, deploymentVersionId, environmentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ApproveDeploymentVersionForEnvironment(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body ApproveDeploymentVersionForEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveDeploymentVersionForEnvironmentRequest(c.Server, deploymentVersionId, environmentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetRolloutInfo(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetRolloutInfoRequest(c.Server, deploymentVersionId, environmentId)
 	if err != nil {
@@ -2743,6 +2848,30 @@ func (c *Client) RejectDeploymentVersionWithBody(ctx context.Context, deployment
 
 func (c *Client) RejectDeploymentVersion(ctx context.Context, deploymentVersionId openapi_types.UUID, body RejectDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRejectDeploymentVersionRequest(c.Server, deploymentVersionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RejectDeploymentVersionForEnvironmentWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRejectDeploymentVersionForEnvironmentRequestWithBody(c.Server, deploymentVersionId, environmentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RejectDeploymentVersionForEnvironment(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body RejectDeploymentVersionForEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRejectDeploymentVersionForEnvironmentRequest(c.Server, deploymentVersionId, environmentId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3221,8 +3350,32 @@ func (c *Client) CreateReleaseChannel(ctx context.Context, body CreateReleaseCha
 	return c.Client.Do(req)
 }
 
+func (c *Client) LockReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLockReleaseTargetRequest(c.Server, releaseTargetId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetReleaseTargetReleases(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetReleaseTargetReleasesRequest(c.Server, releaseTargetId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UnlockReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUnlockReleaseTargetRequest(c.Server, releaseTargetId)
 	if err != nil {
 		return nil, err
 	}
@@ -3921,6 +4074,60 @@ func NewApproveDeploymentVersionRequestWithBody(server string, deploymentVersion
 	return req, nil
 }
 
+// NewApproveDeploymentVersionForEnvironmentRequest calls the generic ApproveDeploymentVersionForEnvironment builder with application/json body
+func NewApproveDeploymentVersionForEnvironmentRequest(server string, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body ApproveDeploymentVersionForEnvironmentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewApproveDeploymentVersionForEnvironmentRequestWithBody(server, deploymentVersionId, environmentId, "application/json", bodyReader)
+}
+
+// NewApproveDeploymentVersionForEnvironmentRequestWithBody generates requests for ApproveDeploymentVersionForEnvironment with any type of body
+func NewApproveDeploymentVersionForEnvironmentRequestWithBody(server string, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "environmentId", runtime.ParamLocationPath, environmentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/deployment-versions/%s/approve/environment/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetRolloutInfoRequest generates requests for GetRolloutInfo
 func NewGetRolloutInfoRequest(server string, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID) (*http.Request, error) {
 	var err error
@@ -3990,6 +4197,60 @@ func NewRejectDeploymentVersionRequestWithBody(server string, deploymentVersionI
 	}
 
 	operationPath := fmt.Sprintf("/v1/deployment-versions/%s/reject", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRejectDeploymentVersionForEnvironmentRequest calls the generic RejectDeploymentVersionForEnvironment builder with application/json body
+func NewRejectDeploymentVersionForEnvironmentRequest(server string, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body RejectDeploymentVersionForEnvironmentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRejectDeploymentVersionForEnvironmentRequestWithBody(server, deploymentVersionId, environmentId, "application/json", bodyReader)
+}
+
+// NewRejectDeploymentVersionForEnvironmentRequestWithBody generates requests for RejectDeploymentVersionForEnvironment with any type of body
+func NewRejectDeploymentVersionForEnvironmentRequestWithBody(server string, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "environmentId", runtime.ParamLocationPath, environmentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/deployment-versions/%s/reject/environment/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -5069,6 +5330,40 @@ func NewCreateReleaseChannelRequestWithBody(server string, contentType string, b
 	return req, nil
 }
 
+// NewLockReleaseTargetRequest generates requests for LockReleaseTarget
+func NewLockReleaseTargetRequest(server string, releaseTargetId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "releaseTargetId", runtime.ParamLocationPath, releaseTargetId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/release-targets/%s/lock", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetReleaseTargetReleasesRequest generates requests for GetReleaseTargetReleases
 func NewGetReleaseTargetReleasesRequest(server string, releaseTargetId openapi_types.UUID) (*http.Request, error) {
 	var err error
@@ -5096,6 +5391,40 @@ func NewGetReleaseTargetReleasesRequest(server string, releaseTargetId openapi_t
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUnlockReleaseTargetRequest generates requests for UnlockReleaseTarget
+func NewUnlockReleaseTargetRequest(server string, releaseTargetId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "releaseTargetId", runtime.ParamLocationPath, releaseTargetId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/release-targets/%s/unlock", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -6305,6 +6634,11 @@ type ClientWithResponsesInterface interface {
 
 	ApproveDeploymentVersionWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, body ApproveDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionResponse, error)
 
+	// ApproveDeploymentVersionForEnvironmentWithBodyWithResponse request with any body
+	ApproveDeploymentVersionForEnvironmentWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionForEnvironmentResponse, error)
+
+	ApproveDeploymentVersionForEnvironmentWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body ApproveDeploymentVersionForEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionForEnvironmentResponse, error)
+
 	// GetRolloutInfoWithResponse request
 	GetRolloutInfoWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetRolloutInfoResponse, error)
 
@@ -6312,6 +6646,11 @@ type ClientWithResponsesInterface interface {
 	RejectDeploymentVersionWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionResponse, error)
 
 	RejectDeploymentVersionWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, body RejectDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionResponse, error)
+
+	// RejectDeploymentVersionForEnvironmentWithBodyWithResponse request with any body
+	RejectDeploymentVersionForEnvironmentWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionForEnvironmentResponse, error)
+
+	RejectDeploymentVersionForEnvironmentWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body RejectDeploymentVersionForEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionForEnvironmentResponse, error)
 
 	// CreateDeploymentWithBodyWithResponse request with any body
 	CreateDeploymentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeploymentResponse, error)
@@ -6419,8 +6758,14 @@ type ClientWithResponsesInterface interface {
 
 	CreateReleaseChannelWithResponse(ctx context.Context, body CreateReleaseChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateReleaseChannelResponse, error)
 
+	// LockReleaseTargetWithResponse request
+	LockReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*LockReleaseTargetResponse, error)
+
 	// GetReleaseTargetReleasesWithResponse request
 	GetReleaseTargetReleasesWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReleaseTargetReleasesResponse, error)
+
+	// UnlockReleaseTargetWithResponse request
+	UnlockReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*UnlockReleaseTargetResponse, error)
 
 	// UpsertReleaseWithBodyWithResponse request with any body
 	UpsertReleaseWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertReleaseResponse, error)
@@ -6683,6 +7028,37 @@ func (r ApproveDeploymentVersionResponse) StatusCode() int {
 	return 0
 }
 
+type ApproveDeploymentVersionForEnvironmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ApprovalRecord
+	JSON403      *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON404 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON500 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r ApproveDeploymentVersionForEnvironmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ApproveDeploymentVersionForEnvironmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetRolloutInfoResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -6743,6 +7119,37 @@ func (r RejectDeploymentVersionResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r RejectDeploymentVersionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RejectDeploymentVersionForEnvironmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ApprovalRecord
+	JSON403      *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON404 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON500 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r RejectDeploymentVersionForEnvironmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RejectDeploymentVersionForEnvironmentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -7546,6 +7953,34 @@ func (r CreateReleaseChannelResponse) StatusCode() int {
 	return 0
 }
 
+type LockReleaseTargetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ReleaseTargetLockRecord
+	JSON409      *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON500 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r LockReleaseTargetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r LockReleaseTargetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetReleaseTargetReleasesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -7575,6 +8010,37 @@ func (r GetReleaseTargetReleasesResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetReleaseTargetReleasesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UnlockReleaseTargetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ReleaseTargetLockRecord
+	JSON400      *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON403 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON500 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r UnlockReleaseTargetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UnlockReleaseTargetResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -8492,6 +8958,23 @@ func (c *ClientWithResponses) ApproveDeploymentVersionWithResponse(ctx context.C
 	return ParseApproveDeploymentVersionResponse(rsp)
 }
 
+// ApproveDeploymentVersionForEnvironmentWithBodyWithResponse request with arbitrary body returning *ApproveDeploymentVersionForEnvironmentResponse
+func (c *ClientWithResponses) ApproveDeploymentVersionForEnvironmentWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionForEnvironmentResponse, error) {
+	rsp, err := c.ApproveDeploymentVersionForEnvironmentWithBody(ctx, deploymentVersionId, environmentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApproveDeploymentVersionForEnvironmentResponse(rsp)
+}
+
+func (c *ClientWithResponses) ApproveDeploymentVersionForEnvironmentWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body ApproveDeploymentVersionForEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionForEnvironmentResponse, error) {
+	rsp, err := c.ApproveDeploymentVersionForEnvironment(ctx, deploymentVersionId, environmentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApproveDeploymentVersionForEnvironmentResponse(rsp)
+}
+
 // GetRolloutInfoWithResponse request returning *GetRolloutInfoResponse
 func (c *ClientWithResponses) GetRolloutInfoWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetRolloutInfoResponse, error) {
 	rsp, err := c.GetRolloutInfo(ctx, deploymentVersionId, environmentId, reqEditors...)
@@ -8516,6 +8999,23 @@ func (c *ClientWithResponses) RejectDeploymentVersionWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseRejectDeploymentVersionResponse(rsp)
+}
+
+// RejectDeploymentVersionForEnvironmentWithBodyWithResponse request with arbitrary body returning *RejectDeploymentVersionForEnvironmentResponse
+func (c *ClientWithResponses) RejectDeploymentVersionForEnvironmentWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionForEnvironmentResponse, error) {
+	rsp, err := c.RejectDeploymentVersionForEnvironmentWithBody(ctx, deploymentVersionId, environmentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRejectDeploymentVersionForEnvironmentResponse(rsp)
+}
+
+func (c *ClientWithResponses) RejectDeploymentVersionForEnvironmentWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body RejectDeploymentVersionForEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionForEnvironmentResponse, error) {
+	rsp, err := c.RejectDeploymentVersionForEnvironment(ctx, deploymentVersionId, environmentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRejectDeploymentVersionForEnvironmentResponse(rsp)
 }
 
 // CreateDeploymentWithBodyWithResponse request with arbitrary body returning *CreateDeploymentResponse
@@ -8858,6 +9358,15 @@ func (c *ClientWithResponses) CreateReleaseChannelWithResponse(ctx context.Conte
 	return ParseCreateReleaseChannelResponse(rsp)
 }
 
+// LockReleaseTargetWithResponse request returning *LockReleaseTargetResponse
+func (c *ClientWithResponses) LockReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*LockReleaseTargetResponse, error) {
+	rsp, err := c.LockReleaseTarget(ctx, releaseTargetId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLockReleaseTargetResponse(rsp)
+}
+
 // GetReleaseTargetReleasesWithResponse request returning *GetReleaseTargetReleasesResponse
 func (c *ClientWithResponses) GetReleaseTargetReleasesWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReleaseTargetReleasesResponse, error) {
 	rsp, err := c.GetReleaseTargetReleases(ctx, releaseTargetId, reqEditors...)
@@ -8865,6 +9374,15 @@ func (c *ClientWithResponses) GetReleaseTargetReleasesWithResponse(ctx context.C
 		return nil, err
 	}
 	return ParseGetReleaseTargetReleasesResponse(rsp)
+}
+
+// UnlockReleaseTargetWithResponse request returning *UnlockReleaseTargetResponse
+func (c *ClientWithResponses) UnlockReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*UnlockReleaseTargetResponse, error) {
+	rsp, err := c.UnlockReleaseTarget(ctx, releaseTargetId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUnlockReleaseTargetResponse(rsp)
 }
 
 // UpsertReleaseWithBodyWithResponse request with arbitrary body returning *UpsertReleaseResponse
@@ -9453,6 +9971,59 @@ func ParseApproveDeploymentVersionResponse(rsp *http.Response) (*ApproveDeployme
 	return response, nil
 }
 
+// ParseApproveDeploymentVersionForEnvironmentResponse parses an HTTP response from a ApproveDeploymentVersionForEnvironmentWithResponse call
+func ParseApproveDeploymentVersionForEnvironmentResponse(rsp *http.Response) (*ApproveDeploymentVersionForEnvironmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ApproveDeploymentVersionForEnvironmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApprovalRecord
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetRolloutInfoResponse parses an HTTP response from a GetRolloutInfoWithResponse call
 func ParseGetRolloutInfoResponse(rsp *http.Response) (*GetRolloutInfoResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -9513,6 +10084,59 @@ func ParseRejectDeploymentVersionResponse(rsp *http.Response) (*RejectDeployment
 	}
 
 	response := &RejectDeploymentVersionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApprovalRecord
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRejectDeploymentVersionForEnvironmentResponse parses an HTTP response from a RejectDeploymentVersionForEnvironmentWithResponse call
+func ParseRejectDeploymentVersionForEnvironmentResponse(rsp *http.Response) (*RejectDeploymentVersionForEnvironmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RejectDeploymentVersionForEnvironmentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -10739,6 +11363,50 @@ func ParseCreateReleaseChannelResponse(rsp *http.Response) (*CreateReleaseChanne
 	return response, nil
 }
 
+// ParseLockReleaseTargetResponse parses an HTTP response from a LockReleaseTargetWithResponse call
+func ParseLockReleaseTargetResponse(rsp *http.Response) (*LockReleaseTargetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &LockReleaseTargetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ReleaseTargetLockRecord
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetReleaseTargetReleasesResponse parses an HTTP response from a GetReleaseTargetReleasesWithResponse call
 func ParseGetReleaseTargetReleasesResponse(rsp *http.Response) (*GetReleaseTargetReleasesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -10779,6 +11447,59 @@ func ParseGetReleaseTargetReleasesResponse(rsp *http.Response) (*GetReleaseTarge
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest struct {
 			Error string `json:"error"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUnlockReleaseTargetResponse parses an HTTP response from a UnlockReleaseTargetWithResponse call
+func ParseUnlockReleaseTargetResponse(rsp *http.Response) (*UnlockReleaseTargetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UnlockReleaseTargetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ReleaseTargetLockRecord
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
