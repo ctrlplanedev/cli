@@ -33,20 +33,21 @@ func parseEnvironmentVersionRollout(rollout string) (*api.InsertEnvironmentVersi
 
 	var parsedPositionGrowthFactor *float32
 	if selector["positionGrowthFactor"] != nil {
-		floatPositionGrowthFactor, ok := selector["positionGrowthFactor"].(float32)
+		float64PositionGrowthFactor, ok := selector["positionGrowthFactor"].(float64)
 		if !ok {
 			return nil, fmt.Errorf("invalid position growth factor: %v", selector["positionGrowthFactor"])
 		}
-		parsedPositionGrowthFactor = &floatPositionGrowthFactor
+		float32PositionGrowthFactor := float32(float64PositionGrowthFactor)
+		parsedPositionGrowthFactor = &float32PositionGrowthFactor
 	}
 
 	var parsedTimeScaleInterval float32
 	if selector["timeScaleInterval"] != nil {
-		floatTimeScaleInterval, ok := selector["timeScaleInterval"].(float32)
+		float64TimeScaleInterval, ok := selector["timeScaleInterval"].(float64)
 		if !ok {
 			return nil, fmt.Errorf("invalid time scale interval: %v", selector["timeScaleInterval"])
 		}
-		parsedTimeScaleInterval = floatTimeScaleInterval
+		parsedTimeScaleInterval = float32(float64TimeScaleInterval)
 	}
 
 	return &api.InsertEnvironmentVersionRollout{
