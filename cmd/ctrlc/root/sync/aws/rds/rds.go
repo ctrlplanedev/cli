@@ -468,7 +468,13 @@ var relationshipRules = []api.CreateResourceRelationshipRule{
 		TargetVersion: "ctrlplane.dev/network/v1",
 		TargetKind:    "AmazonNetwork",
 
-		MetadataKeysMatches: &[]string{"aws/region", "network/name"},
+		MetadataKeysMatches: &[]struct {
+			SourceKey string `json:"sourceKey"`
+			TargetKey string `json:"targetKey"`
+		}{
+			{SourceKey: "aws/region", TargetKey: "aws/region"},
+			{SourceKey: "network/name", TargetKey: "network/name"},
+		},
 	},
 }
 

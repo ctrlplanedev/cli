@@ -163,7 +163,12 @@ func createResourceRelationshipRule(ctx context.Context, resourceProvider *api.R
 		return fmt.Errorf("unsupported cluster kind: %s", clusterResource.Kind)
 	}
 
-	metadataKeysMatches := []string{metadataKey}
+	metadataKeysMatches := []struct {
+		SourceKey string `json:"sourceKey"`
+		TargetKey string `json:"targetKey"`
+	}{
+		{SourceKey: metadataKey, TargetKey: metadataKey},
+	}
 
 	resourceRelationshipRule := api.CreateResourceRelationshipRule{
 		DependencyType:      api.ProvisionedIn,
