@@ -105,6 +105,14 @@ const (
 	UpdateDeploymentVersionJSONBodyStatusRejected UpdateDeploymentVersionJSONBodyStatus = "rejected"
 )
 
+// Defines values for ListDeploymentVersionsParamsStatus.
+const (
+	ListDeploymentVersionsParamsStatusBuilding ListDeploymentVersionsParamsStatus = "building"
+	ListDeploymentVersionsParamsStatusFailed   ListDeploymentVersionsParamsStatus = "failed"
+	ListDeploymentVersionsParamsStatusReady    ListDeploymentVersionsParamsStatus = "ready"
+	ListDeploymentVersionsParamsStatusRejected ListDeploymentVersionsParamsStatus = "rejected"
+)
+
 // Defines values for UpsertReleaseJSONBodyStatus.
 const (
 	UpsertReleaseJSONBodyStatusBuilding UpsertReleaseJSONBodyStatus = "building"
@@ -115,10 +123,10 @@ const (
 
 // Defines values for UpdateReleaseJSONBodyStatus.
 const (
-	Building UpdateReleaseJSONBodyStatus = "building"
-	Failed   UpdateReleaseJSONBodyStatus = "failed"
-	Ready    UpdateReleaseJSONBodyStatus = "ready"
-	Rejected UpdateReleaseJSONBodyStatus = "rejected"
+	UpdateReleaseJSONBodyStatusBuilding UpdateReleaseJSONBodyStatus = "building"
+	UpdateReleaseJSONBodyStatusFailed   UpdateReleaseJSONBodyStatus = "failed"
+	UpdateReleaseJSONBodyStatusReady    UpdateReleaseJSONBodyStatus = "ready"
+	UpdateReleaseJSONBodyStatusRejected UpdateReleaseJSONBodyStatus = "rejected"
 )
 
 // ApprovalRecord defines model for ApprovalRecord.
@@ -171,13 +179,16 @@ type CreateResourceRelationshipRule struct {
 	DependencyDescription *string                                `json:"dependencyDescription,omitempty"`
 	DependencyType        ResourceRelationshipRuleDependencyType `json:"dependencyType"`
 	Description           *string                                `json:"description,omitempty"`
-	MetadataKeysMatches   *[]string                              `json:"metadataKeysMatches,omitempty"`
-	Name                  string                                 `json:"name"`
-	Reference             string                                 `json:"reference"`
-	SourceKind            string                                 `json:"sourceKind"`
-	SourceVersion         string                                 `json:"sourceVersion"`
-	TargetKind            string                                 `json:"targetKind"`
-	TargetMetadataEquals  *[]struct {
+	MetadataKeysMatches   *[]struct {
+		SourceKey string `json:"sourceKey"`
+		TargetKey string `json:"targetKey"`
+	} `json:"metadataKeysMatches,omitempty"`
+	Name                 string `json:"name"`
+	Reference            string `json:"reference"`
+	SourceKind           string `json:"sourceKind"`
+	SourceVersion        string `json:"sourceVersion"`
+	TargetKind           string `json:"targetKind"`
+	TargetMetadataEquals *[]struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
 	} `json:"targetMetadataEquals,omitempty"`
@@ -439,7 +450,9 @@ type JobWithTrigger struct {
 	// JobAgentConfig Configuration for the Job Agent
 	JobAgentConfig map[string]interface{} `json:"jobAgentConfig"`
 	JobAgentId     *openapi_types.UUID    `json:"jobAgentId,omitempty"`
+	Links          *map[string]string     `json:"links,omitempty"`
 	Message        *string                `json:"message,omitempty"`
+	Metadata       *map[string]string     `json:"metadata,omitempty"`
 	Reason         *string                `json:"reason,omitempty"`
 	Release        *Release               `json:"release,omitempty"`
 	Resource       *struct {
@@ -647,13 +660,16 @@ type ResourceRelationshipRule struct {
 	DependencyType        ResourceRelationshipRuleDependencyType `json:"dependencyType"`
 	Description           *string                                `json:"description,omitempty"`
 	Id                    openapi_types.UUID                     `json:"id"`
-	MetadataKeysMatches   *[]string                              `json:"metadataKeysMatches,omitempty"`
-	Name                  string                                 `json:"name"`
-	Reference             string                                 `json:"reference"`
-	SourceKind            string                                 `json:"sourceKind"`
-	SourceVersion         string                                 `json:"sourceVersion"`
-	TargetKind            *string                                `json:"targetKind,omitempty"`
-	TargetMetadataEquals  *[]struct {
+	MetadataKeysMatches   *[]struct {
+		SourceKey string `json:"sourceKey"`
+		TargetKey string `json:"targetKey"`
+	} `json:"metadataKeysMatches,omitempty"`
+	Name                 string  `json:"name"`
+	Reference            string  `json:"reference"`
+	SourceKind           string  `json:"sourceKind"`
+	SourceVersion        string  `json:"sourceVersion"`
+	TargetKind           *string `json:"targetKind,omitempty"`
+	TargetMetadataEquals *[]struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
 	} `json:"targetMetadataEquals,omitempty"`
@@ -745,13 +761,16 @@ type UpdateResourceRelationshipRule struct {
 	DependencyDescription *string                                 `json:"dependencyDescription,omitempty"`
 	DependencyType        *ResourceRelationshipRuleDependencyType `json:"dependencyType,omitempty"`
 	Description           *string                                 `json:"description,omitempty"`
-	MetadataKeysMatch     *[]string                               `json:"metadataKeysMatch,omitempty"`
-	Name                  *string                                 `json:"name,omitempty"`
-	Reference             *string                                 `json:"reference,omitempty"`
-	SourceKind            *string                                 `json:"sourceKind,omitempty"`
-	SourceVersion         *string                                 `json:"sourceVersion,omitempty"`
-	TargetKind            *string                                 `json:"targetKind,omitempty"`
-	TargetMetadataEquals  *[]struct {
+	MetadataKeysMatches   *[]struct {
+		SourceKey string `json:"sourceKey"`
+		TargetKey string `json:"targetKey"`
+	} `json:"metadataKeysMatches,omitempty"`
+	Name                 *string `json:"name,omitempty"`
+	Reference            *string `json:"reference,omitempty"`
+	SourceKind           *string `json:"sourceKind,omitempty"`
+	SourceVersion        *string `json:"sourceVersion,omitempty"`
+	TargetKind           *string `json:"targetKind,omitempty"`
+	TargetMetadataEquals *[]struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
 	} `json:"targetMetadataEquals,omitempty"`
@@ -822,14 +841,6 @@ type Workspace struct {
 
 // GetCloudProviderRegionsParamsProvider defines parameters for GetCloudProviderRegions.
 type GetCloudProviderRegionsParamsProvider string
-
-// CreateDeploymentVersionChannelJSONBody defines parameters for CreateDeploymentVersionChannel.
-type CreateDeploymentVersionChannelJSONBody struct {
-	DeploymentId    string                 `json:"deploymentId"`
-	Description     *string                `json:"description"`
-	Name            string                 `json:"name"`
-	VersionSelector map[string]interface{} `json:"versionSelector"`
-}
 
 // UpsertDeploymentVersionJSONBody defines parameters for UpsertDeploymentVersion.
 type UpsertDeploymentVersionJSONBody struct {
@@ -939,17 +950,22 @@ type CreateDeploymentVariableJSONBody struct {
 	ReferenceValues *[]ReferenceDeploymentVariableValue `json:"referenceValues,omitempty"`
 }
 
+// ListDeploymentVersionsParams defines parameters for ListDeploymentVersions.
+type ListDeploymentVersionsParams struct {
+	Status *ListDeploymentVersionsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+}
+
+// ListDeploymentVersionsParamsStatus defines parameters for ListDeploymentVersions.
+type ListDeploymentVersionsParamsStatus string
+
 // CreateEnvironmentJSONBody defines parameters for CreateEnvironment.
 type CreateEnvironmentJSONBody struct {
-	DeploymentVersionChannels *[]string `json:"deploymentVersionChannels,omitempty"`
-	Description               *string   `json:"description,omitempty"`
+	Description *string `json:"description,omitempty"`
 
 	// Directory The directory path of the environment
 	Directory        *string                 `json:"directory,omitempty"`
 	Metadata         *map[string]string      `json:"metadata,omitempty"`
 	Name             string                  `json:"name"`
-	PolicyId         *string                 `json:"policyId,omitempty"`
-	ReleaseChannels  *[]string               `json:"releaseChannels,omitempty"`
 	ResourceSelector *map[string]interface{} `json:"resourceSelector,omitempty"`
 	SystemId         string                  `json:"systemId"`
 }
@@ -1041,12 +1057,21 @@ type CreateResourceToResourceRelationshipJSONBody struct {
 	WorkspaceId openapi_types.UUID `json:"workspaceId"`
 }
 
-// CreateReleaseChannelJSONBody defines parameters for CreateReleaseChannel.
-type CreateReleaseChannelJSONBody struct {
-	DeploymentId    string                 `json:"deploymentId"`
-	Description     *string                `json:"description"`
-	Name            string                 `json:"name"`
-	ReleaseSelector map[string]interface{} `json:"releaseSelector"`
+// PinReleaseTargetJSONBody defines parameters for PinReleaseTarget.
+type PinReleaseTargetJSONBody struct {
+	union json.RawMessage
+}
+
+// PinReleaseTargetJSONBody0 defines parameters for PinReleaseTarget.
+type PinReleaseTargetJSONBody0 struct {
+	// VersionId The ID of the version to pin
+	VersionId openapi_types.UUID `json:"versionId"`
+}
+
+// PinReleaseTargetJSONBody1 defines parameters for PinReleaseTarget.
+type PinReleaseTargetJSONBody1 struct {
+	// VersionTag The tag of the version to pin
+	VersionTag string `json:"versionTag"`
 }
 
 // UpsertReleaseJSONBody defines parameters for UpsertRelease.
@@ -1160,9 +1185,6 @@ type GetGroupedCountsJSONBody struct {
 	MetadataKeys          []string `json:"metadataKeys"`
 }
 
-// CreateDeploymentVersionChannelJSONRequestBody defines body for CreateDeploymentVersionChannel for application/json ContentType.
-type CreateDeploymentVersionChannelJSONRequestBody CreateDeploymentVersionChannelJSONBody
-
 // UpsertDeploymentVersionJSONRequestBody defines body for UpsertDeploymentVersion for application/json ContentType.
 type UpsertDeploymentVersionJSONRequestBody UpsertDeploymentVersionJSONBody
 
@@ -1211,8 +1233,8 @@ type CreateJobToResourceRelationshipJSONRequestBody CreateJobToResourceRelations
 // CreateResourceToResourceRelationshipJSONRequestBody defines body for CreateResourceToResourceRelationship for application/json ContentType.
 type CreateResourceToResourceRelationshipJSONRequestBody CreateResourceToResourceRelationshipJSONBody
 
-// CreateReleaseChannelJSONRequestBody defines body for CreateReleaseChannel for application/json ContentType.
-type CreateReleaseChannelJSONRequestBody CreateReleaseChannelJSONBody
+// PinReleaseTargetJSONRequestBody defines body for PinReleaseTarget for application/json ContentType.
+type PinReleaseTargetJSONRequestBody PinReleaseTargetJSONBody
 
 // UpsertReleaseJSONRequestBody defines body for UpsertRelease for application/json ContentType.
 type UpsertReleaseJSONRequestBody UpsertReleaseJSONBody
@@ -2427,11 +2449,6 @@ type ClientInterface interface {
 	// GetCloudProviderRegions request
 	GetCloudProviderRegions(ctx context.Context, provider GetCloudProviderRegionsParamsProvider, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateDeploymentVersionChannelWithBody request with any body
-	CreateDeploymentVersionChannelWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateDeploymentVersionChannel(ctx context.Context, body CreateDeploymentVersionChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// UpsertDeploymentVersionWithBody request with any body
 	UpsertDeploymentVersionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -2481,12 +2498,6 @@ type ClientInterface interface {
 
 	UpdateDeployment(ctx context.Context, deploymentId openapi_types.UUID, body UpdateDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteDeploymentVersionChannel request
-	DeleteDeploymentVersionChannel(ctx context.Context, deploymentId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteReleaseChannel request
-	DeleteReleaseChannel(ctx context.Context, deploymentId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// GetResourcesForDeployment request
 	GetResourcesForDeployment(ctx context.Context, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -2497,6 +2508,9 @@ type ClientInterface interface {
 	CreateDeploymentVariableWithBody(ctx context.Context, deploymentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	CreateDeploymentVariable(ctx context.Context, deploymentId openapi_types.UUID, body CreateDeploymentVariableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListDeploymentVersions request
+	ListDeploymentVersions(ctx context.Context, deploymentId openapi_types.UUID, params *ListDeploymentVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateEnvironmentWithBody request with any body
 	CreateEnvironmentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2566,19 +2580,28 @@ type ClientInterface interface {
 
 	CreateResourceToResourceRelationship(ctx context.Context, body CreateResourceToResourceRelationshipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateReleaseChannelWithBody request with any body
-	CreateReleaseChannelWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetReleaseTarget request
+	GetReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreateReleaseChannel(ctx context.Context, body CreateReleaseChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetLatestJobs request
+	GetLatestJobs(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// LockReleaseTarget request
 	LockReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PinReleaseTargetWithBody request with any body
+	PinReleaseTargetWithBody(ctx context.Context, releaseTargetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PinReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, body PinReleaseTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetReleaseTargetReleases request
 	GetReleaseTargetReleases(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UnlockReleaseTarget request
 	UnlockReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UnpinReleaseTarget request
+	UnpinReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpsertReleaseWithBody request with any body
 	UpsertReleaseWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2692,30 +2715,6 @@ type ClientInterface interface {
 
 func (c *Client) GetCloudProviderRegions(ctx context.Context, provider GetCloudProviderRegionsParamsProvider, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetCloudProviderRegionsRequest(c.Server, provider)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateDeploymentVersionChannelWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDeploymentVersionChannelRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateDeploymentVersionChannel(ctx context.Context, body CreateDeploymentVersionChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDeploymentVersionChannelRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2954,30 +2953,6 @@ func (c *Client) UpdateDeployment(ctx context.Context, deploymentId openapi_type
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteDeploymentVersionChannel(ctx context.Context, deploymentId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteDeploymentVersionChannelRequest(c.Server, deploymentId, name)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteReleaseChannel(ctx context.Context, deploymentId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteReleaseChannelRequest(c.Server, deploymentId, name)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) GetResourcesForDeployment(ctx context.Context, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetResourcesForDeploymentRequest(c.Server, deploymentId)
 	if err != nil {
@@ -3016,6 +2991,18 @@ func (c *Client) CreateDeploymentVariableWithBody(ctx context.Context, deploymen
 
 func (c *Client) CreateDeploymentVariable(ctx context.Context, deploymentId openapi_types.UUID, body CreateDeploymentVariableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateDeploymentVariableRequest(c.Server, deploymentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListDeploymentVersions(ctx context.Context, deploymentId openapi_types.UUID, params *ListDeploymentVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListDeploymentVersionsRequest(c.Server, deploymentId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -3326,8 +3313,8 @@ func (c *Client) CreateResourceToResourceRelationship(ctx context.Context, body 
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateReleaseChannelWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateReleaseChannelRequestWithBody(c.Server, contentType, body)
+func (c *Client) GetReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetReleaseTargetRequest(c.Server, releaseTargetId)
 	if err != nil {
 		return nil, err
 	}
@@ -3338,8 +3325,8 @@ func (c *Client) CreateReleaseChannelWithBody(ctx context.Context, contentType s
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateReleaseChannel(ctx context.Context, body CreateReleaseChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateReleaseChannelRequest(c.Server, body)
+func (c *Client) GetLatestJobs(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLatestJobsRequest(c.Server, releaseTargetId)
 	if err != nil {
 		return nil, err
 	}
@@ -3352,6 +3339,30 @@ func (c *Client) CreateReleaseChannel(ctx context.Context, body CreateReleaseCha
 
 func (c *Client) LockReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewLockReleaseTargetRequest(c.Server, releaseTargetId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PinReleaseTargetWithBody(ctx context.Context, releaseTargetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPinReleaseTargetRequestWithBody(c.Server, releaseTargetId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PinReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, body PinReleaseTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPinReleaseTargetRequest(c.Server, releaseTargetId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3376,6 +3387,18 @@ func (c *Client) GetReleaseTargetReleases(ctx context.Context, releaseTargetId o
 
 func (c *Client) UnlockReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUnlockReleaseTargetRequest(c.Server, releaseTargetId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UnpinReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUnpinReleaseTargetRequest(c.Server, releaseTargetId)
 	if err != nil {
 		return nil, err
 	}
@@ -3900,46 +3923,6 @@ func NewGetCloudProviderRegionsRequest(server string, provider GetCloudProviderR
 	return req, nil
 }
 
-// NewCreateDeploymentVersionChannelRequest calls the generic CreateDeploymentVersionChannel builder with application/json body
-func NewCreateDeploymentVersionChannelRequest(server string, body CreateDeploymentVersionChannelJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateDeploymentVersionChannelRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateDeploymentVersionChannelRequestWithBody generates requests for CreateDeploymentVersionChannel with any type of body
-func NewCreateDeploymentVersionChannelRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployment-version-channels")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewUpsertDeploymentVersionRequest calls the generic UpsertDeploymentVersion builder with application/json body
 func NewUpsertDeploymentVersionRequest(server string, body UpsertDeploymentVersionJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -4425,88 +4408,6 @@ func NewUpdateDeploymentRequestWithBody(server string, deploymentId openapi_type
 	return req, nil
 }
 
-// NewDeleteDeploymentVersionChannelRequest generates requests for DeleteDeploymentVersionChannel
-func NewDeleteDeploymentVersionChannelRequest(server string, deploymentId string, name string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployments/%s/deployment-version-channels/name/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewDeleteReleaseChannelRequest generates requests for DeleteReleaseChannel
-func NewDeleteReleaseChannelRequest(server string, deploymentId string, name string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployments/%s/release-channels/name/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewGetResourcesForDeploymentRequest generates requests for GetResourcesForDeployment
 func NewGetResourcesForDeploymentRequest(server string, deploymentId string) (*http.Request, error) {
 	var err error
@@ -4618,6 +4519,62 @@ func NewCreateDeploymentVariableRequestWithBody(server string, deploymentId open
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListDeploymentVersionsRequest generates requests for ListDeploymentVersions
+func NewListDeploymentVersionsRequest(server string, deploymentId openapi_types.UUID, params *ListDeploymentVersionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/deployments/%s/versions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "status", runtime.ParamLocationQuery, *params.Status); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -5290,27 +5247,23 @@ func NewCreateResourceToResourceRelationshipRequestWithBody(server string, conte
 	return req, nil
 }
 
-// NewCreateReleaseChannelRequest calls the generic CreateReleaseChannel builder with application/json body
-func NewCreateReleaseChannelRequest(server string, body CreateReleaseChannelJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
+// NewGetReleaseTargetRequest generates requests for GetReleaseTarget
+func NewGetReleaseTargetRequest(server string, releaseTargetId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "releaseTargetId", runtime.ParamLocationPath, releaseTargetId)
 	if err != nil {
 		return nil, err
 	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateReleaseChannelRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateReleaseChannelRequestWithBody generates requests for CreateReleaseChannel with any type of body
-func NewCreateReleaseChannelRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
 
 	serverURL, err := url.Parse(server)
 	if err != nil {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/release-channels")
+	operationPath := fmt.Sprintf("/v1/release-targets/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -5320,12 +5273,44 @@ func NewCreateReleaseChannelRequestWithBody(server string, contentType string, b
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", queryURL.String(), body)
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Add("Content-Type", contentType)
+	return req, nil
+}
+
+// NewGetLatestJobsRequest generates requests for GetLatestJobs
+func NewGetLatestJobsRequest(server string, releaseTargetId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "releaseTargetId", runtime.ParamLocationPath, releaseTargetId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/release-targets/%s/latest-jobs", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -5360,6 +5345,53 @@ func NewLockReleaseTargetRequest(server string, releaseTargetId openapi_types.UU
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewPinReleaseTargetRequest calls the generic PinReleaseTarget builder with application/json body
+func NewPinReleaseTargetRequest(server string, releaseTargetId openapi_types.UUID, body PinReleaseTargetJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPinReleaseTargetRequestWithBody(server, releaseTargetId, "application/json", bodyReader)
+}
+
+// NewPinReleaseTargetRequestWithBody generates requests for PinReleaseTarget with any type of body
+func NewPinReleaseTargetRequestWithBody(server string, releaseTargetId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "releaseTargetId", runtime.ParamLocationPath, releaseTargetId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/release-targets/%s/pin", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -5415,6 +5447,40 @@ func NewUnlockReleaseTargetRequest(server string, releaseTargetId openapi_types.
 	}
 
 	operationPath := fmt.Sprintf("/v1/release-targets/%s/unlock", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUnpinReleaseTargetRequest generates requests for UnpinReleaseTarget
+func NewUnpinReleaseTargetRequest(server string, releaseTargetId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "releaseTargetId", runtime.ParamLocationPath, releaseTargetId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/release-targets/%s/unpin", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -6614,11 +6680,6 @@ type ClientWithResponsesInterface interface {
 	// GetCloudProviderRegionsWithResponse request
 	GetCloudProviderRegionsWithResponse(ctx context.Context, provider GetCloudProviderRegionsParamsProvider, reqEditors ...RequestEditorFn) (*GetCloudProviderRegionsResponse, error)
 
-	// CreateDeploymentVersionChannelWithBodyWithResponse request with any body
-	CreateDeploymentVersionChannelWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeploymentVersionChannelResponse, error)
-
-	CreateDeploymentVersionChannelWithResponse(ctx context.Context, body CreateDeploymentVersionChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDeploymentVersionChannelResponse, error)
-
 	// UpsertDeploymentVersionWithBodyWithResponse request with any body
 	UpsertDeploymentVersionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDeploymentVersionResponse, error)
 
@@ -6668,12 +6729,6 @@ type ClientWithResponsesInterface interface {
 
 	UpdateDeploymentWithResponse(ctx context.Context, deploymentId openapi_types.UUID, body UpdateDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDeploymentResponse, error)
 
-	// DeleteDeploymentVersionChannelWithResponse request
-	DeleteDeploymentVersionChannelWithResponse(ctx context.Context, deploymentId string, name string, reqEditors ...RequestEditorFn) (*DeleteDeploymentVersionChannelResponse, error)
-
-	// DeleteReleaseChannelWithResponse request
-	DeleteReleaseChannelWithResponse(ctx context.Context, deploymentId string, name string, reqEditors ...RequestEditorFn) (*DeleteReleaseChannelResponse, error)
-
 	// GetResourcesForDeploymentWithResponse request
 	GetResourcesForDeploymentWithResponse(ctx context.Context, deploymentId string, reqEditors ...RequestEditorFn) (*GetResourcesForDeploymentResponse, error)
 
@@ -6684,6 +6739,9 @@ type ClientWithResponsesInterface interface {
 	CreateDeploymentVariableWithBodyWithResponse(ctx context.Context, deploymentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeploymentVariableResponse, error)
 
 	CreateDeploymentVariableWithResponse(ctx context.Context, deploymentId openapi_types.UUID, body CreateDeploymentVariableJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDeploymentVariableResponse, error)
+
+	// ListDeploymentVersionsWithResponse request
+	ListDeploymentVersionsWithResponse(ctx context.Context, deploymentId openapi_types.UUID, params *ListDeploymentVersionsParams, reqEditors ...RequestEditorFn) (*ListDeploymentVersionsResponse, error)
 
 	// CreateEnvironmentWithBodyWithResponse request with any body
 	CreateEnvironmentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error)
@@ -6753,19 +6811,28 @@ type ClientWithResponsesInterface interface {
 
 	CreateResourceToResourceRelationshipWithResponse(ctx context.Context, body CreateResourceToResourceRelationshipJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateResourceToResourceRelationshipResponse, error)
 
-	// CreateReleaseChannelWithBodyWithResponse request with any body
-	CreateReleaseChannelWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateReleaseChannelResponse, error)
+	// GetReleaseTargetWithResponse request
+	GetReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReleaseTargetResponse, error)
 
-	CreateReleaseChannelWithResponse(ctx context.Context, body CreateReleaseChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateReleaseChannelResponse, error)
+	// GetLatestJobsWithResponse request
+	GetLatestJobsWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLatestJobsResponse, error)
 
 	// LockReleaseTargetWithResponse request
 	LockReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*LockReleaseTargetResponse, error)
+
+	// PinReleaseTargetWithBodyWithResponse request with any body
+	PinReleaseTargetWithBodyWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PinReleaseTargetResponse, error)
+
+	PinReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, body PinReleaseTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*PinReleaseTargetResponse, error)
 
 	// GetReleaseTargetReleasesWithResponse request
 	GetReleaseTargetReleasesWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReleaseTargetReleasesResponse, error)
 
 	// UnlockReleaseTargetWithResponse request
 	UnlockReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*UnlockReleaseTargetResponse, error)
+
+	// UnpinReleaseTargetWithResponse request
+	UnpinReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*UnpinReleaseTargetResponse, error)
 
 	// UpsertReleaseWithBodyWithResponse request with any body
 	UpsertReleaseWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertReleaseResponse, error)
@@ -6896,48 +6963,6 @@ func (r GetCloudProviderRegionsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetCloudProviderRegionsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateDeploymentVersionChannelResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		CreatedAt       time.Time               `json:"createdAt"`
-		DeploymentId    string                  `json:"deploymentId"`
-		Description     *string                 `json:"description"`
-		Id              string                  `json:"id"`
-		Name            string                  `json:"name"`
-		VersionSelector *map[string]interface{} `json:"versionSelector,omitempty"`
-	}
-	JSON401 *struct {
-		Error string `json:"error"`
-	}
-	JSON403 *struct {
-		Error string `json:"error"`
-	}
-	JSON409 *struct {
-		Error string `json:"error"`
-		Id    string `json:"id"`
-	}
-	JSON500 *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateDeploymentVersionChannelResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateDeploymentVersionChannelResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -7267,72 +7292,6 @@ func (r UpdateDeploymentResponse) StatusCode() int {
 	return 0
 }
 
-type DeleteDeploymentVersionChannelResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Message string `json:"message"`
-	}
-	JSON403 *struct {
-		Error string `json:"error"`
-	}
-	JSON404 *struct {
-		Error string `json:"error"`
-	}
-	JSON500 *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteDeploymentVersionChannelResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteDeploymentVersionChannelResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DeleteReleaseChannelResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Message string `json:"message"`
-	}
-	JSON403 *struct {
-		Error string `json:"error"`
-	}
-	JSON404 *struct {
-		Error string `json:"error"`
-	}
-	JSON500 *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteReleaseChannelResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteReleaseChannelResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type GetResourcesForDeploymentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -7414,6 +7373,34 @@ func (r CreateDeploymentVariableResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r CreateDeploymentVariableResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListDeploymentVersionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]DeploymentVersion
+	JSON404      *struct {
+		Error string `json:"error"`
+	}
+	JSON500 *struct {
+		Error string `json:"error"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r ListDeploymentVersionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListDeploymentVersionsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -7656,7 +7643,8 @@ type UpdateJobResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Id string `json:"id"`
+		Message string `json:"message"`
+		Success bool   `json:"success"`
 	}
 }
 
@@ -7911,34 +7899,17 @@ func (r CreateResourceToResourceRelationshipResponse) StatusCode() int {
 	return 0
 }
 
-type CreateReleaseChannelResponse struct {
+type GetReleaseTargetResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *struct {
-		CreatedAt       time.Time               `json:"createdAt"`
-		DeploymentId    string                  `json:"deploymentId"`
-		Description     *string                 `json:"description"`
-		Id              string                  `json:"id"`
-		Name            string                  `json:"name"`
-		ReleaseSelector *map[string]interface{} `json:"releaseSelector,omitempty"`
-	}
-	JSON401 *struct {
-		Error string `json:"error"`
-	}
-	JSON403 *struct {
-		Error string `json:"error"`
-	}
-	JSON409 *struct {
-		Error string `json:"error"`
-		Id    string `json:"id"`
-	}
-	JSON500 *struct {
-		Error string `json:"error"`
+	JSON200      *ReleaseTarget
+	JSON404      *struct {
+		Error *string `json:"error,omitempty"`
 	}
 }
 
 // Status returns HTTPResponse.Status
-func (r CreateReleaseChannelResponse) Status() string {
+func (r GetReleaseTargetResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -7946,7 +7917,35 @@ func (r CreateReleaseChannelResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r CreateReleaseChannelResponse) StatusCode() int {
+func (r GetReleaseTargetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLatestJobsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]JobWithTrigger
+	JSON404      *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON500 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLatestJobsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLatestJobsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -7975,6 +7974,39 @@ func (r LockReleaseTargetResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r LockReleaseTargetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PinReleaseTargetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Success *bool `json:"success,omitempty"`
+	}
+	JSON400 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON404 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON500 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r PinReleaseTargetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PinReleaseTargetResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -8041,6 +8073,39 @@ func (r UnlockReleaseTargetResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UnlockReleaseTargetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UnpinReleaseTargetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Success *bool `json:"success,omitempty"`
+	}
+	JSON400 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON404 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+	JSON500 *struct {
+		Error *string `json:"error,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r UnpinReleaseTargetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UnpinReleaseTargetResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -8890,23 +8955,6 @@ func (c *ClientWithResponses) GetCloudProviderRegionsWithResponse(ctx context.Co
 	return ParseGetCloudProviderRegionsResponse(rsp)
 }
 
-// CreateDeploymentVersionChannelWithBodyWithResponse request with arbitrary body returning *CreateDeploymentVersionChannelResponse
-func (c *ClientWithResponses) CreateDeploymentVersionChannelWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeploymentVersionChannelResponse, error) {
-	rsp, err := c.CreateDeploymentVersionChannelWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateDeploymentVersionChannelResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateDeploymentVersionChannelWithResponse(ctx context.Context, body CreateDeploymentVersionChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDeploymentVersionChannelResponse, error) {
-	rsp, err := c.CreateDeploymentVersionChannel(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateDeploymentVersionChannelResponse(rsp)
-}
-
 // UpsertDeploymentVersionWithBodyWithResponse request with arbitrary body returning *UpsertDeploymentVersionResponse
 func (c *ClientWithResponses) UpsertDeploymentVersionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDeploymentVersionResponse, error) {
 	rsp, err := c.UpsertDeploymentVersionWithBody(ctx, contentType, body, reqEditors...)
@@ -9070,24 +9118,6 @@ func (c *ClientWithResponses) UpdateDeploymentWithResponse(ctx context.Context, 
 	return ParseUpdateDeploymentResponse(rsp)
 }
 
-// DeleteDeploymentVersionChannelWithResponse request returning *DeleteDeploymentVersionChannelResponse
-func (c *ClientWithResponses) DeleteDeploymentVersionChannelWithResponse(ctx context.Context, deploymentId string, name string, reqEditors ...RequestEditorFn) (*DeleteDeploymentVersionChannelResponse, error) {
-	rsp, err := c.DeleteDeploymentVersionChannel(ctx, deploymentId, name, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteDeploymentVersionChannelResponse(rsp)
-}
-
-// DeleteReleaseChannelWithResponse request returning *DeleteReleaseChannelResponse
-func (c *ClientWithResponses) DeleteReleaseChannelWithResponse(ctx context.Context, deploymentId string, name string, reqEditors ...RequestEditorFn) (*DeleteReleaseChannelResponse, error) {
-	rsp, err := c.DeleteReleaseChannel(ctx, deploymentId, name, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteReleaseChannelResponse(rsp)
-}
-
 // GetResourcesForDeploymentWithResponse request returning *GetResourcesForDeploymentResponse
 func (c *ClientWithResponses) GetResourcesForDeploymentWithResponse(ctx context.Context, deploymentId string, reqEditors ...RequestEditorFn) (*GetResourcesForDeploymentResponse, error) {
 	rsp, err := c.GetResourcesForDeployment(ctx, deploymentId, reqEditors...)
@@ -9121,6 +9151,15 @@ func (c *ClientWithResponses) CreateDeploymentVariableWithResponse(ctx context.C
 		return nil, err
 	}
 	return ParseCreateDeploymentVariableResponse(rsp)
+}
+
+// ListDeploymentVersionsWithResponse request returning *ListDeploymentVersionsResponse
+func (c *ClientWithResponses) ListDeploymentVersionsWithResponse(ctx context.Context, deploymentId openapi_types.UUID, params *ListDeploymentVersionsParams, reqEditors ...RequestEditorFn) (*ListDeploymentVersionsResponse, error) {
+	rsp, err := c.ListDeploymentVersions(ctx, deploymentId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListDeploymentVersionsResponse(rsp)
 }
 
 // CreateEnvironmentWithBodyWithResponse request with arbitrary body returning *CreateEnvironmentResponse
@@ -9341,21 +9380,22 @@ func (c *ClientWithResponses) CreateResourceToResourceRelationshipWithResponse(c
 	return ParseCreateResourceToResourceRelationshipResponse(rsp)
 }
 
-// CreateReleaseChannelWithBodyWithResponse request with arbitrary body returning *CreateReleaseChannelResponse
-func (c *ClientWithResponses) CreateReleaseChannelWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateReleaseChannelResponse, error) {
-	rsp, err := c.CreateReleaseChannelWithBody(ctx, contentType, body, reqEditors...)
+// GetReleaseTargetWithResponse request returning *GetReleaseTargetResponse
+func (c *ClientWithResponses) GetReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReleaseTargetResponse, error) {
+	rsp, err := c.GetReleaseTarget(ctx, releaseTargetId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateReleaseChannelResponse(rsp)
+	return ParseGetReleaseTargetResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreateReleaseChannelWithResponse(ctx context.Context, body CreateReleaseChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateReleaseChannelResponse, error) {
-	rsp, err := c.CreateReleaseChannel(ctx, body, reqEditors...)
+// GetLatestJobsWithResponse request returning *GetLatestJobsResponse
+func (c *ClientWithResponses) GetLatestJobsWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLatestJobsResponse, error) {
+	rsp, err := c.GetLatestJobs(ctx, releaseTargetId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateReleaseChannelResponse(rsp)
+	return ParseGetLatestJobsResponse(rsp)
 }
 
 // LockReleaseTargetWithResponse request returning *LockReleaseTargetResponse
@@ -9365,6 +9405,23 @@ func (c *ClientWithResponses) LockReleaseTargetWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseLockReleaseTargetResponse(rsp)
+}
+
+// PinReleaseTargetWithBodyWithResponse request with arbitrary body returning *PinReleaseTargetResponse
+func (c *ClientWithResponses) PinReleaseTargetWithBodyWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PinReleaseTargetResponse, error) {
+	rsp, err := c.PinReleaseTargetWithBody(ctx, releaseTargetId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePinReleaseTargetResponse(rsp)
+}
+
+func (c *ClientWithResponses) PinReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, body PinReleaseTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*PinReleaseTargetResponse, error) {
+	rsp, err := c.PinReleaseTarget(ctx, releaseTargetId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePinReleaseTargetResponse(rsp)
 }
 
 // GetReleaseTargetReleasesWithResponse request returning *GetReleaseTargetReleasesResponse
@@ -9383,6 +9440,15 @@ func (c *ClientWithResponses) UnlockReleaseTargetWithResponse(ctx context.Contex
 		return nil, err
 	}
 	return ParseUnlockReleaseTargetResponse(rsp)
+}
+
+// UnpinReleaseTargetWithResponse request returning *UnpinReleaseTargetResponse
+func (c *ClientWithResponses) UnpinReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*UnpinReleaseTargetResponse, error) {
+	rsp, err := c.UnpinReleaseTarget(ctx, releaseTargetId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUnpinReleaseTargetResponse(rsp)
 }
 
 // UpsertReleaseWithBodyWithResponse request with arbitrary body returning *UpsertReleaseResponse
@@ -9763,76 +9829,6 @@ func ParseGetCloudProviderRegionsResponse(rsp *http.Response) (*GetCloudProvider
 			return nil, err
 		}
 		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateDeploymentVersionChannelResponse parses an HTTP response from a CreateDeploymentVersionChannelWithResponse call
-func ParseCreateDeploymentVersionChannelResponse(rsp *http.Response) (*CreateDeploymentVersionChannelResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateDeploymentVersionChannelResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			CreatedAt       time.Time               `json:"createdAt"`
-			DeploymentId    string                  `json:"deploymentId"`
-			Description     *string                 `json:"description"`
-			Id              string                  `json:"id"`
-			Name            string                  `json:"name"`
-			VersionSelector *map[string]interface{} `json:"versionSelector,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest struct {
-			Error string `json:"error"`
-			Id    string `json:"id"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
 
 	}
 
@@ -10356,116 +10352,6 @@ func ParseUpdateDeploymentResponse(rsp *http.Response) (*UpdateDeploymentRespons
 	return response, nil
 }
 
-// ParseDeleteDeploymentVersionChannelResponse parses an HTTP response from a DeleteDeploymentVersionChannelWithResponse call
-func ParseDeleteDeploymentVersionChannelResponse(rsp *http.Response) (*DeleteDeploymentVersionChannelResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteDeploymentVersionChannelResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Message string `json:"message"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteReleaseChannelResponse parses an HTTP response from a DeleteReleaseChannelWithResponse call
-func ParseDeleteReleaseChannelResponse(rsp *http.Response) (*DeleteReleaseChannelResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteReleaseChannelResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Message string `json:"message"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseGetResourcesForDeploymentResponse parses an HTTP response from a GetResourcesForDeploymentWithResponse call
 func ParseGetResourcesForDeploymentResponse(rsp *http.Response) (*GetResourcesForDeploymentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -10577,6 +10463,50 @@ func ParseCreateDeploymentVariableResponse(rsp *http.Response) (*CreateDeploymen
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Error string `json:"error"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest struct {
+			Error string `json:"error"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListDeploymentVersionsResponse parses an HTTP response from a ListDeploymentVersionsWithResponse call
+func ParseListDeploymentVersionsResponse(rsp *http.Response) (*ListDeploymentVersionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListDeploymentVersionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []DeploymentVersion
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest struct {
@@ -10918,7 +10848,8 @@ func ParseUpdateJobResponse(rsp *http.Response) (*UpdateJobResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Id string `json:"id"`
+			Message string `json:"message"`
+			Success bool   `json:"success"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -11293,65 +11224,74 @@ func ParseCreateResourceToResourceRelationshipResponse(rsp *http.Response) (*Cre
 	return response, nil
 }
 
-// ParseCreateReleaseChannelResponse parses an HTTP response from a CreateReleaseChannelWithResponse call
-func ParseCreateReleaseChannelResponse(rsp *http.Response) (*CreateReleaseChannelResponse, error) {
+// ParseGetReleaseTargetResponse parses an HTTP response from a GetReleaseTargetWithResponse call
+func ParseGetReleaseTargetResponse(rsp *http.Response) (*GetReleaseTargetResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &CreateReleaseChannelResponse{
+	response := &GetReleaseTargetResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			CreatedAt       time.Time               `json:"createdAt"`
-			DeploymentId    string                  `json:"deploymentId"`
-			Description     *string                 `json:"description"`
-			Id              string                  `json:"id"`
-			Name            string                  `json:"name"`
-			ReleaseSelector *map[string]interface{} `json:"releaseSelector,omitempty"`
-		}
+		var dest ReleaseTarget
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest struct {
-			Error string `json:"error"`
+			Error *string `json:"error,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON401 = &dest
+		response.JSON404 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
+	}
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+	return response, nil
+}
+
+// ParseGetLatestJobsResponse parses an HTTP response from a GetLatestJobsWithResponse call
+func ParseGetLatestJobsResponse(rsp *http.Response) (*GetLatestJobsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLatestJobsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []JobWithTrigger
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest struct {
-			Error string `json:"error"`
-			Id    string `json:"id"`
+			Error *string `json:"error,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON409 = &dest
+		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest struct {
-			Error string `json:"error"`
+			Error *string `json:"error,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -11392,6 +11332,61 @@ func ParseLockReleaseTargetResponse(rsp *http.Response) (*LockReleaseTargetRespo
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePinReleaseTargetResponse parses an HTTP response from a PinReleaseTargetWithResponse call
+func ParsePinReleaseTargetResponse(rsp *http.Response) (*PinReleaseTargetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PinReleaseTargetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Success *bool `json:"success,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest struct {
@@ -11496,6 +11491,61 @@ func ParseUnlockReleaseTargetResponse(rsp *http.Response) (*UnlockReleaseTargetR
 			return nil, err
 		}
 		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUnpinReleaseTargetResponse parses an HTTP response from a UnpinReleaseTargetWithResponse call
+func ParseUnpinReleaseTargetResponse(rsp *http.Response) (*UnpinReleaseTargetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UnpinReleaseTargetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Success *bool `json:"success,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Error *string `json:"error,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest struct {
