@@ -49,8 +49,8 @@ func createMetadataKeysMatch(match MetadataKeysMatch) (*struct {
 			SourceKey string `json:"sourceKey"`
 			TargetKey string `json:"targetKey"`
 		}{
-			SourceKey: *match.SourceKey,
-			TargetKey: *match.TargetKey,
+			SourceKey: *match.Key,
+			TargetKey: *match.Key,
 		}, nil
 	}
 
