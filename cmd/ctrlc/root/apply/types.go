@@ -107,12 +107,18 @@ type SourceResource struct {
 	Version string `yaml:"version"`
 }
 
+type MetadataKeysMatch struct {
+	Key       *string `yaml:"key,omitempty"`
+	SourceKey *string `yaml:"sourceKey,omitempty"`
+	TargetKey *string `yaml:"targetKey,omitempty"`
+}
+
 type ResourceRelationship struct {
-	Reference         string          `yaml:"reference"`
-	Target            *TargetResource `yaml:"target,omitempty"`
-	Source            *SourceResource `yaml:"source,omitempty"`
-	MetadataKeysMatch []string        `yaml:"metadataKeysMatch"`
-	DependencyType    string          `yaml:"dependencyType"`
+	Reference         string              `yaml:"reference"`
+	Target            *TargetResource     `yaml:"target,omitempty"`
+	Source            *SourceResource     `yaml:"source,omitempty"`
+	MetadataKeysMatch []MetadataKeysMatch `yaml:"metadataKeysMatch"`
+	DependencyType    string              `yaml:"dependencyType"`
 }
 
 // Policy structs

@@ -40,12 +40,42 @@ func processResourceRelationships(
 	}
 }
 
+func createMetadataKeysMatch(match MetadataKeysMatch) (*struct {
+	SourceKey string `json:"sourceKey"`
+	TargetKey string `json:"targetKey"`
+}, error) {
+	if match.Key != nil {
+		return &struct {
+			SourceKey string `json:"sourceKey"`
+			TargetKey string `json:"targetKey"`
+		}{
+			SourceKey: *match.Key,
+			TargetKey: *match.Key,
+		}, nil
+	}
+
+	if match.SourceKey == nil || match.TargetKey == nil {
+		return nil, fmt.Errorf("sourceKey and targetKey must be provided")
+	}
+
+	return &struct {
+		SourceKey string `json:"sourceKey"`
+		TargetKey string `json:"targetKey"`
+	}{
+		SourceKey: *match.SourceKey,
+		TargetKey: *match.TargetKey,
+	}, nil
+}
+
 func createRelationshipRequestBody(workspaceId string, relationship ResourceRelationship) api.CreateResourceRelationshipRule {
 	config := api.CreateResourceRelationshipRule{
-		WorkspaceId:         workspaceId,
-		Reference:           relationship.Reference,
-		DependencyType:      api.ResourceRelationshipRuleDependencyType(relationship.DependencyType),
-		MetadataKeysMatches: &[]string{},
+		WorkspaceId:    workspaceId,
+		Reference:      relationship.Reference,
+		DependencyType: api.ResourceRelationshipRuleDependencyType(relationship.DependencyType),
+		MetadataKeysMatches: &[]struct {
+			SourceKey string `json:"sourceKey"`
+			TargetKey string `json:"targetKey"`
+		}{},
 		TargetMetadataEquals: &[]struct {
 			Key   string `json:"key"`
 			Value string `json:"value"`
@@ -82,7 +112,22 @@ func createRelationshipRequestBody(workspaceId string, relationship ResourceRela
 	}
 
 	if relationship.MetadataKeysMatch != nil {
-		config.MetadataKeysMatches = &relationship.MetadataKeysMatch
+		metadataKeysMatches := []struct {
+			SourceKey string `json:"sourceKey"`
+			TargetKey string `json:"targetKey"`
+		}{}
+
+		for _, match := range relationship.MetadataKeysMatch {
+			metadataKeysMatch, err := createMetadataKeysMatch(match)
+			if err != nil {
+				log.Error("Failed to create metadata keys match", "error", err, "match", match)
+				continue
+			}
+
+			metadataKeysMatches = append(metadataKeysMatches, *metadataKeysMatch)
+		}
+
+		config.MetadataKeysMatches = &metadataKeysMatches
 	}
 
 	// Log the MetadataTargetKeysEquals for debugging
