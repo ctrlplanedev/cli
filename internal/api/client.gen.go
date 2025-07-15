@@ -148,6 +148,7 @@ type ApprovalRecordStatus string
 // BaseDeploymentVariableValue defines model for BaseDeploymentVariableValue.
 type BaseDeploymentVariableValue struct {
 	IsDefault        *bool                   `json:"isDefault,omitempty"`
+	Priority         *int                    `json:"priority,omitempty"`
 	ResourceSelector *map[string]interface{} `json:"resourceSelector"`
 }
 
@@ -179,21 +180,16 @@ type CreateResourceRelationshipRule struct {
 	DependencyDescription *string                                `json:"dependencyDescription,omitempty"`
 	DependencyType        ResourceRelationshipRuleDependencyType `json:"dependencyType"`
 	Description           *string                                `json:"description,omitempty"`
-	MetadataKeysMatches   *[]struct {
-		SourceKey string `json:"sourceKey"`
-		TargetKey string `json:"targetKey"`
-	} `json:"metadataKeysMatches,omitempty"`
-	Name                 string `json:"name"`
-	Reference            string `json:"reference"`
-	SourceKind           string `json:"sourceKind"`
-	SourceVersion        string `json:"sourceVersion"`
-	TargetKind           string `json:"targetKind"`
-	TargetMetadataEquals *[]struct {
-		Key   string `json:"key"`
-		Value string `json:"value"`
-	} `json:"targetMetadataEquals,omitempty"`
-	TargetVersion string `json:"targetVersion"`
-	WorkspaceId   string `json:"workspaceId"`
+	MetadataKeysMatches   *[]MetadataKeyMatchConstraint          `json:"metadataKeysMatches,omitempty"`
+	Name                  string                                 `json:"name"`
+	Reference             string                                 `json:"reference"`
+	SourceKind            string                                 `json:"sourceKind"`
+	SourceMetadataEquals  *[]MetadataEqualsConstraint            `json:"sourceMetadataEquals,omitempty"`
+	SourceVersion         string                                 `json:"sourceVersion"`
+	TargetKind            string                                 `json:"targetKind"`
+	TargetMetadataEquals  *[]MetadataEqualsConstraint            `json:"targetMetadataEquals,omitempty"`
+	TargetVersion         string                                 `json:"targetVersion"`
+	WorkspaceId           string                                 `json:"workspaceId"`
 }
 
 // DenyWindow defines model for DenyWindow.
@@ -258,6 +254,7 @@ type DeploymentVersionSelector struct {
 // DirectDeploymentVariableValue defines model for DirectDeploymentVariableValue.
 type DirectDeploymentVariableValue struct {
 	IsDefault        *bool                                `json:"isDefault,omitempty"`
+	Priority         *int                                 `json:"priority,omitempty"`
 	ResourceSelector *map[string]interface{}              `json:"resourceSelector"`
 	Sensitive        *bool                                `json:"sensitive,omitempty"`
 	Value            *DirectDeploymentVariableValue_Value `json:"value"`
@@ -287,6 +284,7 @@ type DirectDeploymentVariableValue_Value struct {
 type DirectDeploymentVariableValueWithId struct {
 	Id               openapi_types.UUID                         `json:"id"`
 	IsDefault        *bool                                      `json:"isDefault,omitempty"`
+	Priority         *int                                       `json:"priority,omitempty"`
 	ResourceSelector *map[string]interface{}                    `json:"resourceSelector"`
 	Sensitive        *bool                                      `json:"sensitive,omitempty"`
 	Value            *DirectDeploymentVariableValueWithId_Value `json:"value"`
@@ -485,6 +483,18 @@ type JobWithTriggerApprovalStatus string
 // MaxRetries defines model for MaxRetries.
 type MaxRetries = int32
 
+// MetadataEqualsConstraint defines model for MetadataEqualsConstraint.
+type MetadataEqualsConstraint struct {
+	Key   *string `json:"key,omitempty"`
+	Value *string `json:"value,omitempty"`
+}
+
+// MetadataKeyMatchConstraint defines model for MetadataKeyMatchConstraint.
+type MetadataKeyMatchConstraint struct {
+	SourceKey string `json:"sourceKey"`
+	TargetKey string `json:"targetKey"`
+}
+
 // MetadataMap defines model for MetadataMap.
 type MetadataMap map[string]string
 
@@ -523,6 +533,7 @@ type ReferenceDeploymentVariableValue struct {
 	DefaultValue     *ReferenceDeploymentVariableValue_DefaultValue `json:"defaultValue"`
 	IsDefault        *bool                                          `json:"isDefault,omitempty"`
 	Path             []string                                       `json:"path"`
+	Priority         *int                                           `json:"priority,omitempty"`
 	Reference        string                                         `json:"reference"`
 	ResourceSelector *map[string]interface{}                        `json:"resourceSelector"`
 }
@@ -553,6 +564,7 @@ type ReferenceDeploymentVariableValueWithId struct {
 	Id               openapi_types.UUID                                   `json:"id"`
 	IsDefault        *bool                                                `json:"isDefault,omitempty"`
 	Path             []string                                             `json:"path"`
+	Priority         *int                                                 `json:"priority,omitempty"`
 	Reference        string                                               `json:"reference"`
 	ResourceSelector *map[string]interface{}                              `json:"resourceSelector"`
 }
@@ -660,21 +672,16 @@ type ResourceRelationshipRule struct {
 	DependencyType        ResourceRelationshipRuleDependencyType `json:"dependencyType"`
 	Description           *string                                `json:"description,omitempty"`
 	Id                    openapi_types.UUID                     `json:"id"`
-	MetadataKeysMatches   *[]struct {
-		SourceKey string `json:"sourceKey"`
-		TargetKey string `json:"targetKey"`
-	} `json:"metadataKeysMatches,omitempty"`
-	Name                 string  `json:"name"`
-	Reference            string  `json:"reference"`
-	SourceKind           string  `json:"sourceKind"`
-	SourceVersion        string  `json:"sourceVersion"`
-	TargetKind           *string `json:"targetKind,omitempty"`
-	TargetMetadataEquals *[]struct {
-		Key   string `json:"key"`
-		Value string `json:"value"`
-	} `json:"targetMetadataEquals,omitempty"`
-	TargetVersion *string            `json:"targetVersion,omitempty"`
-	WorkspaceId   openapi_types.UUID `json:"workspaceId"`
+	MetadataKeysMatches   *[]MetadataKeyMatchConstraint          `json:"metadataKeysMatches,omitempty"`
+	Name                  string                                 `json:"name"`
+	Reference             string                                 `json:"reference"`
+	SourceKind            string                                 `json:"sourceKind"`
+	SourceMetadataEquals  *[]MetadataEqualsConstraint            `json:"sourceMetadataEquals,omitempty"`
+	SourceVersion         string                                 `json:"sourceVersion"`
+	TargetKind            *string                                `json:"targetKind,omitempty"`
+	TargetMetadataEquals  *[]MetadataEqualsConstraint            `json:"targetMetadataEquals,omitempty"`
+	TargetVersion         *string                                `json:"targetVersion,omitempty"`
+	WorkspaceId           openapi_types.UUID                     `json:"workspaceId"`
 }
 
 // ResourceRelationshipRuleDependencyType defines model for ResourceRelationshipRuleDependencyType.
@@ -761,20 +768,15 @@ type UpdateResourceRelationshipRule struct {
 	DependencyDescription *string                                 `json:"dependencyDescription,omitempty"`
 	DependencyType        *ResourceRelationshipRuleDependencyType `json:"dependencyType,omitempty"`
 	Description           *string                                 `json:"description,omitempty"`
-	MetadataKeysMatches   *[]struct {
-		SourceKey string `json:"sourceKey"`
-		TargetKey string `json:"targetKey"`
-	} `json:"metadataKeysMatches,omitempty"`
-	Name                 *string `json:"name,omitempty"`
-	Reference            *string `json:"reference,omitempty"`
-	SourceKind           *string `json:"sourceKind,omitempty"`
-	SourceVersion        *string `json:"sourceVersion,omitempty"`
-	TargetKind           *string `json:"targetKind,omitempty"`
-	TargetMetadataEquals *[]struct {
-		Key   string `json:"key"`
-		Value string `json:"value"`
-	} `json:"targetMetadataEquals,omitempty"`
-	TargetVersion *string `json:"targetVersion,omitempty"`
+	MetadataKeysMatches   *[]MetadataKeyMatchConstraint           `json:"metadataKeysMatches,omitempty"`
+	Name                  *string                                 `json:"name,omitempty"`
+	Reference             *string                                 `json:"reference,omitempty"`
+	SourceKind            *string                                 `json:"sourceKind,omitempty"`
+	SourceMetadataEquals  *[]MetadataEqualsConstraint             `json:"sourceMetadataEquals,omitempty"`
+	SourceVersion         *string                                 `json:"sourceVersion,omitempty"`
+	TargetKind            *string                                 `json:"targetKind,omitempty"`
+	TargetMetadataEquals  *[]MetadataEqualsConstraint             `json:"targetMetadataEquals,omitempty"`
+	TargetVersion         *string                                 `json:"targetVersion,omitempty"`
 }
 
 // Variable defines model for Variable.

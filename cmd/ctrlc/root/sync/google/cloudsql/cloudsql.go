@@ -382,10 +382,7 @@ var relationshipRules = []api.CreateResourceRelationshipRule{
 		TargetVersion: "ctrlplane.dev/network/v1",
 		TargetKind:    "GoogleNetwork",
 
-		MetadataKeysMatches: &[]struct {
-			SourceKey string `json:"sourceKey"`
-			TargetKey string `json:"targetKey"`
-		}{
+		MetadataKeysMatches: &[]api.MetadataKeyMatchConstraint{
 			{SourceKey: "google/project", TargetKey: "google/project"},
 			{SourceKey: "network/id", TargetKey: "network/id"},
 		},

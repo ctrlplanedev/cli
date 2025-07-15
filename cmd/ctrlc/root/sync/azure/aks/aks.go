@@ -421,10 +421,7 @@ var relationshipRules = []api.CreateResourceRelationshipRule{
 		TargetVersion: "ctrlplane.dev/network/v1",
 		TargetKind:    "AzureNetwork",
 
-		MetadataKeysMatches: &[]struct {
-			SourceKey string `json:"sourceKey"`
-			TargetKey string `json:"targetKey"`
-		}{
+		MetadataKeysMatches: &[]api.MetadataKeyMatchConstraint{
 			{SourceKey: "azure/subscription", TargetKey: "azure/subscription"},
 			{SourceKey: "azure/resource-group", TargetKey: "azure/resource-group"},
 		},

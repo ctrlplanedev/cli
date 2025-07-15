@@ -72,14 +72,8 @@ func createRelationshipRequestBody(workspaceId string, relationship ResourceRela
 		WorkspaceId:    workspaceId,
 		Reference:      relationship.Reference,
 		DependencyType: api.ResourceRelationshipRuleDependencyType(relationship.DependencyType),
-		MetadataKeysMatches: &[]struct {
-			SourceKey string `json:"sourceKey"`
-			TargetKey string `json:"targetKey"`
-		}{},
-		TargetMetadataEquals: &[]struct {
-			Key   string `json:"key"`
-			Value string `json:"value"`
-		}{},
+		MetadataKeysMatches: &[]api.MetadataKeyMatchConstraint{},
+		TargetMetadataEquals: &[]api.MetadataEqualsConstraint{},
 	}
 
 	if relationship.Target != nil {
@@ -87,18 +81,12 @@ func createRelationshipRequestBody(workspaceId string, relationship ResourceRela
 		config.TargetVersion = relationship.Target.Version
 
 		if relationship.Target.MetadataEquals != nil {
-			targetMetadataEquals := []struct {
-				Key   string `json:"key"`
-				Value string `json:"value"`
-			}{}
+			targetMetadataEquals := []api.MetadataEqualsConstraint{}
 
 			for key, value := range relationship.Target.MetadataEquals {
-				targetMetadataEquals = append(targetMetadataEquals, struct {
-					Key   string `json:"key"`
-					Value string `json:"value"`
-				}{
-					Key:   key,
-					Value: value,
+				targetMetadataEquals = append(targetMetadataEquals, api.MetadataEqualsConstraint{
+					Key:   &key,
+					Value: &value,
 				})
 			}
 
@@ -112,10 +100,7 @@ func createRelationshipRequestBody(workspaceId string, relationship ResourceRela
 	}
 
 	if relationship.MetadataKeysMatch != nil {
-		metadataKeysMatches := []struct {
-			SourceKey string `json:"sourceKey"`
-			TargetKey string `json:"targetKey"`
-		}{}
+		metadataKeysMatches := []api.MetadataKeyMatchConstraint{}
 
 		for _, match := range relationship.MetadataKeysMatch {
 			metadataKeysMatch, err := createMetadataKeysMatch(match)
@@ -134,7 +119,7 @@ func createRelationshipRequestBody(workspaceId string, relationship ResourceRela
 	if config.TargetMetadataEquals != nil && len(*config.TargetMetadataEquals) > 0 {
 		fmt.Println("MetadataTargetEquals:")
 		for _, kv := range *config.TargetMetadataEquals {
-			fmt.Printf("  Key: %s, Value: %s\n", kv.Key, kv.Value)
+			fmt.Printf("  Key: %s, Value: %s\n", *kv.Key, *kv.Value)
 		}
 	}
 

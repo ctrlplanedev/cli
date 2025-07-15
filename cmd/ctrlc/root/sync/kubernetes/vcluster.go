@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strconv"
 	"time"
 
@@ -95,11 +96,8 @@ func generateVclusterMetadata(vcluster find.VCluster, clusterMetadata api.Metada
 		}
 	}
 
-	if clusterMetadata != nil {
-		for key, value := range clusterMetadata {
-			metadata[key] = value
-		}
-	}
+
+	maps.Copy(metadata, clusterMetadata)
 
 	return metadata, nil
 }
@@ -163,10 +161,7 @@ func createResourceRelationshipRule(ctx context.Context, resourceProvider *api.R
 		return fmt.Errorf("unsupported cluster kind: %s", clusterResource.Kind)
 	}
 
-	metadataKeysMatches := []struct {
-		SourceKey string `json:"sourceKey"`
-		TargetKey string `json:"targetKey"`
-	}{
+	metadataKeysMatches := []api.MetadataKeyMatchConstraint{
 		{SourceKey: metadataKey, TargetKey: metadataKey},
 	}
 
