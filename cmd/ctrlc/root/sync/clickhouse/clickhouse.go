@@ -35,6 +35,7 @@ type ClickHouseConfigResponse struct {
 	Provider                        string                       `json:"provider"`
 	Region                          string                       `json:"region"`
 	State                           string                       `json:"state"`
+	ClickhouseVersion               string                       `json:"clickhouseVersion"`
 	Endpoints                       []ClickhouseEndpointResponse `json:"endpoints"`
 	Tier                            string                       `json:"tier"`
 	MinTotalMemoryGb                int                          `json:"minTotalMemoryGb"`
@@ -239,6 +240,8 @@ func NewSyncClickhouseCmd() *cobra.Command {
 					kinds.DBMetadataPort:   fmt.Sprintf("%d", connection.Port),
 					kinds.DBMetadataHost:   connection.Host,
 					kinds.DBMetadataSSL:    "true",
+
+					kinds.DBMetadataVersion: service.ClickhouseVersion,
 
 					"database/id":    service.ID,
 					"database/model": "relational",
