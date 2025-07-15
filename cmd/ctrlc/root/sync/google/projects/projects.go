@@ -54,8 +54,7 @@ func NewSyncProjectsCmd() *cobra.Command {
 					"account/parent-id": project.Parent.Id,
 					"account/parent-type": project.Parent.Type,
 
-					"google/project-id":   project.ProjectId,
-					"google/project-name": project.Name,
+					"google/project":      project.ProjectId,
 					"google/number":       fmt.Sprintf("%d", project.ProjectNumber),
 					"google/state":        project.LifecycleState,
 					"google/parent-id":    project.Parent.Id,
