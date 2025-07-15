@@ -102,8 +102,8 @@ func generateVclusterMetadata(vcluster find.VCluster, clusterMetadata api.Metada
 	return metadata, nil
 }
 
-func generateVclusterConfig(vcluster find.VCluster, clusterName string, clusterConfig map[string]interface{}) map[string]interface{} {
-	vclusterConfig := make(map[string]interface{})
+func generateVclusterConfig(vcluster find.VCluster, clusterConfig map[string]any) map[string]any {
+	vclusterConfig := make(map[string]any)
 	vclusterConfig["name"] = vcluster.Name
 	vclusterConfig["namespace"] = vcluster.Namespace
 	vclusterConfig["status"] = getNormalizedVclusterStatus(vcluster.Status)
@@ -142,7 +142,7 @@ func getCreateResourceFromVcluster(vcluster find.VCluster, clusterResource Clust
 		Kind:       generateVclusterKind(clusterResource),
 		Version:    "ctrlplane.dev/kubernetes/cluster/v1",
 		Metadata:   metadata,
-		Config:     generateVclusterConfig(vcluster, clusterResource.Name, clonedParentConfig),
+		Config:     generateVclusterConfig(vcluster, clonedParentConfig),
 	}
 
 	return resource, nil
@@ -249,9 +249,8 @@ func NewSyncVclusterCmd() *cobra.Command {
 			}
 			log.Infof("Upserted %d resources", len(resourcesToUpsert))
 
-			if err := createResourceRelationshipRule(cmd.Context(), rp, clusterResource); err != nil {
-				return fmt.Errorf("failed to create resource relationship rule: %w", err)
-			}
+			createResourceRelationshipRule(cmd.Context(), rp, clusterResource)
+			
 			return nil
 		},
 	}
