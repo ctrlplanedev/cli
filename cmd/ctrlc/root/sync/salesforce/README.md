@@ -7,7 +7,7 @@ This package provides functionality to sync Salesforce CRM data into Ctrlplane a
 ### Prerequisites
 
 You need Salesforce OAuth2 credentials:
-- **Domain**: Your Salesforce instance URL (e.g., `https://my-domain.my.salesforce.com`)
+- **Domain**: Your Salesforce instance URL (e.g., `https://mycompany.my.salesforce.com`)
 - **Consumer Key**: From your Salesforce Connected App
 - **Consumer Secret**: From your Salesforce Connected App
 
@@ -24,10 +24,12 @@ You need Salesforce OAuth2 credentials:
 
 ### Authentication
 
+The Salesforce credentials are configured at the parent `salesforce` command level and apply to all subcommands (accounts, opportunities, etc.).
+
 You can provide credentials via environment variables:
 
 ```bash
-export SALESFORCE_DOMAIN="https://my-domain.my.salesforce.com"
+export SALESFORCE_DOMAIN="https://mycompany.my.salesforce.com"
 export SALESFORCE_CONSUMER_KEY="your-consumer-key"
 export SALESFORCE_CONSUMER_SECRET="your-consumer-secret"
 ```
@@ -36,21 +38,28 @@ Or via command-line flags:
 
 ```bash
 ctrlc sync salesforce accounts \
-  --domain "https://my-domain.my.salesforce.com" \
-  --consumer-key "your-consumer-key" \
-  --consumer-secret "your-consumer-secret"
+  --salesforce-domain "https://mycompany.my.salesforce.com" \
+  --salesforce-consumer-key "your-consumer-key" \
+  --salesforce-consumer-secret "your-consumer-secret"
 ```
 
 ### Command-Line Flags
+
+#### Global Salesforce Flags (apply to all subcommands)
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--salesforce-domain` | Salesforce instance URL | `$SALESFORCE_DOMAIN` |
+| `--salesforce-consumer-key` | OAuth2 consumer key | `$SALESFORCE_CONSUMER_KEY` |
+| `--salesforce-consumer-secret` | OAuth2 consumer secret | `$SALESFORCE_CONSUMER_SECRET` |
+
+#### Subcommand Flags
 
 Both `accounts` and `opportunities` commands support the following flags:
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--domain` | Salesforce instance URL | `$SALESFORCE_DOMAIN` |
-| `--consumer-key` | OAuth2 consumer key | `$SALESFORCE_CONSUMER_KEY` |
-| `--consumer-secret` | OAuth2 consumer secret | `$SALESFORCE_CONSUMER_SECRET` |
-| `--provider`, `-p` | Resource provider name | `salesforce-accounts` or `salesforce-opportunities` |
+| `--provider`, `-p` | Resource provider name | Auto-generated from domain (e.g., `wandb-salesforce-accounts`) |
 | `--metadata` | Custom metadata mappings (can be used multiple times) | Built-in defaults |
 | `--where` | SOQL WHERE clause to filter records | None (syncs all records) |
 | `--limit` | Maximum number of records to sync | 0 (no limit) |
@@ -90,24 +99,27 @@ You can map any Salesforce field (including custom fields) to Ctrlplane metadata
 ```bash
 # Map standard and custom fields to metadata
 ctrlc sync salesforce accounts \
-  --metadata="account/id=Id" \
-  --metadata="ctrlplane/external-id=MasterRecordId" \
-  --metadata="account/owner-id=OwnerId" \
   --metadata="account/tier=Tier__c" \
   --metadata="account/region=Region__c" \
-  --metadata="account/annual-revenue=Annual_Revenue__c" \
-  --metadata="account/health=Customer_Health__c"
+  --metadata="account/annual-revenue=AnnualRevenue" \
+  --metadata="account/health=Customer_Health__c" \
+  --metadata="account/contract-value=Contract_Value__c"
 ```
 
-**Note**: 
-- Metadata values are always stored as strings, so all field values are automatically converted
-- The format is `prefix/key=SalesforceField` for metadata mappings where:
-  - `ctrlplane/` prefix is for system fields (e.g., `ctrlplane/external-id`)
-  - `account/` prefix is for account-specific metadata
-  - Use custom prefixes as needed for your organization
-- The sync automatically includes common fields with default mappings that can be overridden
-- The `Id` is mapped to `ctrlplane/external-id` by default for accounts
-- All fields are fetched from Salesforce, so custom fields are always available for mapping
+**Key Points about Metadata Mappings**:
+- Format: `metadata-key=SalesforceFieldName`
+- The left side is the metadata key in Ctrlplane (e.g., `account/tier`)
+- The right side is the exact Salesforce field name (e.g., `Tier__c`)
+- Custom fields in Salesforce typically end with `__c`
+- All values are stored as strings in metadata
+- Use `--list-all-fields` to discover available field names
+
+### Default Provider Naming
+
+If you don't specify a `--provider` name, the system automatically generates one based on your Salesforce domain:
+- `https://wandb.my.salesforce.com` → `wandb-salesforce-accounts`
+- `https://acme.my.salesforce.com` → `acme-salesforce-accounts`
+- `https://mycompany.my.salesforce.com` → `mycompany-salesforce-accounts`
 
 ### Syncing Opportunities
 
@@ -143,20 +155,12 @@ Just like accounts, you can map any Salesforce opportunity field (including cust
 ```bash
 # Map standard and custom fields to metadata
 ctrlc sync salesforce opportunities \
-  --metadata="opportunity/id=Id" \
-  --metadata="opportunity/account-id=AccountId" \
   --metadata="opportunity/type=Type__c" \
   --metadata="opportunity/expected-revenue=ExpectedRevenue" \
-  --metadata="opportunity/lead-source=LeadSource"
+  --metadata="opportunity/lead-source=LeadSource" \
+  --metadata="opportunity/next-step=NextStep" \
+  --metadata="opportunity/use-case=Use_Case__c"
 ```
-
-**Note**: 
-- Metadata values are always stored as strings, so all field values are automatically converted
-- The format is `prefix/key=SalesforceField` for metadata mappings where:
-  - `ctrlplane/` prefix is for system fields (e.g., `ctrlplane/external-id`)
-  - `opportunity/` prefix is for opportunity-specific metadata
-  - Use custom prefixes as needed for your organization
-- The sync automatically includes common fields with default mappings that can be overridden
 
 ## Resource Schema
 
@@ -168,25 +172,65 @@ Resources are created with the following structure:
 {
   "version": "ctrlplane.dev/crm/account/v1",
   "kind": "SalesforceAccount",
-  "name": "Account Name",
+  "name": "Acme Corporation",
   "identifier": "001XX000003DHPh",
   "config": {
-    "name": "Account Name",
+    "name": "Acme Corporation",
     "industry": "Technology",
     "id": "001XX000003DHPh",
+    "type": "Customer",
+    "phone": "+1-555-0123",
+    "website": "https://acme.com",
     "salesforceAccount": {
       "recordId": "001XX000003DHPh",
       "ownerId": "005XX000001SvogAAC",
-      "billingCity": "San Francisco",
-      "website": "https://example.com"
+      "parentId": "",
+      "type": "Customer",
+      "accountSource": "Web",
+      "numberOfEmployees": 5000,
+      "description": "Major technology customer",
+      "billingAddress": {
+        "street": "123 Main St",
+        "city": "San Francisco",
+        "state": "CA",
+        "postalCode": "94105",
+        "country": "USA",
+        "latitude": 37.7749,
+        "longitude": -122.4194
+      },
+      "shippingAddress": {
+        "street": "123 Main St",
+        "city": "San Francisco",
+        "state": "CA",
+        "postalCode": "94105",
+        "country": "USA",
+        "latitude": 37.7749,
+        "longitude": -122.4194
+      },
+      "createdDate": "2023-01-15T10:30:00Z",
+      "lastModifiedDate": "2024-01-20T15:45:00Z",
+      "isDeleted": false,
+      "photoUrl": "https://..."
     }
   },
   "metadata": {
-    "salesforce.account.id": "001XX000003DHPh",
-    "salesforce.account.owner_id": "005XX000001SvogAAC",
-    "salesforce.account.industry": "Technology",
-    "salesforce.account.billing_city": "San Francisco",
-    "salesforce.account.website": "https://example.com"
+    "ctrlplane/external-id": "001XX000003DHPh",
+    "account/id": "001XX000003DHPh",
+    "account/owner-id": "005XX000001SvogAAC",
+    "account/industry": "Technology",
+    "account/billing-city": "San Francisco",
+    "account/billing-state": "CA",
+    "account/billing-country": "USA",
+    "account/website": "https://acme.com",
+    "account/phone": "+1-555-0123",
+    "account/type": "Customer",
+    "account/source": "Web",
+    "account/shipping-city": "San Francisco",
+    "account/parent-id": "",
+    "account/employees": "5000",
+    // Custom fields added via --metadata mappings
+    "account/tier": "Enterprise",
+    "account/health": "Green"
   }
 }
 ```
@@ -197,27 +241,50 @@ Resources are created with the following structure:
 {
   "version": "ctrlplane.dev/crm/opportunity/v1", 
   "kind": "SalesforceOpportunity",
-  "name": "Opportunity Name",
+  "name": "Acme Corp - Enterprise Deal",
   "identifier": "006XX000003DHPh",
   "config": {
-    "name": "Opportunity Name",
-    "amount": "50000.00",
-    "stage": "Qualification",
+    "name": "Acme Corp - Enterprise Deal",
+    "amount": 250000,
+    "stage": "Negotiation/Review",
     "id": "006XX000003DHPh",
+    "probability": 75,
+    "isClosed": false,
+    "isWon": false,
     "salesforceOpportunity": {
       "recordId": "006XX000003DHPh",
-      "closeDate": "2024-12-31T00:00:00Z",
       "accountId": "001XX000003DHPh",
-      "probability": "10"
+      "ownerId": "005XX000001SvogAAC",
+      "type": "New Business",
+      "leadSource": "Partner Referral",
+      "closeDate": "2024-12-31T00:00:00Z",
+      "forecastCategory": "Commit",
+      "description": "Enterprise license upgrade",
+      "nextStep": "Legal review",
+      "hasOpenActivity": true,
+      "createdDate": "2024-01-15T10:30:00Z",
+      "lastModifiedDate": "2024-02-20T15:45:00Z",
+      "lastActivityDate": "2024-02-19T00:00:00Z",
+      "fiscalQuarter": 4,
+      "fiscalYear": 2024
     }
   },
   "metadata": {
-    "salesforce.opportunity.id": "006XX000003DHPh",
-    "salesforce.opportunity.account_id": "001XX000003DHPh",
-    "salesforce.opportunity.stage": "Qualification",
-    "salesforce.opportunity.amount": "50000.00",
-    "salesforce.opportunity.probability": "10",
-    "salesforce.opportunity.close_date": "2024-12-31"
+    "ctrlplane/external-id": "006XX000003DHPh",
+    "opportunity/id": "006XX000003DHPh",
+    "opportunity/account-id": "001XX000003DHPh",
+    "opportunity/owner-id": "005XX000001SvogAAC",
+    "opportunity/stage": "Negotiation/Review",
+    "opportunity/amount": "250000",
+    "opportunity/probability": "75",
+    "opportunity/close-date": "2024-12-31",
+    "opportunity/type": "New Business",
+    "opportunity/lead-source": "Partner Referral",
+    "opportunity/is-closed": "false",
+    "opportunity/is-won": "false",
+    // Custom fields added via --metadata mappings
+    "opportunity/use-case": "Platform Migration",
+    "opportunity/competition": "Competitor X"
   }
 }
 ```
@@ -229,42 +296,85 @@ This integration uses the [go-salesforce](https://github.com/k-capehart/go-sales
 ### Features
 
 - **Dynamic Field Discovery**: Automatically discovers and fetches all available fields (standard and custom) from Salesforce objects
-- **Custom Field Mappings**: Map any Salesforce field to Ctrlplane metadata using command-line flags
+- **Custom Field Mappings**: Map any Salesforce field to Ctrlplane metadata using `--metadata` flags
 - **Flexible Filtering**: Use SOQL WHERE clauses with the `--where` flag to filter records
-- **Flexible Transformations**: Use reflection-based utilities to handle field mappings dynamically
-- **Extensible Architecture**: Shared utilities in `common/util.go` make it easy to add support for new Salesforce objects
-- **Automatic Pagination**: Fetches all records by default, with support for limiting the number of records
-- **Smart Field Capture**: Automatically captures any custom Salesforce fields not defined in the struct
-- **Optional Field Listing**: Use `--list-all-fields` to see all available fields in the logs
+- **Smart Field Capture**: Automatically captures any custom Salesforce fields (ending in `__c`) not defined in the struct
+- **Automatic Pagination**: Handles large datasets efficiently with ID-based pagination
+- **Subdomain-based Naming**: Automatically generates provider names from your Salesforce subdomain
+- **Required Field Validation**: Uses Cobra's `MarkFlagRequired` for proper validation
 
-### Currently Syncs
+### Core Architecture
 
-- **Accounts**: Complete account information including:
-  - Basic fields (name, industry, website, phone)
-  - Address information (billing and shipping)
-  - Hierarchy (parent/child relationships)
-  - Custom fields (any field ending in `__c`)
-  
-- **Opportunities**: Deal information including:
-  - Basic fields (name, amount, stage, close date)
-  - Relationships (account associations)
-  - Probability and forecast data
-  - Custom fields (any field ending in `__c`)
+The sync implementation follows a clean, modular architecture:
 
-### Pagination
+1. **Parse Metadata Mappings**: `ParseMetadataMappings` parses the `--metadata` flags once, returning:
+   - Field names to include in the SOQL query
+   - A lookup map for transforming fields to metadata keys
 
-By default, the sync will retrieve all records from Salesforce using pagination:
-- Records are fetched in batches of 2000 (Salesforce's default)
-- Uses ID-based pagination to handle large datasets (avoids Salesforce's OFFSET limitation)
-- Use the `--limit` flag to restrict the number of records synced
-- Records are ordered by ID for consistent pagination
+2. **Query Salesforce**: `QuerySalesforceObject` performs the actual SOQL query with:
+   - Dynamic field selection based on struct tags and metadata mappings
+   - Automatic pagination handling
+   - Optional field listing for discovery
+
+3. **Transform to Resources**: Each object is transformed into a Ctrlplane resource with:
+   - Standard metadata mappings
+   - Custom field mappings from the `--metadata` flags
+   - Proper type conversion (all metadata values are strings)
+
+4. **Upload to Ctrlplane**: `UpsertToCtrlplane` handles the resource upload
+
+### Handling Custom Fields
+
+Salesforce custom fields (typically ending in `__c`) are handled through:
+
+1. **Automatic Capture**: The `UnmarshalJSON` method captures any fields not in the struct into a `CustomFields` map
+2. **Metadata Mapping**: Use `--metadata` flags to map these fields to Ctrlplane metadata
+3. **Field Discovery**: Use `--list-all-fields` to see all available fields in your Salesforce instance
+
+Example workflow:
+```bash
+# 1. Discover available fields
+ctrlc sync salesforce accounts --list-all-fields --limit 1
+
+# 2. Map the custom fields you need
+ctrlc sync salesforce accounts \
+  --metadata="account/tier=Customer_Tier__c" \
+  --metadata="account/segment=Market_Segment__c" \
+  --metadata="account/arr=Annual_Recurring_Revenue__c"
+```
 
 ### Shared Utilities
 
-The `common/util.go` file provides reusable functions for all Salesforce object syncs:
-- `QuerySalesforceObject`: Generic function to query any Salesforce object with pagination support
-- `UnmarshalWithCustomFields`: Captures any fields from Salesforce that aren't defined in the Go struct
-- `GetKnownFieldsFromStruct`: Automatically extracts field names from struct tags
-- `ParseMappings`: Handles custom metadata field mappings
+The `common/` package provides reusable functions for all Salesforce object syncs:
 
-These utilities make it easy to add support for new Salesforce objects (Leads, Contacts, etc.) with minimal code duplication.
+- **`InitSalesforceClient`**: Sets up OAuth2 authentication
+- **`ParseMetadataMappings`**: Parses `--metadata` flags into field lists and lookup maps
+- **`QuerySalesforceObject`**: Generic SOQL query with pagination
+- **`GetCustomFieldValue`**: Gets any field value from struct (standard or custom)
+- **`UnmarshalWithCustomFields`**: Captures unknown fields from Salesforce
+- **`GetKnownFieldsFromStruct`**: Extracts field names from struct tags
+- **`GetSalesforceSubdomain`**: Extracts subdomain for default provider naming
+- **`UpsertToCtrlplane`**: Handles resource upload to Ctrlplane
+
+### Pagination
+
+Records are fetched efficiently using Salesforce best practices:
+- ID-based pagination (avoids OFFSET limitations)
+- Configurable batch size (default: 2000 records)
+- Ordered by ID for consistent results
+- Use `--limit` to restrict total records synced
+
+### Adding New Salesforce Objects
+
+To add support for a new Salesforce object (e.g., Leads):
+
+1. Create a new struct with JSON tags matching Salesforce field names
+2. Include a `CustomFields map[string]interface{}` field
+3. Implement `UnmarshalJSON` to capture custom fields
+4. Create a command that:
+   - Uses `ParseMetadataMappings` for field mappings
+   - Calls `QuerySalesforceObject` for data retrieval
+   - Transforms objects to Ctrlplane resources
+   - Uses `UpsertToCtrlplane` for upload
+
+The shared utilities handle most of the complexity, making new object support straightforward.

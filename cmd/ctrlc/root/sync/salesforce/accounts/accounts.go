@@ -2,7 +2,9 @@ package accounts
 
 import (
 	"context"
+	"fmt"
 	"reflect"
+	"strconv"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
@@ -10,6 +12,7 @@ import (
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/k-capehart/go-salesforce/v2"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 type Account struct {
@@ -64,11 +67,6 @@ type Account struct {
 	CustomFields map[string]interface{} `json:"-"`
 }
 
-// GetCustomFields implements the DynamicFieldHolder interface
-func (a Account) GetCustomFields() map[string]interface{} {
-	return a.CustomFields
-}
-
 func (a *Account) UnmarshalJSON(data []byte) error {
 	type Alias Account
 	aux := &struct {
@@ -91,9 +89,6 @@ func (a *Account) UnmarshalJSON(data []byte) error {
 
 func NewSalesforceAccountsCmd() *cobra.Command {
 	var name string
-	var domain string
-	var consumerKey string
-	var consumerSecret string
 	var metadataMappings []string
 	var limit int
 	var listAllFields bool
@@ -103,10 +98,11 @@ func NewSalesforceAccountsCmd() *cobra.Command {
 		Use:   "accounts",
 		Short: "Sync Salesforce accounts into Ctrlplane",
 		Example: heredoc.Doc(`
-			# Make sure Salesforce credentials are configured via environment variables
-			
 			# Sync all Salesforce accounts
-			$ ctrlc sync salesforce accounts
+			$ ctrlc sync salesforce accounts \
+			  --salesforce-domain="https://mycompany.my.salesforce.com" \
+			  --salesforce-consumer-key="your-key" \
+			  --salesforce-consumer-secret="your-secret"
 			
 			# Sync accounts with a specific filter
 			$ ctrlc sync salesforce accounts --where="Customer_Health__c != null"
@@ -131,18 +127,41 @@ func NewSalesforceAccountsCmd() *cobra.Command {
 			
 			# Combine filters with metadata mappings
 			$ ctrlc sync salesforce accounts \
+			  --salesforce-domain="https://mycompany.my.salesforce.com" \
+			  --salesforce-consumer-key="your-key" \
+			  --salesforce-consumer-secret="your-secret" \
 			  --where="Type = 'Customer' AND AnnualRevenue > 1000000" \
 			  --metadata="account/revenue=AnnualRevenue"
 		`),
-		PreRunE: common.ValidateFlags(&domain, &consumerKey, &consumerSecret),
-		RunE:    runSync(&name, &domain, &consumerKey, &consumerSecret, &metadataMappings, &limit, &listAllFields, &whereClause),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			domain := viper.GetString("salesforce-domain")
+			consumerKey := viper.GetString("salesforce-consumer-key")
+			consumerSecret := viper.GetString("salesforce-consumer-secret")
+
+			log.Info("Syncing Salesforce accounts into Ctrlplane", "domain", domain)
+
+			ctx := context.Background()
+
+			sf, err := common.InitSalesforceClient(domain, consumerKey, consumerSecret)
+			if err != nil {
+				return err
+			}
+
+			resources, err := processAccounts(ctx, sf, metadataMappings, limit, listAllFields, whereClause)
+			if err != nil {
+				return err
+			}
+
+			if name == "" {
+				subdomain := common.GetSalesforceSubdomain(domain)
+				name = fmt.Sprintf("%s-salesforce-accounts", subdomain)
+			}
+
+			return common.UpsertToCtrlplane(ctx, resources, name)
+		},
 	}
 
-	// Add command flags
 	cmd.Flags().StringVarP(&name, "provider", "p", "", "Name of the resource provider")
-	cmd.Flags().StringVar(&domain, "domain", "", "Salesforce domain (e.g., https://my-domain.my.salesforce.com)")
-	cmd.Flags().StringVar(&consumerKey, "consumer-key", "", "Salesforce consumer key")
-	cmd.Flags().StringVar(&consumerSecret, "consumer-secret", "", "Salesforce consumer secret")
 	cmd.Flags().StringArrayVar(&metadataMappings, "metadata", []string{}, "Custom metadata mappings (format: metadata/key=SalesforceField)")
 	cmd.Flags().IntVar(&limit, "limit", 0, "Maximum number of records to sync (0 = no limit)")
 	cmd.Flags().BoolVar(&listAllFields, "list-all-fields", false, "List all available Salesforce fields in the logs")
@@ -151,35 +170,11 @@ func NewSalesforceAccountsCmd() *cobra.Command {
 	return cmd
 }
 
-// runSync contains the main sync logic
-func runSync(name, domain, consumerKey, consumerSecret *string, metadataMappings *[]string, limit *int, listAllFields *bool, whereClause *string) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		log.Info("Syncing Salesforce accounts into Ctrlplane", "domain", *domain)
-
-		ctx := context.Background()
-
-		sf, err := common.InitSalesforceClient(*domain, *consumerKey, *consumerSecret)
-		if err != nil {
-			return err
-		}
-
-		resources, err := processAccounts(ctx, sf, *metadataMappings, *limit, *listAllFields, *whereClause)
-		if err != nil {
-			return err
-		}
-
-		if *name == "" {
-			*name = "salesforce-accounts"
-		}
-
-		return common.UpsertToCtrlplane(ctx, resources, *name)
-	}
-}
-
-// processAccounts queries and transforms accounts
 func processAccounts(ctx context.Context, sf *salesforce.Salesforce, metadataMappings []string, limit int, listAllFields bool, whereClause string) ([]api.CreateResource, error) {
+	additionalFields, mappingLookup := common.ParseMetadataMappings(metadataMappings)
 
-	accounts, err := queryAccounts(ctx, sf, limit, listAllFields, metadataMappings, whereClause)
+	var accounts []Account
+	err := common.QuerySalesforceObject(ctx, sf, "Account", limit, listAllFields, &accounts, additionalFields, whereClause)
 	if err != nil {
 		return nil, err
 	}
@@ -188,52 +183,38 @@ func processAccounts(ctx context.Context, sf *salesforce.Salesforce, metadataMap
 
 	resources := []api.CreateResource{}
 	for _, account := range accounts {
-		resource := transformAccountToResource(account, metadataMappings)
+		resource := transformAccountToResource(account, mappingLookup)
 		resources = append(resources, resource)
 	}
 
 	return resources, nil
 }
 
-func queryAccounts(ctx context.Context, sf *salesforce.Salesforce, limit int, listAllFields bool, metadataMappings []string, whereClause string) ([]Account, error) {
-	additionalFields := common.ExtractFieldsFromMetadataMappings(metadataMappings)
-
-	var accounts []Account
-	err := common.QuerySalesforceObject(ctx, sf, "Account", limit, listAllFields, &accounts, additionalFields, whereClause)
-	if err != nil {
-		return nil, err
-	}
-	return accounts, nil
-}
-
-func transformAccountToResource(account Account, metadataMappings []string) api.CreateResource {
-	defaultMetadataMappings := map[string]string{
-		"ctrlplane/external-id":   "Id",
-		"account/id":              "Id",
-		"account/owner-id":        "OwnerId",
-		"account/industry":        "Industry",
-		"account/billing-city":    "BillingCity",
-		"account/billing-state":   "BillingState",
-		"account/billing-country": "BillingCountry",
-		"account/website":         "Website",
-		"account/phone":           "Phone",
-		"account/type":            "Type",
-		"account/source":          "AccountSource",
-		"account/shipping-city":   "ShippingCity",
-		"account/parent-id":       "ParentId",
-		"account/employees":       "NumberOfEmployees",
-		"account/region":          "Region__c",
-		"account/annual-revenue":  "Annual_Revenue__c",
-		"account/tier":            "Tier__c",
-		"account/health":          "Customer_Health__c",
+func transformAccountToResource(account Account, mappingLookup map[string]string) api.CreateResource {
+	metadata := map[string]string{
+		"ctrlplane/external-id":   account.ID,
+		"account/id":              account.ID,
+		"account/owner-id":        account.OwnerId,
+		"account/industry":        account.Industry,
+		"account/billing-city":    account.BillingCity,
+		"account/billing-state":   account.BillingState,
+		"account/billing-country": account.BillingCountry,
+		"account/website":         account.Website,
+		"account/phone":           account.Phone,
+		"account/type":            account.Type,
+		"account/source":          account.AccountSource,
+		"account/shipping-city":   account.ShippingCity,
+		"account/parent-id":       account.ParentId,
+		"account/employees":       strconv.Itoa(account.NumberOfEmployees),
 	}
 
-	// Parse metadata mappings using common utility
-	metadata := common.ParseMappings(account, metadataMappings, defaultMetadataMappings)
+	for fieldName, metadataKey := range mappingLookup {
+		if value, found := common.GetCustomFieldValue(account, fieldName); found {
+			metadata[metadataKey] = value
+		}
+	}
 
-	// Build base config with common fields
 	config := map[string]interface{}{
-		// Common cross-provider fields
 		"name":     account.Name,
 		"industry": account.Industry,
 		"id":       account.ID,
@@ -241,7 +222,6 @@ func transformAccountToResource(account Account, metadataMappings []string) api.
 		"phone":    account.Phone,
 		"website":  account.Website,
 
-		// Salesforce-specific implementation details
 		"salesforceAccount": map[string]interface{}{
 			"recordId":          account.ID,
 			"ownerId":           account.OwnerId,

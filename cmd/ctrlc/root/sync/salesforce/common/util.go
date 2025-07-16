@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/url"
 	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -16,22 +15,31 @@ import (
 	"github.com/spf13/viper"
 )
 
-// DynamicFieldHolder interface for structs that can hold custom fields
-type DynamicFieldHolder interface {
-	GetCustomFields() map[string]interface{}
+func GetSalesforceSubdomain(domain string) string {
+	subdomain := "salesforce"
+	if strings.HasPrefix(domain, "https://") || strings.HasPrefix(domain, "http://") {
+		parts := strings.Split(domain, "//")
+		if len(parts) > 1 {
+			hostParts := strings.Split(parts[1], ".")
+			if len(hostParts) > 0 {
+				subdomain = hostParts[0]
+			}
+		}
+	}
+	return subdomain
 }
 
-// ExtractFieldsFromMetadataMappings extracts Salesforce field names from metadata mappings
-func ExtractFieldsFromMetadataMappings(metadataMappings []string) []string {
+func ParseMetadataMappings(mappings []string) ([]string, map[string]string) {
 	fieldMap := make(map[string]bool)
+	lookupMap := make(map[string]string) // fieldName -> metadataKey
 
-	for _, mapping := range metadataMappings {
-		parts := strings.SplitN(mapping, "=", 2)
+	for _, mapping := range mappings {
+		parts := strings.Split(mapping, "=")
 		if len(parts) == 2 {
-			salesforceField := strings.TrimSpace(parts[1])
-			if salesforceField != "" {
-				fieldMap[salesforceField] = true
-			}
+			metadataKey := parts[0]
+			fieldName := parts[1]
+			fieldMap[fieldName] = true
+			lookupMap[fieldName] = metadataKey
 		}
 	}
 
@@ -40,120 +48,37 @@ func ExtractFieldsFromMetadataMappings(metadataMappings []string) []string {
 		fields = append(fields, field)
 	}
 
-	return fields
+	return fields, lookupMap
 }
 
-// ParseMappings applies custom field mappings to extract string values for metadata
-func ParseMappings(data interface{}, mappings []string, defaultMappings map[string]string) map[string]string {
-	result := map[string]string{}
-
-	dataValue := reflect.ValueOf(data)
-	dataType := reflect.TypeOf(data)
-
-	if dataValue.Kind() == reflect.Ptr {
-		dataValue = dataValue.Elem()
-		dataType = dataType.Elem()
+func GetCustomFieldValue(obj interface{}, fieldName string) (string, bool) {
+	objValue := reflect.ValueOf(obj)
+	if objValue.Kind() == reflect.Ptr {
+		objValue = objValue.Elem()
 	}
 
-	// Process custom mappings (format: ctrlplane/key=SalesforceField)
-	for _, mapping := range mappings {
-		parts := strings.SplitN(mapping, "=", 2)
-		if len(parts) != 2 {
-			log.Warn("Invalid mapping format, skipping", "mapping", mapping)
-			continue
+	customFields := objValue.FieldByName("CustomFields")
+	if customFields.IsValid() && customFields.Kind() == reflect.Map {
+		if value := customFields.MapIndex(reflect.ValueOf(fieldName)); value.IsValid() {
+			return fmt.Sprintf("%v", value.Interface()), true
 		}
+	}
 
-		ctrlplaneKey, sfField := parts[0], parts[1]
-
-		found := false
-		for i := 0; i < dataType.NumField(); i++ {
-			field := dataType.Field(i)
-			jsonTag := field.Tag.Get("json")
-
-			if jsonTag == sfField {
-				fieldValue := dataValue.Field(i)
-
-				strValue := fieldToString(fieldValue)
-
-				if strValue != "" {
-					result[ctrlplaneKey] = strValue
-				}
-				found = true
-				break
-			}
-		}
-
-		// If not found in struct fields, check CustomFields if the struct implements DynamicFieldHolder
-		if !found {
-			if holder, ok := data.(DynamicFieldHolder); ok {
-				customFields := holder.GetCustomFields()
-				if customFields != nil {
-					if value, exists := customFields[sfField]; exists {
-						strValue := fmt.Sprintf("%v", value)
-						if strValue != "" && strValue != "<nil>" {
-							result[ctrlplaneKey] = strValue
-						}
-					}
+	objType := objValue.Type()
+	for i := 0; i < objType.NumField(); i++ {
+		field := objType.Field(i)
+		if jsonTag := field.Tag.Get("json"); jsonTag != "" {
+			tagName := strings.Split(jsonTag, ",")[0]
+			if tagName == fieldName {
+				fieldValue := objValue.Field(i)
+				if fieldValue.IsValid() && fieldValue.CanInterface() {
+					return fmt.Sprintf("%v", fieldValue.Interface()), true
 				}
 			}
 		}
 	}
 
-	// Add default mappings if they haven't been explicitly mapped
-	existingKeys := make(map[string]bool)
-	for key := range result {
-		existingKeys[key] = true
-	}
-
-	for defaultKey, sfField := range defaultMappings {
-		if !existingKeys[defaultKey] {
-			// Find and add the default field
-			for i := 0; i < dataType.NumField(); i++ {
-				field := dataType.Field(i)
-				if field.Tag.Get("json") == sfField {
-					fieldValue := dataValue.Field(i)
-					strValue := fieldToString(fieldValue)
-
-					if strValue != "" {
-						result[defaultKey] = strValue
-					}
-					break
-				}
-			}
-		}
-	}
-
-	return result
-}
-
-// fieldToString converts a reflect.Value to string for metadata
-func fieldToString(fieldValue reflect.Value) string {
-	switch fieldValue.Kind() {
-	case reflect.String:
-		return fieldValue.String()
-	case reflect.Int, reflect.Int64:
-		if val := fieldValue.Int(); val != 0 {
-			return fmt.Sprintf("%d", val)
-		}
-	case reflect.Float64, reflect.Float32:
-		if val := fieldValue.Float(); val != 0 {
-			return strconv.FormatFloat(val, 'f', -1, 64)
-		}
-	case reflect.Bool:
-		if fieldValue.Bool() {
-			return "true"
-		}
-		return "false"
-	default:
-		// For complex types, try to marshal to JSON
-		if fieldValue.IsValid() && fieldValue.CanInterface() {
-			if bytes, err := json.Marshal(fieldValue.Interface()); err == nil {
-				return string(bytes)
-			}
-		}
-	}
-
-	return ""
+	return "", false
 }
 
 // QuerySalesforceObject performs a generic query on any Salesforce object with pagination support
@@ -164,7 +89,6 @@ func QuerySalesforceObject(ctx context.Context, sf *salesforce.Salesforce, objec
 	}
 	elementType := targetValue.Type().Elem()
 
-	// Get field names from the struct
 	fieldNames := []string{}
 	for i := 0; i < elementType.NumField(); i++ {
 		field := elementType.Field(i)
@@ -177,7 +101,6 @@ func QuerySalesforceObject(ctx context.Context, sf *salesforce.Salesforce, objec
 		}
 	}
 
-	// Include additional fields passed in (e.g., from metadata mappings)
 	for _, field := range additionalFields {
 		found := false
 		for _, existing := range fieldNames {
@@ -191,7 +114,6 @@ func QuerySalesforceObject(ctx context.Context, sf *salesforce.Salesforce, objec
 		}
 	}
 
-	// If listAllFields is true, describe the object to show what's available
 	if listAllFields {
 		describeResp, err := sf.DoRequest("GET", fmt.Sprintf("/sobjects/%s/describe", objectName), nil)
 		if err != nil {
@@ -204,7 +126,6 @@ func QuerySalesforceObject(ctx context.Context, sf *salesforce.Salesforce, objec
 			return fmt.Errorf("failed to decode describe response: %w", err)
 		}
 
-		// Extract all available field names for logging
 		fields, ok := describeResult["fields"].([]interface{})
 		if !ok {
 			return fmt.Errorf("unexpected describe response format")
@@ -223,12 +144,10 @@ func QuerySalesforceObject(ctx context.Context, sf *salesforce.Salesforce, objec
 		log.Info("Available fields", "object", objectName, "count", len(allFieldNames), "fields", allFieldNames)
 	}
 
-	// Build query with pagination support
 	totalRetrieved := 0
 	lastId := ""
 	batchSize := 2000
 
-	// Query in batches using ID-based pagination to avoid OFFSET limits
 	for {
 		fieldsClause := strings.Join(fieldNames, ", ")
 		baseQuery := fmt.Sprintf("SELECT %s FROM %s", fieldsClause, objectName)
@@ -283,7 +202,6 @@ func QuerySalesforceObject(ctx context.Context, sf *salesforce.Salesforce, objec
 
 		batchSlice := reflect.New(targetValue.Type()).Elem()
 
-		// Unmarshal records into the batch slice - this will trigger our custom UnmarshalJSON
 		if err := json.Unmarshal(queryResult.Records, batchSlice.Addr().Interface()); err != nil {
 			return fmt.Errorf("failed to unmarshal records: %w", err)
 		}
@@ -330,24 +248,6 @@ func QuerySalesforceObject(ctx context.Context, sf *salesforce.Salesforce, objec
 	return nil
 }
 
-// ExtractCustomFields extracts fields from a JSON response that aren't in the struct
-func ExtractCustomFields(data []byte, knownFields map[string]bool) (map[string]interface{}, error) {
-	var allFields map[string]interface{}
-	if err := json.Unmarshal(data, &allFields); err != nil {
-		return nil, err
-	}
-
-	customFields := make(map[string]interface{})
-	for key, value := range allFields {
-		if !knownFields[key] {
-			customFields[key] = value
-		}
-	}
-
-	return customFields, nil
-}
-
-// GetKnownFieldsFromStruct extracts all JSON field names from a struct's tags
 func GetKnownFieldsFromStruct(structType reflect.Type) map[string]bool {
 	knownFields := make(map[string]bool)
 
@@ -372,7 +272,26 @@ func GetKnownFieldsFromStruct(structType reflect.Type) map[string]bool {
 	return knownFields
 }
 
-// UpsertToCtrlplane creates or updates a resource provider and sets its resources
+func UnmarshalWithCustomFields(data []byte, target interface{}, knownFields map[string]bool) (map[string]interface{}, error) {
+	if err := json.Unmarshal(data, target); err != nil {
+		return nil, err
+	}
+
+	var allFields map[string]interface{}
+	if err := json.Unmarshal(data, &allFields); err != nil {
+		return nil, err
+	}
+
+	customFields := make(map[string]interface{})
+	for fieldName, value := range allFields {
+		if !knownFields[fieldName] {
+			customFields[fieldName] = value
+		}
+	}
+
+	return customFields, nil
+}
+
 func UpsertToCtrlplane(ctx context.Context, resources []api.CreateResource, providerName string) error {
 	apiURL := viper.GetString("url")
 	apiKey := viper.GetString("api-key")
@@ -408,25 +327,4 @@ func UpsertToCtrlplane(ctx context.Context, resources []api.CreateResource, prov
 
 	log.Info("Successfully synced resources", "count", len(resources))
 	return nil
-}
-
-// UnmarshalWithCustomFields unmarshals JSON data into the target struct and returns any unknown fields
-func UnmarshalWithCustomFields(data []byte, target interface{}, knownFields map[string]bool) (map[string]interface{}, error) {
-	if err := json.Unmarshal(data, target); err != nil {
-		return nil, err
-	}
-
-	var allFields map[string]interface{}
-	if err := json.Unmarshal(data, &allFields); err != nil {
-		return nil, err
-	}
-
-	customFields := make(map[string]interface{})
-	for fieldName, value := range allFields {
-		if !knownFields[fieldName] {
-			customFields[fieldName] = value
-		}
-	}
-
-	return customFields, nil
 }
