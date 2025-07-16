@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/url"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -136,7 +137,7 @@ func fieldToString(fieldValue reflect.Value) string {
 		}
 	case reflect.Float64, reflect.Float32:
 		if val := fieldValue.Float(); val != 0 {
-			return fmt.Sprintf("%g", val) // %g removes trailing zeros
+			return strconv.FormatFloat(val, 'f', -1, 64)
 		}
 	case reflect.Bool:
 		if fieldValue.Bool() {
@@ -261,12 +262,13 @@ func QuerySalesforceObject(ctx context.Context, sf *salesforce.Salesforce, objec
 		if err != nil {
 			return fmt.Errorf("failed to query %s: %w", objectName, err)
 		}
-		defer queryResp.Body.Close()
 
 		body, err := io.ReadAll(queryResp.Body)
 		if err != nil {
+			queryResp.Body.Close()
 			return fmt.Errorf("failed to read response body: %w", err)
 		}
+		queryResp.Body.Close()
 
 		var queryResult struct {
 			TotalSize      int             `json:"totalSize"`

@@ -234,7 +234,7 @@ func transformOpportunityToResource(opportunity Opportunity, metadataMappings []
 	config := map[string]interface{}{
 		// Common cross-provider fields
 		"name":   opportunity.Name,
-		"amount": strconv.FormatFloat(opportunity.Amount, 'f', 2, 64),
+		"amount": strconv.FormatFloat(opportunity.Amount, 'f', -1, 64),
 		"stage":  opportunity.StageName,
 		"id":     opportunity.ID,
 
@@ -243,7 +243,7 @@ func transformOpportunityToResource(opportunity Opportunity, metadataMappings []
 			"recordId":            opportunity.ID,
 			"closeDate":           closeDateFormatted,
 			"accountId":           opportunity.AccountID,
-			"probability":         strconv.FormatFloat(opportunity.Probability, 'f', 2, 64),
+			"probability":         strconv.FormatFloat(opportunity.Probability, 'f', -1, 64),
 			"type":                opportunity.Type,
 			"description":         opportunity.Description,
 			"nextStep":            opportunity.NextStep,

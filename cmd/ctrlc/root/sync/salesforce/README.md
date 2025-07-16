@@ -101,9 +101,12 @@ ctrlc sync salesforce accounts \
 
 **Note**: 
 - Metadata values are always stored as strings, so all field values are automatically converted
-- The format is `ctrlplane/key=SalesforceField` for metadata mappings
+- The format is `prefix/key=SalesforceField` for metadata mappings where:
+  - `ctrlplane/` prefix is for system fields (e.g., `ctrlplane/external-id`)
+  - `account/` prefix is for account-specific metadata
+  - Use custom prefixes as needed for your organization
 - The sync automatically includes common fields with default mappings that can be overridden
-- The `MasterRecordId` is mapped to `ctrlplane/external-id` by default
+- The `Id` is mapped to `ctrlplane/external-id` by default for accounts
 - All fields are fetched from Salesforce, so custom fields are always available for mapping
 
 ### Syncing Opportunities
@@ -149,7 +152,10 @@ ctrlc sync salesforce opportunities \
 
 **Note**: 
 - Metadata values are always stored as strings, so all field values are automatically converted
-- The format is `ctrlplane/key=SalesforceField` for metadata mappings
+- The format is `prefix/key=SalesforceField` for metadata mappings where:
+  - `ctrlplane/` prefix is for system fields (e.g., `ctrlplane/external-id`)
+  - `opportunity/` prefix is for opportunity-specific metadata
+  - Use custom prefixes as needed for your organization
 - The sync automatically includes common fields with default mappings that can be overridden
 
 ## Resource Schema
