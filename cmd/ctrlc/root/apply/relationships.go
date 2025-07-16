@@ -69,11 +69,12 @@ func createMetadataKeysMatch(match MetadataKeysMatch) (*struct {
 
 func createRelationshipRequestBody(workspaceId string, relationship ResourceRelationship) api.CreateResourceRelationshipRule {
 	config := api.CreateResourceRelationshipRule{
-		WorkspaceId:    workspaceId,
-		Reference:      relationship.Reference,
-		DependencyType: api.ResourceRelationshipRuleDependencyType(relationship.DependencyType),
-		MetadataKeysMatches: &[]api.MetadataKeyMatchConstraint{},
+		WorkspaceId:          workspaceId,
+		Reference:            relationship.Reference,
+		DependencyType:       api.ResourceRelationshipRuleDependencyType(relationship.DependencyType),
+		MetadataKeysMatches:  &[]api.MetadataKeyMatchConstraint{},
 		TargetMetadataEquals: &[]api.MetadataEqualsConstraint{},
+		SourceMetadataEquals: &[]api.MetadataEqualsConstraint{},
 	}
 
 	if relationship.Target != nil {
@@ -97,6 +98,19 @@ func createRelationshipRequestBody(workspaceId string, relationship ResourceRela
 	if relationship.Source != nil {
 		config.SourceKind = relationship.Source.Kind
 		config.SourceVersion = relationship.Source.Version
+
+		if relationship.Source.MetadataEquals != nil {
+			sourceMetadataEquals := []api.MetadataEqualsConstraint{}
+
+			for key, value := range relationship.Source.MetadataEquals {
+				sourceMetadataEquals = append(sourceMetadataEquals, api.MetadataEqualsConstraint{
+					Key:   &key,
+					Value: &value,
+				})
+			}
+
+			config.SourceMetadataEquals = &sourceMetadataEquals
+		}
 	}
 
 	if relationship.MetadataKeysMatch != nil {

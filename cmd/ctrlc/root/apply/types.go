@@ -103,8 +103,9 @@ type TargetResource struct {
 }
 
 type SourceResource struct {
-	Kind    string `yaml:"kind"`
-	Version string `yaml:"version"`
+	Kind           string            `yaml:"kind"`
+	Version        string            `yaml:"version"`
+	MetadataEquals map[string]string `yaml:"metadataEquals"`
 }
 
 type MetadataKeysMatch struct {
