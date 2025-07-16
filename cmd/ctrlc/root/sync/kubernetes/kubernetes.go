@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func processNamespace(_ context.Context, namespace corev1.Namespace) api.CreateResource {
+func processNamespace(_ context.Context, clusterName string, namespace corev1.Namespace) api.CreateResource {
 	metadata := map[string]string{}
 	for key, value := range namespace.Labels {
 		metadata[fmt.Sprintf("tags/%s", key)] = value
@@ -29,7 +29,7 @@ func processNamespace(_ context.Context, namespace corev1.Namespace) api.CreateR
 	return api.CreateResource{
 		Version: "ctrlplane.dev/kubernetes/namespace/v1",
 		Kind: "KubernetesNamespace",
-		Name: namespace.Name,
+		Name: fmt.Sprintf("%s/%s", clusterName, namespace.Name),
 		Identifier: string(namespace.UID),
 		Config: map[string]any{
 			"id": string(namespace.UID),
@@ -49,7 +49,7 @@ func NewSyncKubernetesCmd() *cobra.Command {
 		Use:   "kubernetes",
 		Short: "Sync Kubernetes resources on a cluster",
 		Example: heredoc.Doc(`
-			$ ctrlc sync kubernetes --cluster 1234567890
+			$ ctrlc sync kubernetes --cluster-identifier 1234567890 --cluster-name my-cluster
 		`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log.Info("Syncing Kubernetes resources on a cluster")
@@ -60,10 +60,6 @@ func NewSyncKubernetesCmd() *cobra.Command {
 			config, configClusterName, err := getKubeConfig()
 			if err != nil {
 				return err
-			}
-
-			if clusterName == "" {
-				clusterName = configClusterName
 			}
 
 			log.Info("Connected to cluster", "name", clusterName)
@@ -78,13 +74,46 @@ func NewSyncKubernetesCmd() *cobra.Command {
 				return err
 			}
 
+			apiURL := viper.GetString("url")
+			apiKey := viper.GetString("api-key")
+			workspaceId := viper.GetString("workspace")
+		
+			ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			if err != nil {
+				return fmt.Errorf("failed to create API client: %w", err)
+			}
+			
+			ctx := context.Background()
+			clusterResource, _ := ctrlplaneClient.GetResourceByIdentifierWithResponse(ctx, workspaceId, clusterIdentifier)
+			if clusterResource.JSON200 != nil {
+				clusterName = clusterResource.JSON200.Name
+			}
+
+			if clusterName == "" {
+				clusterName = configClusterName
+			}
+
 			resources := []api.CreateResource{}
 			for _, namespace := range namespaces.Items {
-				resource := processNamespace(context.Background(), namespace)
+				resource := processNamespace(context.Background(), clusterName, namespace)
 				resources = append(resources, resource)
 			}
 
-			return upsertToCtrlplane(context.Background(), resources, clusterIdentifier, clusterName, providerName)
+			if clusterResource.JSON200 != nil {
+				for _, resource := range resources {
+					for key, value := range clusterResource.JSON200.Metadata {
+						if strings.HasPrefix(key, "tags/") {
+							continue
+						}
+						if _, exists := resource.Metadata[key]; !exists {
+							resource.Metadata[key] = value
+						}
+					}
+					resource.Metadata["kubernetes/name"] = clusterResource.JSON200.Name
+				}
+			}
+
+			return upsertToCtrlplane(ctrlplaneClient, resources, clusterIdentifier, clusterName, providerName)
 		},
 	}
 	cmd.Flags().StringVarP(&providerName, "provider", "p", "", "Name of the resource provider")
@@ -95,34 +124,9 @@ func NewSyncKubernetesCmd() *cobra.Command {
 }
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, clusterIdentifier string, clusterName string, providerName string) error {
-	apiURL := viper.GetString("url")
-	apiKey := viper.GetString("api-key")
+func upsertToCtrlplane(ctrlplaneClient *api.ClientWithResponses, resources []api.CreateResource, clusterIdentifier string, clusterName string, providerName string) error {
+	ctx := context.Background()
 	workspaceId := viper.GetString("workspace")
-
-	ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
-	if err != nil {
-		return fmt.Errorf("failed to create API client: %w", err)
-	}
-
-	clusterResource, _ := ctrlplaneClient.GetResourceByIdentifierWithResponse(ctx, workspaceId, clusterIdentifier)
-	if clusterResource.JSON200 != nil {
-		for _, resource := range resources {
-			for key, value := range clusterResource.JSON200.Metadata {
-				if strings.HasPrefix(key, "tags/") {
-					continue
-				}
-				if _, exists := resource.Metadata[key]; !exists {
-					resource.Metadata[key] = value
-				}
-			}
-			resource.Metadata["kubernetes/name"] = clusterResource.JSON200.Name
-		}
-		if clusterName == "" {
-			clusterName = clusterResource.JSON200.Name
-		}
-		
-	}
 
 	if providerName == "" {
 		providerName = fmt.Sprintf("kubernetes-cluster-%s", clusterName)
