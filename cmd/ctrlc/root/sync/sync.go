@@ -8,6 +8,7 @@ import (
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/github"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/google"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/kubernetes"
+	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/salesforce"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/tailscale"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/terraform"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
@@ -38,6 +39,7 @@ func NewSyncCmd() *cobra.Command {
 	cmd.AddCommand(kubernetes.NewSyncKubernetesCmd())
 	cmd.AddCommand(kubernetes.NewSyncVclusterCmd())
 	cmd.AddCommand(github.NewSyncGitHubCmd())
+	cmd.AddCommand(salesforce.NewSalesforceCmd())
 
 	return cmd
 }
