@@ -29,35 +29,6 @@ func GetSalesforceSubdomain(domain string) string {
 	return subdomain
 }
 
-func GetCustomFieldValue(obj interface{}, fieldName string) (string, bool) {
-	objValue := reflect.ValueOf(obj)
-	if objValue.Kind() == reflect.Ptr {
-		objValue = objValue.Elem()
-	}
-
-	if customFields := objValue.FieldByName("CustomFields"); customFields.IsValid() && customFields.Kind() == reflect.Map {
-		if value := customFields.MapIndex(reflect.ValueOf(fieldName)); value.IsValid() {
-			return fmt.Sprintf("%v", value.Interface()), true
-		}
-	}
-
-	objType := objValue.Type()
-	for i := 0; i < objType.NumField(); i++ {
-		field := objType.Field(i)
-		if jsonTag := field.Tag.Get("json"); jsonTag != "" {
-			tagName := strings.Split(jsonTag, ",")[0]
-			if tagName == fieldName {
-				fieldValue := objValue.Field(i)
-				if fieldValue.IsValid() && fieldValue.CanInterface() {
-					return fmt.Sprintf("%v", fieldValue.Interface()), true
-				}
-			}
-		}
-	}
-
-	return "", false
-}
-
 // QuerySalesforceObject performs a generic query on any Salesforce object with pagination support
 func QuerySalesforceObject(ctx context.Context, sf *salesforce.Salesforce, objectName string, limit int, listAllFields bool, target interface{}, additionalFields []string, whereClause string) error {
 	targetValue := reflect.ValueOf(target).Elem()
@@ -65,7 +36,43 @@ func QuerySalesforceObject(ctx context.Context, sf *salesforce.Salesforce, objec
 		return fmt.Errorf("target must be a pointer to a slice")
 	}
 
-	fieldNames := getFieldsToQuery(targetValue.Type().Elem(), additionalFields)
+	fieldMap := make(map[string]bool)
+
+	var standardFields []string
+	switch objectName {
+	case "Account":
+		standardFields = []string{
+			"Id", "Name", "Type", "Industry", "Website", "Phone",
+			"BillingStreet", "BillingCity", "BillingState", "BillingPostalCode", "BillingCountry",
+			"BillingLatitude", "BillingLongitude",
+			"ShippingStreet", "ShippingCity", "ShippingState", "ShippingPostalCode", "ShippingCountry",
+			"ShippingLatitude", "ShippingLongitude",
+			"NumberOfEmployees", "Description", "OwnerId", "ParentId", "AccountSource",
+			"CreatedDate", "LastModifiedDate", "IsDeleted", "PhotoUrl",
+		}
+	case "Opportunity":
+		standardFields = []string{
+			"Id", "Name", "Amount", "StageName", "CloseDate", "AccountId",
+			"Probability", "Type", "NextStep", "LeadSource", "IsClosed", "IsWon",
+			"ForecastCategory", "Description", "OwnerId", "ContactId", "CampaignId",
+			"HasOpenActivity", "CreatedDate", "LastModifiedDate", "LastActivityDate",
+		}
+	default:
+		standardFields = []string{"Id", "Name", "CreatedDate", "LastModifiedDate"}
+	}
+
+	for _, field := range standardFields {
+		fieldMap[field] = true
+	}
+
+	for _, field := range additionalFields {
+		fieldMap[field] = true
+	}
+
+	fieldNames := make([]string, 0, len(fieldMap))
+	for field := range fieldMap {
+		fieldNames = append(fieldNames, field)
+	}
 
 	if listAllFields {
 		if err := logAvailableFields(sf, objectName); err != nil {
@@ -74,32 +81,6 @@ func QuerySalesforceObject(ctx context.Context, sf *salesforce.Salesforce, objec
 	}
 
 	return paginateQuery(ctx, sf, objectName, fieldNames, whereClause, limit, targetValue)
-}
-
-// getFieldsToQuery extracts field names from struct tags and merges with additional fields
-func getFieldsToQuery(elementType reflect.Type, additionalFields []string) []string {
-	// Use a map to automatically handle deduplication
-	fieldMap := make(map[string]bool)
-
-	for i := 0; i < elementType.NumField(); i++ {
-		field := elementType.Field(i)
-		jsonTag := field.Tag.Get("json")
-		if jsonTag != "" && jsonTag != "-" {
-			if fieldName := strings.Split(jsonTag, ",")[0]; fieldName != "" {
-				fieldMap[fieldName] = true
-			}
-		}
-	}
-
-	for _, field := range additionalFields {
-		fieldMap[field] = true
-	}
-
-	fields := make([]string, 0, len(fieldMap))
-	for field := range fieldMap {
-		fields = append(fields, field)
-	}
-	return fields
 }
 
 func logAvailableFields(sf *salesforce.Salesforce, objectName string) error {
@@ -132,6 +113,7 @@ func logAvailableFields(sf *salesforce.Salesforce, objectName string) error {
 	return nil
 }
 
+// buildSOQL constructs a SOQL query with pagination
 func buildSOQL(objectName string, fields []string, whereClause string, lastId string, limit int) string {
 	query := fmt.Sprintf("SELECT %s FROM %s", strings.Join(fields, ", "), objectName)
 
@@ -150,28 +132,27 @@ func buildSOQL(objectName string, fields []string, whereClause string, lastId st
 
 	if limit > 0 {
 		query += fmt.Sprintf(" LIMIT %d", limit)
-	} else {
-		query += " LIMIT 2000" // Default batch size
 	}
 
 	return query
 }
 
 func getRecordId(record reflect.Value) string {
-	if record.Kind() != reflect.Struct {
-		return ""
-	}
-	if idField := record.FieldByName("ID"); idField.IsValid() && idField.Kind() == reflect.String {
-		return idField.String()
-	}
-	if idField := record.FieldByName("Id"); idField.IsValid() && idField.Kind() == reflect.String {
-		return idField.String()
+	if record.Kind() == reflect.Map && record.Type().Key().Kind() == reflect.String {
+		for _, key := range record.MapKeys() {
+			if key.String() == "Id" {
+				idValue := record.MapIndex(key)
+				if idValue.IsValid() && idValue.CanInterface() {
+					return fmt.Sprintf("%v", idValue.Interface())
+				}
+			}
+		}
 	}
 	return ""
 }
 
 func paginateQuery(ctx context.Context, sf *salesforce.Salesforce, objectName string, fields []string, whereClause string, limit int, targetValue reflect.Value) error {
-	const batchSize = 2000
+	const batchSize = 200
 	totalRetrieved := 0
 	lastId := ""
 
@@ -198,7 +179,6 @@ func paginateQuery(ctx context.Context, sf *salesforce.Salesforce, objectName st
 		recordCount := batch.Len()
 		totalRetrieved += recordCount
 
-		// Get last ID for next page
 		if recordCount > 0 {
 			lastId = getRecordId(batch.Index(recordCount - 1))
 		}
@@ -210,7 +190,6 @@ func paginateQuery(ctx context.Context, sf *salesforce.Salesforce, objectName st
 		}
 	}
 
-	// Trim to exact limit if needed
 	if limit > 0 && targetValue.Len() > limit {
 		targetValue.Set(targetValue.Slice(0, limit))
 	}
@@ -239,7 +218,6 @@ func executeQuery(sf *salesforce.Salesforce, query string, targetType reflect.Ty
 		return reflect.Value{}, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	// Create a new slice of the target type to unmarshal into
 	batch := reflect.New(targetType).Elem()
 	if err := json.Unmarshal(result.Records, batch.Addr().Interface()); err != nil {
 		return reflect.Value{}, fmt.Errorf("failed to unmarshal records: %w", err)
@@ -248,48 +226,13 @@ func executeQuery(sf *salesforce.Salesforce, query string, targetType reflect.Ty
 	return batch, nil
 }
 
-func GetKnownFieldsFromStruct(structType reflect.Type) map[string]bool {
-	knownFields := make(map[string]bool)
-
-	if structType.Kind() == reflect.Ptr {
-		structType = structType.Elem()
-	}
-
-	for i := 0; i < structType.NumField(); i++ {
-		field := structType.Field(i)
-		jsonTag := field.Tag.Get("json")
-
-		if jsonTag == "" || jsonTag == "-" {
-			continue
-		}
-
-		fieldName := strings.Split(jsonTag, ",")[0]
-		if fieldName != "" {
-			knownFields[fieldName] = true
+func AddToMetadata(metadata map[string]string, key string, value any) {
+	if value != nil {
+		strVal := fmt.Sprintf("%v", value)
+		if strVal != "" && strVal != "<nil>" {
+			metadata[key] = strVal
 		}
 	}
-
-	return knownFields
-}
-
-func UnmarshalWithCustomFields(data []byte, target interface{}, knownFields map[string]bool) (map[string]interface{}, error) {
-	if err := json.Unmarshal(data, target); err != nil {
-		return nil, err
-	}
-
-	var allFields map[string]interface{}
-	if err := json.Unmarshal(data, &allFields); err != nil {
-		return nil, err
-	}
-
-	customFields := make(map[string]interface{})
-	for fieldName, value := range allFields {
-		if !knownFields[fieldName] {
-			customFields[fieldName] = value
-		}
-	}
-
-	return customFields, nil
 }
 
 func UpsertToCtrlplane(ctx context.Context, resources []api.CreateResource, providerName string) error {

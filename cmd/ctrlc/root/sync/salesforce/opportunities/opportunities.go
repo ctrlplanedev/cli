@@ -3,8 +3,6 @@ package opportunities
 import (
 	"context"
 	"fmt"
-	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/MakeNowJust/heredoc/v2"
@@ -15,72 +13,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-
-type Opportunity struct {
-	ID                             string  `json:"Id"`
-	Name                           string  `json:"Name"`
-	Amount                         float64 `json:"Amount"`
-	StageName                      string  `json:"StageName"`
-	CloseDate                      string  `json:"CloseDate"` // Salesforce returns dates as strings
-	AccountID                      string  `json:"AccountId"`
-	Probability                    float64 `json:"Probability"`
-	IsDeleted                      bool    `json:"IsDeleted"`
-	Description                    string  `json:"Description"`
-	Type                           string  `json:"Type"`
-	NextStep                       string  `json:"NextStep"`
-	LeadSource                     string  `json:"LeadSource"`
-	IsClosed                       bool    `json:"IsClosed"`
-	IsWon                          bool    `json:"IsWon"`
-	ForecastCategory               string  `json:"ForecastCategory"`
-	ForecastCategoryName           string  `json:"ForecastCategoryName"`
-	CampaignID                     string  `json:"CampaignId"`
-	HasOpportunityLineItem         bool    `json:"HasOpportunityLineItem"`
-	Pricebook2ID                   string  `json:"Pricebook2Id"`
-	OwnerID                        string  `json:"OwnerId"`
-	Territory2ID                   string  `json:"Territory2Id"`
-	IsExcludedFromTerritory2Filter bool    `json:"IsExcludedFromTerritory2Filter"`
-	CreatedDate                    string  `json:"CreatedDate"`
-	CreatedById                    string  `json:"CreatedById"`
-	LastModifiedDate               string  `json:"LastModifiedDate"`
-	LastModifiedById               string  `json:"LastModifiedById"`
-	SystemModstamp                 string  `json:"SystemModstamp"`
-	LastActivityDate               string  `json:"LastActivityDate"`
-	PushCount                      int     `json:"PushCount"`
-	LastStageChangeDate            string  `json:"LastStageChangeDate"`
-	ContactId                      string  `json:"ContactId"`
-	LastViewedDate                 string  `json:"LastViewedDate"`
-	LastReferencedDate             string  `json:"LastReferencedDate"`
-	SyncedQuoteId                  string  `json:"SyncedQuoteId"`
-	ContractId                     string  `json:"ContractId"`
-	HasOpenActivity                bool    `json:"HasOpenActivity"`
-	HasOverdueTask                 bool    `json:"HasOverdueTask"`
-	LastAmountChangedHistoryId     string  `json:"LastAmountChangedHistoryId"`
-	LastCloseDateChangedHistoryId  string  `json:"LastCloseDateChangedHistoryId"`
-
-	// CustomFields holds any additional fields not defined in the struct
-	CustomFields map[string]interface{} `json:"-"`
-}
-
-// UnmarshalJSON implements custom unmarshalling to capture unknown fields
-func (o *Opportunity) UnmarshalJSON(data []byte) error {
-	type Alias Opportunity
-	aux := &struct {
-		*Alias
-	}{
-		Alias: (*Alias)(o),
-	}
-
-	knownFields := common.GetKnownFieldsFromStruct(reflect.TypeOf(Opportunity{}))
-
-	customFields, err := common.UnmarshalWithCustomFields(data, aux, knownFields)
-	if err != nil {
-		return err
-	}
-
-	o.CustomFields = customFields
-
-	return nil
-}
 
 func NewSalesforceOpportunitiesCmd() *cobra.Command {
 	var name string
@@ -163,13 +95,14 @@ func NewSalesforceOpportunitiesCmd() *cobra.Command {
 	return cmd
 }
 
+// processOpportunities queries and transforms opportunities
 func processOpportunities(ctx context.Context, sf *salesforce.Salesforce, metadataMappings map[string]string, limit int, listAllFields bool, whereClause string) ([]api.CreateResource, error) {
 	additionalFields := make([]string, 0, len(metadataMappings))
 	for _, fieldName := range metadataMappings {
 		additionalFields = append(additionalFields, fieldName)
 	}
 
-	var opportunities []Opportunity
+	var opportunities []map[string]any
 	err := common.QuerySalesforceObject(ctx, sf, "Opportunity", limit, listAllFields, &opportunities, additionalFields, whereClause)
 	if err != nil {
 		return nil, err
@@ -186,77 +119,99 @@ func processOpportunities(ctx context.Context, sf *salesforce.Salesforce, metada
 	return resources, nil
 }
 
-func transformOpportunityToResource(opportunity Opportunity, metadataMappings map[string]string) api.CreateResource {
-	var closeDateFormatted string
-	if opportunity.CloseDate != "" {
-		if t, err := time.Parse("2006-01-02", opportunity.CloseDate); err == nil {
-			closeDateFormatted = t.Format(time.RFC3339)
-		} else {
-			closeDateFormatted = opportunity.CloseDate
-		}
+func formatCloseDate(closeDate any) string {
+	if closeDate == nil {
+		return ""
 	}
 
-	metadata := map[string]string{
-		"opportunity/id":                opportunity.ID,
-		"ctrlplane/external-id":         opportunity.ID,
-		"opportunity/account-id":        opportunity.AccountID,
-		"opportunity/stage":             opportunity.StageName,
-		"opportunity/amount":            strconv.FormatFloat(opportunity.Amount, 'f', -1, 64),
-		"opportunity/probability":       strconv.FormatFloat(opportunity.Probability, 'f', -1, 64),
-		"opportunity/close-date":        closeDateFormatted,
-		"opportunity/name":              opportunity.Name,
-		"opportunity/type":              opportunity.Type,
-		"opportunity/owner-id":          opportunity.OwnerID,
-		"opportunity/is-closed":         strconv.FormatBool(opportunity.IsClosed),
-		"opportunity/is-won":            strconv.FormatBool(opportunity.IsWon),
-		"opportunity/lead-source":       opportunity.LeadSource,
-		"opportunity/forecast-category": opportunity.ForecastCategory,
-		"opportunity/contact-id":        opportunity.ContactId,
-		"opportunity/campaign-id":       opportunity.CampaignID,
-		"opportunity/created-date":      opportunity.CreatedDate,
-		"opportunity/last-modified":     opportunity.LastModifiedDate,
+	closeDateStr := fmt.Sprintf("%v", closeDate)
+	if str, ok := closeDate.(string); ok && str != "" {
+		if t, err := time.Parse("2006-01-02", str); err == nil {
+			return t.Format(time.RFC3339)
+		}
+	}
+	return closeDateStr
+}
+
+func transformOpportunityToResource(opportunity map[string]any, metadataMappings map[string]string) api.CreateResource {
+	metadata := map[string]string{}
+
+	common.AddToMetadata(metadata, "opportunity/id", opportunity["Id"])
+	common.AddToMetadata(metadata, "opportunity/account-id", opportunity["AccountId"])
+	common.AddToMetadata(metadata, "opportunity/stage", opportunity["StageName"])
+	common.AddToMetadata(metadata, "opportunity/amount", opportunity["Amount"])
+	common.AddToMetadata(metadata, "opportunity/probability", opportunity["Probability"])
+	common.AddToMetadata(metadata, "opportunity/name", opportunity["Name"])
+	common.AddToMetadata(metadata, "opportunity/type", opportunity["Type"])
+	common.AddToMetadata(metadata, "opportunity/owner-id", opportunity["OwnerId"])
+	common.AddToMetadata(metadata, "opportunity/is-closed", opportunity["IsClosed"])
+	common.AddToMetadata(metadata, "opportunity/is-won", opportunity["IsWon"])
+	common.AddToMetadata(metadata, "opportunity/lead-source", opportunity["LeadSource"])
+	common.AddToMetadata(metadata, "opportunity/forecast-category", opportunity["ForecastCategory"])
+	common.AddToMetadata(metadata, "opportunity/contact-id", opportunity["ContactId"])
+	common.AddToMetadata(metadata, "opportunity/campaign-id", opportunity["CampaignId"])
+	common.AddToMetadata(metadata, "opportunity/created-date", opportunity["CreatedDate"])
+	common.AddToMetadata(metadata, "opportunity/last-modified", opportunity["LastModifiedDate"])
+
+	if closeDate := opportunity["CloseDate"]; closeDate != nil {
+		closeDateFormatted := fmt.Sprintf("%v", closeDate)
+		if closeDateStr, ok := closeDate.(string); ok && closeDateStr != "" {
+			if t, err := time.Parse("2006-01-02", closeDateStr); err == nil {
+				closeDateFormatted = t.Format(time.RFC3339)
+			}
+		}
+		metadata["opportunity/close-date"] = closeDateFormatted
 	}
 
 	for metadataKey, fieldName := range metadataMappings {
-		if value, found := common.GetCustomFieldValue(opportunity, fieldName); found {
-			metadata[metadataKey] = value
+		if value, exists := opportunity[fieldName]; exists {
+			common.AddToMetadata(metadata, metadataKey, value)
+		}
+	}
+
+	fiscalQuarter := 0
+	fiscalYear := 0
+	if period, ok := opportunity["FiscalPeriod"].(string); ok && period != "" {
+		// Period format is typically like "2024 Q1"
+		if n, err := fmt.Sscanf(period, "%d Q%d", &fiscalYear, &fiscalQuarter); err != nil || n != 2 {
+			log.Debug("Failed to parse fiscal period", "period", period, "error", err)
+			// Leave fiscalQuarter and fiscalYear as 0
 		}
 	}
 
 	config := map[string]interface{}{
-		"name":   opportunity.Name,
-		"amount": strconv.FormatFloat(opportunity.Amount, 'f', -1, 64),
-		"stage":  opportunity.StageName,
-		"id":     opportunity.ID,
+		"name":        fmt.Sprintf("%v", opportunity["Name"]),
+		"amount":      opportunity["Amount"],
+		"stage":       fmt.Sprintf("%v", opportunity["StageName"]),
+		"id":          fmt.Sprintf("%v", opportunity["Id"]),
+		"probability": opportunity["Probability"],
+		"isClosed":    opportunity["IsClosed"],
+		"isWon":       opportunity["IsWon"],
 
 		"salesforceOpportunity": map[string]interface{}{
-			"recordId":            opportunity.ID,
-			"closeDate":           closeDateFormatted,
-			"accountId":           opportunity.AccountID,
-			"probability":         strconv.FormatFloat(opportunity.Probability, 'f', -1, 64),
-			"type":                opportunity.Type,
-			"description":         opportunity.Description,
-			"nextStep":            opportunity.NextStep,
-			"leadSource":          opportunity.LeadSource,
-			"isClosed":            opportunity.IsClosed,
-			"isWon":               opportunity.IsWon,
-			"forecastCategory":    opportunity.ForecastCategory,
-			"ownerId":             opportunity.OwnerID,
-			"contactId":           opportunity.ContactId,
-			"campaignId":          opportunity.CampaignID,
-			"hasLineItems":        opportunity.HasOpportunityLineItem,
-			"createdDate":         opportunity.CreatedDate,
-			"lastModifiedDate":    opportunity.LastModifiedDate,
-			"pushCount":           opportunity.PushCount,
-			"lastStageChangeDate": opportunity.LastStageChangeDate,
+			"recordId":         fmt.Sprintf("%v", opportunity["Id"]),
+			"accountId":        fmt.Sprintf("%v", opportunity["AccountId"]),
+			"ownerId":          fmt.Sprintf("%v", opportunity["OwnerId"]),
+			"type":             fmt.Sprintf("%v", opportunity["Type"]),
+			"leadSource":       fmt.Sprintf("%v", opportunity["LeadSource"]),
+			"closeDate":        formatCloseDate(opportunity["CloseDate"]),
+			"forecastCategory": fmt.Sprintf("%v", opportunity["ForecastCategory"]),
+			"description":      fmt.Sprintf("%v", opportunity["Description"]),
+			"nextStep":         fmt.Sprintf("%v", opportunity["NextStep"]),
+			"hasOpenActivity":  opportunity["HasOpenActivity"],
+			"createdDate":      fmt.Sprintf("%v", opportunity["CreatedDate"]),
+			"lastModifiedDate": fmt.Sprintf("%v", opportunity["LastModifiedDate"]),
+			"lastActivityDate": fmt.Sprintf("%v", opportunity["LastActivityDate"]),
+			"fiscalQuarter":    fiscalQuarter,
+			"fiscalYear":       fiscalYear,
 		},
 	}
 
 	return api.CreateResource{
 		Version:    "ctrlplane.dev/crm/opportunity/v1",
 		Kind:       "SalesforceOpportunity",
-		Name:       opportunity.Name,
-		Identifier: opportunity.ID,
+		Name:       fmt.Sprintf("%v", opportunity["Name"]),
+		Identifier: fmt.Sprintf("%v", opportunity["Id"]),
 		Config:     config,
 		Metadata:   metadata,
 	}

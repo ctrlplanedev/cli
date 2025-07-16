@@ -1,6 +1,8 @@
 package salesforce
 
 import (
+	"fmt"
+
 	"github.com/MakeNowJust/heredoc"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/salesforce/accounts"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/salesforce/opportunities"
@@ -27,17 +29,31 @@ func NewSalesforceCmd() *cobra.Command {
 		`),
 	}
 
-	cmd.PersistentFlags().String("salesforce-domain", "", "Salesforce domain (e.g., https://my-domain.my.salesforce.com)")
-	cmd.PersistentFlags().String("salesforce-consumer-key", "", "Salesforce consumer key")
-	cmd.PersistentFlags().String("salesforce-consumer-secret", "", "Salesforce consumer secret")
+	cmd.PersistentFlags().String("salesforce-domain", "", "Salesforce domain (e.g., https://my-domain.my.salesforce.com) (can also be set via SALESFORCE_DOMAIN env var)")
+	cmd.PersistentFlags().String("salesforce-consumer-key", "", "Salesforce consumer key (can also be set via SALESFORCE_CONSUMER_KEY env var)")
+	cmd.PersistentFlags().String("salesforce-consumer-secret", "", "Salesforce consumer secret (can also be set via SALESFORCE_CONSUMER_SECRET env var)")
 
-	viper.BindPFlag("salesforce-domain", cmd.PersistentFlags().Lookup("salesforce-domain"))
-	viper.BindPFlag("salesforce-consumer-key", cmd.PersistentFlags().Lookup("salesforce-consumer-key"))
-	viper.BindPFlag("salesforce-consumer-secret", cmd.PersistentFlags().Lookup("salesforce-consumer-secret"))
+	viper.AutomaticEnv()
 
-	cmd.MarkPersistentFlagRequired("salesforce-domain")
-	cmd.MarkPersistentFlagRequired("salesforce-consumer-key")
-	cmd.MarkPersistentFlagRequired("salesforce-consumer-secret")
+	if err := viper.BindEnv("salesforce-domain", "SALESFORCE_DOMAIN"); err != nil {
+		panic(fmt.Errorf("failed to bind SALESFORCE_DOMAIN env var: %w", err))
+	}
+	if err := viper.BindEnv("salesforce-consumer-key", "SALESFORCE_CONSUMER_KEY"); err != nil {
+		panic(fmt.Errorf("failed to bind SALESFORCE_CONSUMER_KEY env var: %w", err))
+	}
+	if err := viper.BindEnv("salesforce-consumer-secret", "SALESFORCE_CONSUMER_SECRET"); err != nil {
+		panic(fmt.Errorf("failed to bind SALESFORCE_CONSUMER_SECRET env var: %w", err))
+	}
+
+	if err := viper.BindPFlag("salesforce-domain", cmd.PersistentFlags().Lookup("salesforce-domain")); err != nil {
+		panic(fmt.Errorf("failed to bind salesforce-domain flag: %w", err))
+	}
+	if err := viper.BindPFlag("salesforce-consumer-key", cmd.PersistentFlags().Lookup("salesforce-consumer-key")); err != nil {
+		panic(fmt.Errorf("failed to bind salesforce-consumer-key flag: %w", err))
+	}
+	if err := viper.BindPFlag("salesforce-consumer-secret", cmd.PersistentFlags().Lookup("salesforce-consumer-secret")); err != nil {
+		panic(fmt.Errorf("failed to bind salesforce-consumer-secret flag: %w", err))
+	}
 
 	cmd.AddCommand(accounts.NewSalesforceAccountsCmd())
 	cmd.AddCommand(opportunities.NewSalesforceOpportunitiesCmd())

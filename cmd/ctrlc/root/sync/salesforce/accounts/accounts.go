@@ -3,8 +3,6 @@ package accounts
 import (
 	"context"
 	"fmt"
-	"reflect"
-	"strconv"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
@@ -14,78 +12,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-
-type Account struct {
-	ID                      string      `json:"Id"` // this is the globally unique identifier for the account
-	IsDeleted               bool        `json:"IsDeleted"`
-	MasterRecordId          string      `json:"MasterRecordId"`
-	Name                    string      `json:"Name"`
-	Type                    string      `json:"Type"`
-	ParentId                string      `json:"ParentId"`
-	BillingStreet           string      `json:"BillingStreet"`
-	BillingCity             string      `json:"BillingCity"`
-	BillingState            string      `json:"BillingState"`
-	BillingPostalCode       string      `json:"BillingPostalCode"`
-	BillingCountry          string      `json:"BillingCountry"`
-	BillingLatitude         float64     `json:"BillingLatitude"`
-	BillingLongitude        float64     `json:"BillingLongitude"`
-	BillingGeocodeAccuracy  string      `json:"BillingGeocodeAccuracy"`
-	BillingAddress          interface{} `json:"BillingAddress"`
-	ShippingStreet          string      `json:"ShippingStreet"`
-	ShippingCity            string      `json:"ShippingCity"`
-	ShippingState           string      `json:"ShippingState"`
-	ShippingPostalCode      string      `json:"ShippingPostalCode"`
-	ShippingCountry         string      `json:"ShippingCountry"`
-	ShippingLatitude        float64     `json:"ShippingLatitude"`
-	ShippingLongitude       float64     `json:"ShippingLongitude"`
-	ShippingGeocodeAccuracy string      `json:"ShippingGeocodeAccuracy"`
-	ShippingAddress         interface{} `json:"ShippingAddress"`
-	Phone                   string      `json:"Phone"`
-	Website                 string      `json:"Website"`
-	PhotoUrl                string      `json:"PhotoUrl"`
-	Industry                string      `json:"Industry"`
-	NumberOfEmployees       int         `json:"NumberOfEmployees"`
-	Description             string      `json:"Description"`
-	OwnerId                 string      `json:"OwnerId"`
-	CreatedDate             string      `json:"CreatedDate"`
-	CreatedById             string      `json:"CreatedById"`
-	LastModifiedDate        string      `json:"LastModifiedDate"`
-	LastModifiedById        string      `json:"LastModifiedById"`
-	SystemModstamp          string      `json:"SystemModstamp"`
-	LastActivityDate        string      `json:"LastActivityDate"`
-	LastViewedDate          string      `json:"LastViewedDate"`
-	LastReferencedDate      string      `json:"LastReferencedDate"`
-	Jigsaw                  string      `json:"Jigsaw"`
-	JigsawCompanyId         string      `json:"JigsawCompanyId"`
-	AccountSource           string      `json:"AccountSource"`
-	SicDesc                 string      `json:"SicDesc"`
-	IsPriorityRecord        bool        `json:"IsPriorityRecord"`
-
-	// CustomFields holds any additional fields not defined in the struct
-	// This allows handling of custom Salesforce fields like Tier__c with
-	// the --metadata flag.
-	CustomFields map[string]interface{} `json:"-"`
-}
-
-func (a *Account) UnmarshalJSON(data []byte) error {
-	type Alias Account
-	aux := &struct {
-		*Alias
-	}{
-		Alias: (*Alias)(a),
-	}
-
-	knownFields := common.GetKnownFieldsFromStruct(reflect.TypeOf(Account{}))
-
-	customFields, err := common.UnmarshalWithCustomFields(data, aux, knownFields)
-	if err != nil {
-		return err
-	}
-
-	a.CustomFields = customFields
-
-	return nil
-}
 
 func NewSalesforceAccountsCmd() *cobra.Command {
 	var name string
@@ -176,7 +102,7 @@ func processAccounts(ctx context.Context, sf *salesforce.Salesforce, metadataMap
 		additionalFields = append(additionalFields, fieldName)
 	}
 
-	var accounts []Account
+	var accounts []map[string]any
 	err := common.QuerySalesforceObject(ctx, sf, "Account", limit, listAllFields, &accounts, additionalFields, whereClause)
 	if err != nil {
 		return nil, err
@@ -193,76 +119,74 @@ func processAccounts(ctx context.Context, sf *salesforce.Salesforce, metadataMap
 	return resources, nil
 }
 
-func transformAccountToResource(account Account, metadataMappings map[string]string) api.CreateResource {
-	metadata := map[string]string{
-		"ctrlplane/external-id":   account.ID,
-		"account/id":              account.ID,
-		"account/owner-id":        account.OwnerId,
-		"account/industry":        account.Industry,
-		"account/billing-city":    account.BillingCity,
-		"account/billing-state":   account.BillingState,
-		"account/billing-country": account.BillingCountry,
-		"account/website":         account.Website,
-		"account/phone":           account.Phone,
-		"account/type":            account.Type,
-		"account/source":          account.AccountSource,
-		"account/shipping-city":   account.ShippingCity,
-		"account/parent-id":       account.ParentId,
-		"account/employees":       strconv.Itoa(account.NumberOfEmployees),
-	}
+func transformAccountToResource(account map[string]any, metadataMappings map[string]string) api.CreateResource {
+	metadata := map[string]string{}
+	common.AddToMetadata(metadata, "account/id", account["Id"])
+	common.AddToMetadata(metadata, "account/owner-id", account["OwnerId"])
+	common.AddToMetadata(metadata, "account/industry", account["Industry"])
+	common.AddToMetadata(metadata, "account/billing-city", account["BillingCity"])
+	common.AddToMetadata(metadata, "account/billing-state", account["BillingState"])
+	common.AddToMetadata(metadata, "account/billing-country", account["BillingCountry"])
+	common.AddToMetadata(metadata, "account/website", account["Website"])
+	common.AddToMetadata(metadata, "account/phone", account["Phone"])
+	common.AddToMetadata(metadata, "account/type", account["Type"])
+	common.AddToMetadata(metadata, "account/source", account["AccountSource"])
+	common.AddToMetadata(metadata, "account/shipping-city", account["ShippingCity"])
+	common.AddToMetadata(metadata, "account/parent-id", account["ParentId"])
+	common.AddToMetadata(metadata, "account/employees", account["NumberOfEmployees"])
 
 	for metadataKey, fieldName := range metadataMappings {
-		if value, found := common.GetCustomFieldValue(account, fieldName); found {
-			metadata[metadataKey] = value
+		if value, exists := account[fieldName]; exists {
+			common.AddToMetadata(metadata, metadataKey, value)
 		}
 	}
 
 	config := map[string]interface{}{
-		"name":     account.Name,
-		"industry": account.Industry,
-		"id":       account.ID,
-		"type":     account.Type,
-		"phone":    account.Phone,
-		"website":  account.Website,
+		"name":     fmt.Sprintf("%v", account["Name"]),
+		"industry": fmt.Sprintf("%v", account["Industry"]),
+		"id":       fmt.Sprintf("%v", account["Id"]),
+		"type":     fmt.Sprintf("%v", account["Type"]),
+		"phone":    fmt.Sprintf("%v", account["Phone"]),
+		"website":  fmt.Sprintf("%v", account["Website"]),
 
 		"salesforceAccount": map[string]interface{}{
-			"recordId":          account.ID,
-			"ownerId":           account.OwnerId,
-			"parentId":          account.ParentId,
-			"type":              account.Type,
-			"accountSource":     account.AccountSource,
-			"numberOfEmployees": account.NumberOfEmployees,
-			"description":       account.Description,
+			"recordId":          fmt.Sprintf("%v", account["Id"]),
+			"ownerId":           fmt.Sprintf("%v", account["OwnerId"]),
+			"parentId":          fmt.Sprintf("%v", account["ParentId"]),
+			"type":              fmt.Sprintf("%v", account["Type"]),
+			"accountSource":     fmt.Sprintf("%v", account["AccountSource"]),
+			"numberOfEmployees": account["NumberOfEmployees"],
+			"description":       fmt.Sprintf("%v", account["Description"]),
 			"billingAddress": map[string]interface{}{
-				"street":     account.BillingStreet,
-				"city":       account.BillingCity,
-				"state":      account.BillingState,
-				"postalCode": account.BillingPostalCode,
-				"country":    account.BillingCountry,
-				"latitude":   account.BillingLatitude,
-				"longitude":  account.BillingLongitude,
+				"street":     fmt.Sprintf("%v", account["BillingStreet"]),
+				"city":       fmt.Sprintf("%v", account["BillingCity"]),
+				"state":      fmt.Sprintf("%v", account["BillingState"]),
+				"postalCode": fmt.Sprintf("%v", account["BillingPostalCode"]),
+				"country":    fmt.Sprintf("%v", account["BillingCountry"]),
+				"latitude":   account["BillingLatitude"],
+				"longitude":  account["BillingLongitude"],
 			},
 			"shippingAddress": map[string]interface{}{
-				"street":     account.ShippingStreet,
-				"city":       account.ShippingCity,
-				"state":      account.ShippingState,
-				"postalCode": account.ShippingPostalCode,
-				"country":    account.ShippingCountry,
-				"latitude":   account.ShippingLatitude,
-				"longitude":  account.ShippingLongitude,
+				"street":     fmt.Sprintf("%v", account["ShippingStreet"]),
+				"city":       fmt.Sprintf("%v", account["ShippingCity"]),
+				"state":      fmt.Sprintf("%v", account["ShippingState"]),
+				"postalCode": fmt.Sprintf("%v", account["ShippingPostalCode"]),
+				"country":    fmt.Sprintf("%v", account["ShippingCountry"]),
+				"latitude":   account["ShippingLatitude"],
+				"longitude":  account["ShippingLongitude"],
 			},
-			"createdDate":      account.CreatedDate,
-			"lastModifiedDate": account.LastModifiedDate,
-			"isDeleted":        account.IsDeleted,
-			"photoUrl":         account.PhotoUrl,
+			"createdDate":      fmt.Sprintf("%v", account["CreatedDate"]),
+			"lastModifiedDate": fmt.Sprintf("%v", account["LastModifiedDate"]),
+			"isDeleted":        account["IsDeleted"],
+			"photoUrl":         fmt.Sprintf("%v", account["PhotoUrl"]),
 		},
 	}
 
 	return api.CreateResource{
 		Version:    "ctrlplane.dev/crm/account/v1",
 		Kind:       "SalesforceAccount",
-		Name:       account.Name,
-		Identifier: account.ID,
+		Name:       fmt.Sprintf("%v", account["Name"]),
+		Identifier: fmt.Sprintf("%v", account["Id"]),
 		Config:     config,
 		Metadata:   metadata,
 	}
