@@ -121,9 +121,19 @@ func buildSOQL(objectName string, fields []string, whereClause string, lastId st
 	if whereClause != "" {
 		conditions = append(conditions, whereClause)
 	}
-	if lastId != "" {
-		conditions = append(conditions, fmt.Sprintf("Id > '%s'", lastId))
-	}
+    if lastId != "" {
+        // Reject anything that isn’t exactly 15 or 18 alphanumeric chars
+        if len(lastId) != 15 && len(lastId) != 18 {
+            return "", fmt.Errorf("invalid Salesforce ID: %q", lastId)
+        }
+        for i := range lastId {
+            c := lastId[i]
+            if !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+                return "", fmt.Errorf("invalid Salesforce ID: %q", lastId)
+            }
+        }
+        conditions = append(conditions, fmt.Sprintf("Id > '%s'", lastId))
+    }
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
