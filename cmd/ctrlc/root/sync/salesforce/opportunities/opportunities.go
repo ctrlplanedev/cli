@@ -153,14 +153,8 @@ func transformOpportunityToResource(opportunity map[string]any, metadataMappings
 	common.AddToMetadata(metadata, "opportunity/created-date", opportunity["CreatedDate"])
 	common.AddToMetadata(metadata, "opportunity/last-modified", opportunity["LastModifiedDate"])
 
-	if closeDate := opportunity["CloseDate"]; closeDate != nil {
-		closeDateFormatted := fmt.Sprintf("%v", closeDate)
-		if closeDateStr, ok := closeDate.(string); ok && closeDateStr != "" {
-			if t, err := time.Parse("2006-01-02", closeDateStr); err == nil {
-				closeDateFormatted = t.Format(time.RFC3339)
-			}
-		}
-		metadata["opportunity/close-date"] = closeDateFormatted
+	if closeDate := formatCloseDate(opportunity["CloseDate"]); closeDate != "" {
+		metadata["opportunity/close-date"] = closeDate
 	}
 
 	for metadataKey, fieldName := range metadataMappings {
