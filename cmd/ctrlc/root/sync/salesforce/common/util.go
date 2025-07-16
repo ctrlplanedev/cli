@@ -29,36 +29,13 @@ func GetSalesforceSubdomain(domain string) string {
 	return subdomain
 }
 
-func ParseMetadataMappings(mappings []string) ([]string, map[string]string) {
-	fieldMap := make(map[string]bool)
-	lookupMap := make(map[string]string) // fieldName -> metadataKey
-
-	for _, mapping := range mappings {
-		parts := strings.Split(mapping, "=")
-		if len(parts) == 2 {
-			metadataKey := parts[0]
-			fieldName := parts[1]
-			fieldMap[fieldName] = true
-			lookupMap[fieldName] = metadataKey
-		}
-	}
-
-	fields := make([]string, 0, len(fieldMap))
-	for field := range fieldMap {
-		fields = append(fields, field)
-	}
-
-	return fields, lookupMap
-}
-
 func GetCustomFieldValue(obj interface{}, fieldName string) (string, bool) {
 	objValue := reflect.ValueOf(obj)
 	if objValue.Kind() == reflect.Ptr {
 		objValue = objValue.Elem()
 	}
 
-	customFields := objValue.FieldByName("CustomFields")
-	if customFields.IsValid() && customFields.Kind() == reflect.Map {
+	if customFields := objValue.FieldByName("CustomFields"); customFields.IsValid() && customFields.Kind() == reflect.Map {
 		if value := customFields.MapIndex(reflect.ValueOf(fieldName)); value.IsValid() {
 			return fmt.Sprintf("%v", value.Interface()), true
 		}
@@ -87,165 +64,188 @@ func QuerySalesforceObject(ctx context.Context, sf *salesforce.Salesforce, objec
 	if targetValue.Kind() != reflect.Slice {
 		return fmt.Errorf("target must be a pointer to a slice")
 	}
-	elementType := targetValue.Type().Elem()
 
-	fieldNames := []string{}
+	fieldNames := getFieldsToQuery(targetValue.Type().Elem(), additionalFields)
+
+	if listAllFields {
+		if err := logAvailableFields(sf, objectName); err != nil {
+			return err
+		}
+	}
+
+	return paginateQuery(ctx, sf, objectName, fieldNames, whereClause, limit, targetValue)
+}
+
+// getFieldsToQuery extracts field names from struct tags and merges with additional fields
+func getFieldsToQuery(elementType reflect.Type, additionalFields []string) []string {
+	// Use a map to automatically handle deduplication
+	fieldMap := make(map[string]bool)
+
 	for i := 0; i < elementType.NumField(); i++ {
 		field := elementType.Field(i)
 		jsonTag := field.Tag.Get("json")
 		if jsonTag != "" && jsonTag != "-" {
-			fieldName := strings.Split(jsonTag, ",")[0]
-			if fieldName != "" {
-				fieldNames = append(fieldNames, fieldName)
+			if fieldName := strings.Split(jsonTag, ",")[0]; fieldName != "" {
+				fieldMap[fieldName] = true
 			}
 		}
 	}
 
 	for _, field := range additionalFields {
-		found := false
-		for _, existing := range fieldNames {
-			if existing == field {
-				found = true
-				break
-			}
-		}
-		if !found {
-			fieldNames = append(fieldNames, field)
-		}
+		fieldMap[field] = true
 	}
 
-	if listAllFields {
-		describeResp, err := sf.DoRequest("GET", fmt.Sprintf("/sobjects/%s/describe", objectName), nil)
-		if err != nil {
-			return fmt.Errorf("failed to describe %s object: %w", objectName, err)
-		}
-		defer describeResp.Body.Close()
+	fields := make([]string, 0, len(fieldMap))
+	for field := range fieldMap {
+		fields = append(fields, field)
+	}
+	return fields
+}
 
-		var describeResult map[string]interface{}
-		if err := json.NewDecoder(describeResp.Body).Decode(&describeResult); err != nil {
-			return fmt.Errorf("failed to decode describe response: %w", err)
-		}
+func logAvailableFields(sf *salesforce.Salesforce, objectName string) error {
+	resp, err := sf.DoRequest("GET", fmt.Sprintf("/sobjects/%s/describe", objectName), nil)
+	if err != nil {
+		return fmt.Errorf("failed to describe %s object: %w", objectName, err)
+	}
+	defer resp.Body.Close()
 
-		fields, ok := describeResult["fields"].([]interface{})
-		if !ok {
-			return fmt.Errorf("unexpected describe response format")
-		}
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return fmt.Errorf("failed to decode describe response: %w", err)
+	}
 
-		allFieldNames := []string{}
-		for _, field := range fields {
-			fieldMap, ok := field.(map[string]interface{})
-			if !ok {
-				continue
-			}
+	fields, ok := result["fields"].([]interface{})
+	if !ok {
+		return fmt.Errorf("unexpected describe response format")
+	}
+
+	fieldNames := make([]string, 0, len(fields))
+	for _, field := range fields {
+		if fieldMap, ok := field.(map[string]interface{}); ok {
 			if name, ok := fieldMap["name"].(string); ok {
-				allFieldNames = append(allFieldNames, name)
+				fieldNames = append(fieldNames, name)
 			}
 		}
-		log.Info("Available fields", "object", objectName, "count", len(allFieldNames), "fields", allFieldNames)
 	}
 
+	log.Info("Available fields", "object", objectName, "count", len(fieldNames), "fields", fieldNames)
+	return nil
+}
+
+func buildSOQL(objectName string, fields []string, whereClause string, lastId string, limit int) string {
+	query := fmt.Sprintf("SELECT %s FROM %s", strings.Join(fields, ", "), objectName)
+
+	conditions := []string{}
+	if whereClause != "" {
+		conditions = append(conditions, whereClause)
+	}
+	if lastId != "" {
+		conditions = append(conditions, fmt.Sprintf("Id > '%s'", lastId))
+	}
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	query += " ORDER BY Id"
+
+	if limit > 0 {
+		query += fmt.Sprintf(" LIMIT %d", limit)
+	} else {
+		query += " LIMIT 2000" // Default batch size
+	}
+
+	return query
+}
+
+func getRecordId(record reflect.Value) string {
+	if record.Kind() != reflect.Struct {
+		return ""
+	}
+	if idField := record.FieldByName("ID"); idField.IsValid() && idField.Kind() == reflect.String {
+		return idField.String()
+	}
+	if idField := record.FieldByName("Id"); idField.IsValid() && idField.Kind() == reflect.String {
+		return idField.String()
+	}
+	return ""
+}
+
+func paginateQuery(ctx context.Context, sf *salesforce.Salesforce, objectName string, fields []string, whereClause string, limit int, targetValue reflect.Value) error {
+	const batchSize = 2000
 	totalRetrieved := 0
 	lastId := ""
-	batchSize := 2000
 
 	for {
-		fieldsClause := strings.Join(fieldNames, ", ")
-		baseQuery := fmt.Sprintf("SELECT %s FROM %s", fieldsClause, objectName)
-
-		paginatedQuery := baseQuery
-		whereClauses := []string{}
-
-		if whereClause != "" {
-			whereClauses = append(whereClauses, whereClause)
-		}
-
-		if lastId != "" {
-			whereClauses = append(whereClauses, fmt.Sprintf("Id > '%s'", lastId))
-		}
-
-		if len(whereClauses) > 0 {
-			paginatedQuery += " WHERE " + strings.Join(whereClauses, " AND ")
-		}
-		paginatedQuery += " ORDER BY Id"
-
+		batchLimit := batchSize
 		if limit > 0 && limit-totalRetrieved < batchSize {
-			paginatedQuery += fmt.Sprintf(" LIMIT %d", limit-totalRetrieved)
-		} else {
-			paginatedQuery += fmt.Sprintf(" LIMIT %d", batchSize)
+			batchLimit = limit - totalRetrieved
 		}
 
-		encodedQuery := url.QueryEscape(paginatedQuery)
-		queryURL := fmt.Sprintf("/query?q=%s", encodedQuery)
-
-		queryResp, err := sf.DoRequest("GET", queryURL, nil)
+		query := buildSOQL(objectName, fields, whereClause, lastId, batchLimit)
+		batch, err := executeQuery(sf, query, targetValue.Type())
 		if err != nil {
 			return fmt.Errorf("failed to query %s: %w", objectName, err)
 		}
 
-		body, err := io.ReadAll(queryResp.Body)
-		if err != nil {
-			queryResp.Body.Close()
-			return fmt.Errorf("failed to read response body: %w", err)
-		}
-		queryResp.Body.Close()
-
-		var queryResult struct {
-			TotalSize      int             `json:"totalSize"`
-			Done           bool            `json:"done"`
-			Records        json.RawMessage `json:"records"`
-			NextRecordsUrl string          `json:"nextRecordsUrl"`
-		}
-
-		if err := json.Unmarshal(body, &queryResult); err != nil {
-			return fmt.Errorf("failed to unmarshal query response: %w", err)
-		}
-
-		batchSlice := reflect.New(targetValue.Type()).Elem()
-
-		if err := json.Unmarshal(queryResult.Records, batchSlice.Addr().Interface()); err != nil {
-			return fmt.Errorf("failed to unmarshal records: %w", err)
-		}
-
-		if batchSlice.Len() == 0 {
+		if batch.Len() == 0 {
 			break
 		}
 
-		for i := 0; i < batchSlice.Len(); i++ {
-			targetValue.Set(reflect.Append(targetValue, batchSlice.Index(i)))
+		for i := 0; i < batch.Len(); i++ {
+			targetValue.Set(reflect.Append(targetValue, batch.Index(i)))
 		}
 
-		recordCount := batchSlice.Len()
+		recordCount := batch.Len()
 		totalRetrieved += recordCount
 
+		// Get last ID for next page
 		if recordCount > 0 {
-			lastRecord := batchSlice.Index(recordCount - 1)
-			if lastRecord.Kind() == reflect.Struct {
-				idField := lastRecord.FieldByName("ID")
-				if !idField.IsValid() {
-					idField = lastRecord.FieldByName("Id")
-				}
-				if idField.IsValid() && idField.Kind() == reflect.String {
-					lastId = idField.String()
-				}
-			}
+			lastId = getRecordId(batch.Index(recordCount - 1))
 		}
 
 		log.Debug("Retrieved batch", "object", objectName, "batch_size", recordCount, "total", totalRetrieved)
 
-		if limit > 0 && totalRetrieved >= limit {
-			break
-		}
-
-		if recordCount == 0 {
+		if (limit > 0 && totalRetrieved >= limit) || recordCount < batchLimit {
 			break
 		}
 	}
 
+	// Trim to exact limit if needed
 	if limit > 0 && targetValue.Len() > limit {
 		targetValue.Set(targetValue.Slice(0, limit))
 	}
 
 	return nil
+}
+
+// executeQuery executes a SOQL query and returns the unmarshaled records
+func executeQuery(sf *salesforce.Salesforce, query string, targetType reflect.Type) (reflect.Value, error) {
+	encodedQuery := url.QueryEscape(query)
+	resp, err := sf.DoRequest("GET", fmt.Sprintf("/query?q=%s", encodedQuery), nil)
+	if err != nil {
+		return reflect.Value{}, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return reflect.Value{}, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var result struct {
+		Records json.RawMessage `json:"records"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return reflect.Value{}, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	// Create a new slice of the target type to unmarshal into
+	batch := reflect.New(targetType).Elem()
+	if err := json.Unmarshal(result.Records, batch.Addr().Interface()); err != nil {
+		return reflect.Value{}, fmt.Errorf("failed to unmarshal records: %w", err)
+	}
+
+	return batch, nil
 }
 
 func GetKnownFieldsFromStruct(structType reflect.Type) map[string]bool {

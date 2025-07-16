@@ -89,7 +89,7 @@ func (a *Account) UnmarshalJSON(data []byte) error {
 
 func NewSalesforceAccountsCmd() *cobra.Command {
 	var name string
-	var metadataMappings []string
+	var metadataMappings map[string]string
 	var limit int
 	var listAllFields bool
 	var whereClause string
@@ -162,7 +162,7 @@ func NewSalesforceAccountsCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&name, "provider", "p", "", "Name of the resource provider")
-	cmd.Flags().StringArrayVar(&metadataMappings, "metadata", []string{}, "Custom metadata mappings (format: metadata/key=SalesforceField)")
+	cmd.Flags().StringToStringVar(&metadataMappings, "metadata", map[string]string{}, "Custom metadata mappings (format: metadata/key=SalesforceField)")
 	cmd.Flags().IntVar(&limit, "limit", 0, "Maximum number of records to sync (0 = no limit)")
 	cmd.Flags().BoolVar(&listAllFields, "list-all-fields", false, "List all available Salesforce fields in the logs")
 	cmd.Flags().StringVar(&whereClause, "where", "", "SOQL WHERE clause to filter records (e.g., \"Customer_Health__c != null\")")
@@ -170,8 +170,11 @@ func NewSalesforceAccountsCmd() *cobra.Command {
 	return cmd
 }
 
-func processAccounts(ctx context.Context, sf *salesforce.Salesforce, metadataMappings []string, limit int, listAllFields bool, whereClause string) ([]api.CreateResource, error) {
-	additionalFields, mappingLookup := common.ParseMetadataMappings(metadataMappings)
+func processAccounts(ctx context.Context, sf *salesforce.Salesforce, metadataMappings map[string]string, limit int, listAllFields bool, whereClause string) ([]api.CreateResource, error) {
+	additionalFields := make([]string, 0, len(metadataMappings))
+	for _, fieldName := range metadataMappings {
+		additionalFields = append(additionalFields, fieldName)
+	}
 
 	var accounts []Account
 	err := common.QuerySalesforceObject(ctx, sf, "Account", limit, listAllFields, &accounts, additionalFields, whereClause)
@@ -183,14 +186,14 @@ func processAccounts(ctx context.Context, sf *salesforce.Salesforce, metadataMap
 
 	resources := []api.CreateResource{}
 	for _, account := range accounts {
-		resource := transformAccountToResource(account, mappingLookup)
+		resource := transformAccountToResource(account, metadataMappings)
 		resources = append(resources, resource)
 	}
 
 	return resources, nil
 }
 
-func transformAccountToResource(account Account, mappingLookup map[string]string) api.CreateResource {
+func transformAccountToResource(account Account, metadataMappings map[string]string) api.CreateResource {
 	metadata := map[string]string{
 		"ctrlplane/external-id":   account.ID,
 		"account/id":              account.ID,
@@ -208,7 +211,7 @@ func transformAccountToResource(account Account, mappingLookup map[string]string
 		"account/employees":       strconv.Itoa(account.NumberOfEmployees),
 	}
 
-	for fieldName, metadataKey := range mappingLookup {
+	for metadataKey, fieldName := range metadataMappings {
 		if value, found := common.GetCustomFieldValue(account, fieldName); found {
 			metadata[metadataKey] = value
 		}

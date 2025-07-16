@@ -84,7 +84,7 @@ func (o *Opportunity) UnmarshalJSON(data []byte) error {
 
 func NewSalesforceOpportunitiesCmd() *cobra.Command {
 	var name string
-	var metadataMappings []string
+	var metadataMappings map[string]string
 	var limit int
 	var listAllFields bool
 	var whereClause string
@@ -155,7 +155,7 @@ func NewSalesforceOpportunitiesCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&name, "provider", "p", "", "Name of the resource provider")
-	cmd.Flags().StringArrayVar(&metadataMappings, "metadata", []string{}, "Custom metadata mappings (format: metadata/key=SalesforceField)")
+	cmd.Flags().StringToStringVar(&metadataMappings, "metadata", map[string]string{}, "Custom metadata mappings (format: metadata/key=SalesforceField)")
 	cmd.Flags().IntVar(&limit, "limit", 0, "Maximum number of records to sync (0 = no limit)")
 	cmd.Flags().BoolVar(&listAllFields, "list-all-fields", false, "List all available Salesforce fields in the logs")
 	cmd.Flags().StringVar(&whereClause, "where", "", "SOQL WHERE clause to filter records (e.g., \"Amount > 100000\")")
@@ -163,12 +163,12 @@ func NewSalesforceOpportunitiesCmd() *cobra.Command {
 	return cmd
 }
 
-// processOpportunities queries and transforms opportunities
-func processOpportunities(ctx context.Context, sf *salesforce.Salesforce, metadataMappings []string, limit int, listAllFields bool, whereClause string) ([]api.CreateResource, error) {
-	// Parse metadata mappings to get field names for query
-	additionalFields, mappingLookup := common.ParseMetadataMappings(metadataMappings)
+func processOpportunities(ctx context.Context, sf *salesforce.Salesforce, metadataMappings map[string]string, limit int, listAllFields bool, whereClause string) ([]api.CreateResource, error) {
+	additionalFields := make([]string, 0, len(metadataMappings))
+	for _, fieldName := range metadataMappings {
+		additionalFields = append(additionalFields, fieldName)
+	}
 
-	// Query Salesforce for opportunities
 	var opportunities []Opportunity
 	err := common.QuerySalesforceObject(ctx, sf, "Opportunity", limit, listAllFields, &opportunities, additionalFields, whereClause)
 	if err != nil {
@@ -177,18 +177,16 @@ func processOpportunities(ctx context.Context, sf *salesforce.Salesforce, metada
 
 	log.Info("Found Salesforce opportunities", "count", len(opportunities))
 
-	// Transform opportunities to Ctrlplane resources
 	resources := []api.CreateResource{}
 	for _, opp := range opportunities {
-		resource := transformOpportunityToResource(opp, mappingLookup)
+		resource := transformOpportunityToResource(opp, metadataMappings)
 		resources = append(resources, resource)
 	}
 
 	return resources, nil
 }
 
-func transformOpportunityToResource(opportunity Opportunity, mappingLookup map[string]string) api.CreateResource {
-	// Format close date
+func transformOpportunityToResource(opportunity Opportunity, metadataMappings map[string]string) api.CreateResource {
 	var closeDateFormatted string
 	if opportunity.CloseDate != "" {
 		if t, err := time.Parse("2006-01-02", opportunity.CloseDate); err == nil {
@@ -219,8 +217,7 @@ func transformOpportunityToResource(opportunity Opportunity, mappingLookup map[s
 		"opportunity/last-modified":     opportunity.LastModifiedDate,
 	}
 
-	// Apply custom metadata mappings
-	for fieldName, metadataKey := range mappingLookup {
+	for metadataKey, fieldName := range metadataMappings {
 		if value, found := common.GetCustomFieldValue(opportunity, fieldName); found {
 			metadata[metadataKey] = value
 		}
