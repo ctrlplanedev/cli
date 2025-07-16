@@ -10,6 +10,7 @@ import (
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -40,6 +41,30 @@ func processNamespace(_ context.Context, clusterName string, namespace corev1.Na
 	}
 }
 
+func processDeployment(_ context.Context, clusterName string, deployment appsv1.Deployment) api.CreateResource {
+	metadata := map[string]string{}
+	for key, value := range deployment.Labels {
+		metadata[fmt.Sprintf("tags/%s", key)] = value
+	}
+	metadata["deployment/name"] = deployment.Name
+	metadata["deployment/id"] = string(deployment.UID)
+	metadata["deployment/api-version"] = deployment.APIVersion
+	metadata["deployment/namespace"] = deployment.Namespace
+
+	return api.CreateResource{
+		Version: "ctrlplane.dev/kubernetes/deployment/v1",
+		Kind: "KubernetesDeployment",
+		Name: fmt.Sprintf("%s/%s/%s", clusterName, deployment.Namespace, deployment.Name),
+		Identifier: string(deployment.UID),
+		Config: map[string]any{
+			"id": string(deployment.UID),
+			"name": deployment.Name,
+			"namespace": deployment.Namespace,
+		},
+		Metadata: metadata,
+	}
+}
+
 func NewSyncKubernetesCmd() *cobra.Command {
 	var clusterIdentifier string
 	var providerName string
@@ -64,16 +89,6 @@ func NewSyncKubernetesCmd() *cobra.Command {
 
 			log.Info("Connected to cluster", "name", clusterName)
 
-			clientset, err := kubernetes.NewForConfig(config)
-			if err != nil {
-				return err
-			}
-
-			namespaces, err := clientset.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
-			if err != nil {
-				return err
-			}
-
 			apiURL := viper.GetString("url")
 			apiKey := viper.GetString("api-key")
 			workspaceId := viper.GetString("workspace")
@@ -93,9 +108,29 @@ func NewSyncKubernetesCmd() *cobra.Command {
 				clusterName = configClusterName
 			}
 
+			clientset, err := kubernetes.NewForConfig(config)
+			if err != nil {
+				return err
+			}
+
+			namespaces, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+			if err != nil {
+				return err
+			}
+
 			resources := []api.CreateResource{}
 			for _, namespace := range namespaces.Items {
 				resource := processNamespace(context.Background(), clusterName, namespace)
+				resources = append(resources, resource)
+			}
+
+			deployments, err := clientset.AppsV1().Deployments(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
+			if err != nil {
+				return err
+			}
+
+			for _, deployment := range deployments.Items {
+				resource := processDeployment(context.Background(), clusterName, deployment)
 				resources = append(resources, resource)
 			}
 
