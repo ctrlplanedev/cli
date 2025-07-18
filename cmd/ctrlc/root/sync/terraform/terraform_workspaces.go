@@ -44,13 +44,25 @@ func getLinksMetadata(workspace *tfe.Workspace, baseURL url.URL) *string {
 	return &linksString
 }
 
-func getWorkspaceVariables(workspace *tfe.Workspace) map[string]string {
+func getWorkspaceVariables(ctx context.Context, workspace *tfe.Workspace, client *tfe.Client) map[string]string {
 	variables := make(map[string]string)
 	for _, variable := range workspace.Variables {
-		if variable != nil && variable.Category == tfe.CategoryTerraform && !variable.Sensitive {
-			key := fmt.Sprintf("terraform-cloud/variables/%s", variable.Key)
-			variables[key] = variable.Value
+		if variable == nil || variable.Sensitive {
+			continue
 		}
+
+		fetchedVariable, err := client.Variables.Read(ctx, workspace.ID, variable.ID)
+		if err != nil {
+			log.Error("Failed to read variable", "error", err, "variable", variable.Key)
+			continue
+		}
+
+		if fetchedVariable.Category != tfe.CategoryTerraform || fetchedVariable.Sensitive {
+			continue
+		}
+
+		variables[fetchedVariable.Key] = fetchedVariable.Value
+		time.Sleep(200 * time.Millisecond)
 	}
 	return variables
 }
@@ -76,7 +88,7 @@ func getWorkspaceTags(workspace *tfe.Workspace) map[string]string {
 	return tags
 }
 
-func convertWorkspaceToResource(workspace *tfe.Workspace, baseURL url.URL) (WorkspaceResource, error) {
+func convertWorkspaceToResource(ctx context.Context, workspace *tfe.Workspace, client *tfe.Client) (WorkspaceResource, error) {
 	if workspace == nil {
 		return WorkspaceResource{}, fmt.Errorf("workspace is nil")
 	}
@@ -98,13 +110,13 @@ func convertWorkspaceToResource(workspace *tfe.Workspace, baseURL url.URL) (Work
 		metadata["terraform-cloud/organization"] = workspace.Organization.Name
 	}
 
-	linksMetadata := getLinksMetadata(workspace, baseURL)
+	linksMetadata := getLinksMetadata(workspace, client.BaseURL())
 	if linksMetadata != nil {
 		metadata["ctrlplane/links"] = *linksMetadata
 	}
 
 	moreValues := []map[string]string{
-		getWorkspaceVariables(workspace),
+		getWorkspaceVariables(ctx, workspace, client),
 		getWorkspaceTags(workspace),
 		getWorkspaceVcsRepo(workspace),
 	}
@@ -174,12 +186,13 @@ func getWorkspacesInOrg(ctx context.Context, client *tfe.Client, organization st
 
 	workspaceResources := []WorkspaceResource{}
 	for _, workspace := range workspaces {
-		workspaceResource, err := convertWorkspaceToResource(workspace, client.BaseURL())
+		workspaceResource, err := convertWorkspaceToResource(ctx, workspace, client)
 		if err != nil {
 			log.Error("Failed to convert workspace to resource", "error", err, "workspace", workspace.Name)
 			continue
 		}
 		workspaceResources = append(workspaceResources, workspaceResource)
+		time.Sleep(1 * time.Second)
 	}
 	return workspaceResources, nil
 }

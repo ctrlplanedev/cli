@@ -6,7 +6,8 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
-	"github.com/ctrlplanedev/cli/internal/cliutil"
+
+	// "github.com/ctrlplanedev/cli/internal/cliutil"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-tfe"
 	"github.com/spf13/cobra"
@@ -86,14 +87,15 @@ func NewSyncTerraformCmd() *cobra.Command {
 				resources = append(resources, resource)
 			}
 
-			upsertResp, err := ctrlplaneClient.SetResourceProvidersResources(ctx, providerId, api.SetResourceProvidersResourcesJSONRequestBody{
+			_, err = ctrlplaneClient.SetResourceProvidersResources(ctx, providerId, api.SetResourceProvidersResourcesJSONRequestBody{
 				Resources: resources,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to upsert resources: %w", err)
 			}
 
-			return cliutil.HandleResponseOutput(cmd, upsertResp)
+			return nil
+			// return cliutil.HandleResponseOutput(cmd, upsertResp)
 		},
 	}
 
