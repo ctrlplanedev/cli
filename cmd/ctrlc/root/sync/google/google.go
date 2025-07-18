@@ -4,6 +4,7 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/google/bigtable"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/google/buckets"
+	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/google/cloudrun"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/google/cloudsql"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/google/gke"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/google/networks"
@@ -48,6 +49,7 @@ func NewGoogleCloudCmd() *cobra.Command {
 	cmd.AddCommand(cliutil.AddIntervalSupport(vms.NewSyncVMsCmd(), ""))
 	cmd.AddCommand(cliutil.AddIntervalSupport(secrets.NewSyncSecretsCmd(), ""))
 	cmd.AddCommand(cliutil.AddIntervalSupport(projects.NewSyncProjectsCmd(), ""))
+	cmd.AddCommand(cliutil.AddIntervalSupport(cloudrun.NewSyncCloudRunCmd(), ""))
 
 	return cmd
 }
