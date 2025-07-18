@@ -62,7 +62,7 @@ func getWorkspaceVariables(ctx context.Context, workspace *tfe.Workspace, client
 		}
 
 		variables[fetchedVariable.Key] = fetchedVariable.Value
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 	}
 	return variables
 }
@@ -192,7 +192,7 @@ func getWorkspacesInOrg(ctx context.Context, client *tfe.Client, organization st
 			continue
 		}
 		workspaceResources = append(workspaceResources, workspaceResource)
-		time.Sleep(1 * time.Second)
+		time.Sleep(50 * time.Millisecond)
 	}
 	return workspaceResources, nil
 }
