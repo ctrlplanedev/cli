@@ -4,3 +4,4 @@ test.bash
 /bin
 .idea
 .vscode
+*.test.yaml
