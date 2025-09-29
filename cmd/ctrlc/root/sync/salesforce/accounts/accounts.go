@@ -8,9 +8,12 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/salesforce/common"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/k-capehart/go-salesforce/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func NewSalesforceAccountsCmd() *cobra.Command {
@@ -97,6 +100,20 @@ func NewSalesforceAccountsCmd() *cobra.Command {
 }
 
 func processAccounts(ctx context.Context, sf *salesforce.Salesforce, metadataMappings map[string]string, limit int, listAllFields bool, whereClause string) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "salesforce.accounts.process",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("salesforce.object", "Account"),
+			attribute.Int("salesforce.limit", limit),
+			attribute.Bool("salesforce.list_all_fields", listAllFields),
+		),
+	)
+	defer span.End()
+
+	if whereClause != "" {
+		telemetry.AddSpanAttribute(span, "salesforce.where_clause", whereClause)
+	}
+
 	additionalFields := make([]string, 0, len(metadataMappings))
 	for _, fieldName := range metadataMappings {
 		additionalFields = append(additionalFields, fieldName)
@@ -105,16 +122,22 @@ func processAccounts(ctx context.Context, sf *salesforce.Salesforce, metadataMap
 	var accounts []map[string]any
 	err := common.QuerySalesforceObject(ctx, sf, "Account", limit, listAllFields, &accounts, additionalFields, whereClause)
 	if err != nil {
+		log.Error("Failed to query Salesforce accounts", "error", err)
+		telemetry.SetSpanError(span, err)
 		return nil, err
 	}
 
 	log.Info("Found Salesforce accounts", "count", len(accounts))
+	telemetry.AddSpanAttribute(span, "salesforce.records_found", len(accounts))
 
 	resources := []api.CreateResource{}
 	for _, account := range accounts {
 		resource := transformAccountToResource(account, metadataMappings)
 		resources = append(resources, resource)
 	}
+
+	telemetry.AddSpanAttribute(span, "salesforce.records_processed", len(resources))
+	telemetry.SetSpanSuccess(span)
 
 	return resources, nil
 }

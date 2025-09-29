@@ -11,8 +11,11 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/storage/v1"
 )
 
@@ -93,11 +96,35 @@ func initStorageClient(ctx context.Context) (*storage.Service, error) {
 
 // processBuckets lists and processes all Storage buckets in the project
 func processBuckets(ctx context.Context, storageClient *storage.Service, project string) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "google.storage.process_buckets",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+	defer span.End()
+
+	// Create span for ListBuckets call
+	_, listSpan := telemetry.StartSpan(ctx, "google.storage.list_buckets",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+
 	// List all buckets in the project
 	buckets, err := storageClient.Buckets.List(project).Do()
+
 	if err != nil {
+		telemetry.SetSpanError(listSpan, err)
+		listSpan.End()
+		telemetry.SetSpanError(span, err)
 		return nil, fmt.Errorf("failed to list buckets: %w", err)
 	}
+
+	telemetry.AddSpanAttribute(listSpan, "google.storage.buckets_found", len(buckets.Items))
+	telemetry.SetSpanSuccess(listSpan)
+	listSpan.End()
 
 	log.Info("Found buckets", "count", len(buckets.Items))
 
@@ -110,6 +137,9 @@ func processBuckets(ctx context.Context, storageClient *storage.Service, project
 		}
 		resources = append(resources, resource)
 	}
+
+	telemetry.AddSpanAttribute(span, "google.storage.total_buckets", len(resources))
+	telemetry.SetSpanSuccess(span)
 
 	return resources, nil
 }

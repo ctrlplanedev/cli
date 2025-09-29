@@ -11,8 +11,11 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/aws/common"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"os"
 	"strconv"
 	"sync"
@@ -174,6 +177,14 @@ func initComputeClient(ctx context.Context, region string) (*ec2.Client, aws.Con
 func processNetworks(
 	ctx context.Context, ec2Client *ec2.Client, awsSubnets []types.Subnet, region string, accountId string,
 ) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "aws.networks.process_networks",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("aws.region", region),
+		),
+	)
+	defer span.End()
+
 	var nextToken *string
 	vpcs := make([]types.Vpc, 0)
 	subnetsByVpc := make(map[string][]types.Subnet)
@@ -189,12 +200,26 @@ func processNetworks(
 	}
 
 	for {
-		output, err := ec2Client.DescribeVpcs(ctx, &ec2.DescribeVpcsInput{
+		listCtx, listSpan := telemetry.StartSpan(ctx, "aws.networks.describe_vpcs",
+			trace.WithSpanKind(trace.SpanKindClient),
+			trace.WithAttributes(
+				attribute.String("aws.region", region),
+			),
+		)
+
+		output, err := ec2Client.DescribeVpcs(listCtx, &ec2.DescribeVpcsInput{
 			NextToken: nextToken,
 		})
 		if err != nil {
+			telemetry.SetSpanError(listSpan, err)
+			listSpan.End()
+			telemetry.SetSpanError(span, err)
 			return nil, fmt.Errorf("failed to list VPCs: %w", err)
 		}
+
+		telemetry.AddSpanAttribute(listSpan, "aws.networks.vpcs_found", len(output.Vpcs))
+		telemetry.SetSpanSuccess(listSpan)
+		listSpan.End()
 
 		vpcs = append(vpcs, output.Vpcs...)
 		if output.NextToken == nil {
@@ -218,6 +243,8 @@ func processNetworks(
 		resources = append(resources, resource)
 	}
 
+	telemetry.AddSpanAttribute(span, "aws.networks.vpcs_processed", len(resources))
+	telemetry.SetSpanSuccess(span)
 	return resources, nil
 }
 
@@ -287,6 +314,14 @@ func initNetworkMetadata(vpc types.Vpc, region string, subnetCount int) map[stri
 // getSubnetsForVpc retrieves subnets as AWS SDK objects
 // these objects are processed differently for VPC and subnet resources
 func getAwsSubnets(ctx context.Context, ec2Client *ec2.Client, region string) ([]types.Subnet, error) {
+	ctx, span := telemetry.StartSpan(ctx, "aws.networks.get_subnets",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("aws.region", region),
+		),
+	)
+	defer span.End()
+
 	var subnets []types.Subnet
 	var nextToken *string
 
@@ -298,6 +333,7 @@ func getAwsSubnets(ctx context.Context, ec2Client *ec2.Client, region string) ([
 
 		subnetsOutput, err := ec2Client.DescribeSubnets(ctx, subnetInput)
 		if err != nil {
+			telemetry.SetSpanError(span, err)
 			return nil, fmt.Errorf("failed to list subnets at region %s: %w", region, err)
 		}
 
@@ -308,11 +344,22 @@ func getAwsSubnets(ctx context.Context, ec2Client *ec2.Client, region string) ([
 		nextToken = subnetsOutput.NextToken
 	}
 
+	telemetry.AddSpanAttribute(span, "aws.networks.subnets_found", len(subnets))
+	telemetry.SetSpanSuccess(span)
 	return subnets, nil
 }
 
 // processSubnets lists and processes all subnetworks
-func processSubnets(_ context.Context, subnets []types.Subnet, region string) ([]api.CreateResource, error) {
+func processSubnets(ctx context.Context, subnets []types.Subnet, region string) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "aws.networks.process_subnets",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("aws.region", region),
+			attribute.Int("aws.networks.subnets_total", len(subnets)),
+		),
+	)
+	defer span.End()
+
 	resources := make([]api.CreateResource, 0)
 	subnetCount := 0
 
@@ -327,6 +374,8 @@ func processSubnets(_ context.Context, subnets []types.Subnet, region string) ([
 		subnetCount++
 	}
 
+	telemetry.AddSpanAttribute(span, "aws.networks.subnets_processed", subnetCount)
+	telemetry.SetSpanSuccess(span)
 	log.Info("Processed subnets", "count", subnetCount)
 	return resources, nil
 }

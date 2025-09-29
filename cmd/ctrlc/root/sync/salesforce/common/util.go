@@ -11,8 +11,11 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/k-capehart/go-salesforce/v2"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func GetSalesforceSubdomain(domain string) string {
@@ -31,9 +34,25 @@ func GetSalesforceSubdomain(domain string) string {
 
 // QuerySalesforceObject performs a generic query on any Salesforce object with pagination support
 func QuerySalesforceObject(ctx context.Context, sf *salesforce.Salesforce, objectName string, limit int, listAllFields bool, target interface{}, additionalFields []string, whereClause string) error {
+	ctx, span := telemetry.StartSpan(ctx, "salesforce.query_object",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("salesforce.object", objectName),
+			attribute.Int("salesforce.limit", limit),
+			attribute.Bool("salesforce.list_all_fields", listAllFields),
+		),
+	)
+	defer span.End()
+
+	if whereClause != "" {
+		telemetry.AddSpanAttribute(span, "salesforce.where_clause", whereClause)
+	}
+
 	targetValue := reflect.ValueOf(target).Elem()
 	if targetValue.Kind() != reflect.Slice {
-		return fmt.Errorf("target must be a pointer to a slice")
+		err := fmt.Errorf("target must be a pointer to a slice")
+		telemetry.SetSpanError(span, err)
+		return err
 	}
 
 	fieldMap := make(map[string]bool)
@@ -74,30 +93,53 @@ func QuerySalesforceObject(ctx context.Context, sf *salesforce.Salesforce, objec
 		fieldNames = append(fieldNames, field)
 	}
 
+	telemetry.AddSpanAttribute(span, "salesforce.field_count", len(fieldNames))
+
 	if listAllFields {
-		if err := logAvailableFields(sf, objectName); err != nil {
+		if err := logAvailableFields(ctx, sf, objectName); err != nil {
+			telemetry.SetSpanError(span, err)
 			return err
 		}
 	}
 
-	return paginateQuery(ctx, sf, objectName, fieldNames, whereClause, limit, targetValue)
+	err := paginateQuery(ctx, sf, objectName, fieldNames, whereClause, limit, targetValue)
+	if err != nil {
+		telemetry.SetSpanError(span, err)
+		return err
+	}
+
+	telemetry.AddSpanAttribute(span, "salesforce.records_retrieved", targetValue.Len())
+	telemetry.SetSpanSuccess(span)
+	return nil
 }
 
-func logAvailableFields(sf *salesforce.Salesforce, objectName string) error {
+func logAvailableFields(ctx context.Context, sf *salesforce.Salesforce, objectName string) error {
+	ctx, span := telemetry.StartSpan(ctx, "salesforce.describe_object",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("salesforce.object", objectName),
+		),
+	)
+	defer span.End()
+
 	resp, err := sf.DoRequest("GET", fmt.Sprintf("/sobjects/%s/describe", objectName), nil)
 	if err != nil {
+		telemetry.SetSpanError(span, err)
 		return fmt.Errorf("failed to describe %s object: %w", objectName, err)
 	}
 	defer resp.Body.Close()
 
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		telemetry.SetSpanError(span, err)
 		return fmt.Errorf("failed to decode describe response: %w", err)
 	}
 
 	fields, ok := result["fields"].([]interface{})
 	if !ok {
-		return fmt.Errorf("unexpected describe response format")
+		err := fmt.Errorf("unexpected describe response format")
+		telemetry.SetSpanError(span, err)
+		return err
 	}
 
 	fieldNames := make([]string, 0, len(fields))
@@ -110,6 +152,8 @@ func logAvailableFields(sf *salesforce.Salesforce, objectName string) error {
 	}
 
 	log.Info("Available fields", "object", objectName, "count", len(fieldNames), "fields", fieldNames)
+	telemetry.AddSpanAttribute(span, "salesforce.available_fields_count", len(fieldNames))
+	telemetry.SetSpanSuccess(span)
 	return nil
 }
 
@@ -152,9 +196,19 @@ func getRecordId(record reflect.Value) string {
 }
 
 func paginateQuery(ctx context.Context, sf *salesforce.Salesforce, objectName string, fields []string, whereClause string, limit int, targetValue reflect.Value) error {
+	ctx, span := telemetry.StartSpan(ctx, "salesforce.paginate_query",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("salesforce.object", objectName),
+			attribute.Int("salesforce.limit", limit),
+		),
+	)
+	defer span.End()
+
 	const batchSize = 200
 	totalRetrieved := 0
 	lastId := ""
+	totalApiCalls := 0
 
 	for {
 		batchLimit := batchSize
@@ -163,12 +217,31 @@ func paginateQuery(ctx context.Context, sf *salesforce.Salesforce, objectName st
 		}
 
 		query := buildSOQL(objectName, fields, whereClause, lastId, batchLimit)
-		batch, err := executeQuery(sf, query, targetValue.Type())
+
+		// Create child span for each API call/batch
+		batchCtx, batchSpan := telemetry.StartSpan(ctx, "salesforce.execute_query_batch",
+			trace.WithSpanKind(trace.SpanKindClient),
+			trace.WithAttributes(
+				attribute.String("salesforce.object", objectName),
+				attribute.Int("salesforce.batch_limit", batchLimit),
+				attribute.Int("salesforce.batch_number", totalApiCalls+1),
+			),
+		)
+
+		batch, err := executeQuery(batchCtx, sf, query, targetValue.Type())
+		totalApiCalls++
+
 		if err != nil {
+			telemetry.SetSpanError(batchSpan, err)
+			batchSpan.End()
+			telemetry.SetSpanError(span, err)
 			return fmt.Errorf("failed to query %s: %w", objectName, err)
 		}
 
 		if batch.Len() == 0 {
+			telemetry.AddSpanAttribute(batchSpan, "salesforce.records_fetched", 0)
+			telemetry.SetSpanSuccess(batchSpan)
+			batchSpan.End()
 			break
 		}
 
@@ -184,6 +257,9 @@ func paginateQuery(ctx context.Context, sf *salesforce.Salesforce, objectName st
 		}
 
 		log.Debug("Retrieved batch", "object", objectName, "batch_size", recordCount, "total", totalRetrieved)
+		telemetry.AddSpanAttribute(batchSpan, "salesforce.records_fetched", recordCount)
+		telemetry.SetSpanSuccess(batchSpan)
+		batchSpan.End()
 
 		if (limit > 0 && totalRetrieved >= limit) || recordCount < batchLimit {
 			break
@@ -194,20 +270,30 @@ func paginateQuery(ctx context.Context, sf *salesforce.Salesforce, objectName st
 		targetValue.Set(targetValue.Slice(0, limit))
 	}
 
+	telemetry.AddSpanAttribute(span, "salesforce.total_records", totalRetrieved)
+	telemetry.AddSpanAttribute(span, "salesforce.total_api_calls", totalApiCalls)
+	telemetry.SetSpanSuccess(span)
 	return nil
 }
 
 // executeQuery executes a SOQL query and returns the unmarshaled records
-func executeQuery(sf *salesforce.Salesforce, query string, targetType reflect.Type) (reflect.Value, error) {
+func executeQuery(ctx context.Context, sf *salesforce.Salesforce, query string, targetType reflect.Type) (reflect.Value, error) {
+	ctx, span := telemetry.StartSpan(ctx, "salesforce.execute_query",
+		trace.WithSpanKind(trace.SpanKindClient),
+	)
+	defer span.End()
+
 	encodedQuery := url.QueryEscape(query)
 	resp, err := sf.DoRequest("GET", fmt.Sprintf("/query?q=%s", encodedQuery), nil)
 	if err != nil {
+		telemetry.SetSpanError(span, err)
 		return reflect.Value{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		telemetry.SetSpanError(span, err)
 		return reflect.Value{}, fmt.Errorf("failed to read response: %w", err)
 	}
 
@@ -215,14 +301,17 @@ func executeQuery(sf *salesforce.Salesforce, query string, targetType reflect.Ty
 		Records json.RawMessage `json:"records"`
 	}
 	if err := json.Unmarshal(body, &result); err != nil {
+		telemetry.SetSpanError(span, err)
 		return reflect.Value{}, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
 	batch := reflect.New(targetType).Elem()
 	if err := json.Unmarshal(result.Records, batch.Addr().Interface()); err != nil {
+		telemetry.SetSpanError(span, err)
 		return reflect.Value{}, fmt.Errorf("failed to unmarshal records: %w", err)
 	}
 
+	telemetry.SetSpanSuccess(span)
 	return batch, nil
 }
 

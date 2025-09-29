@@ -12,8 +12,11 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/bigtableadmin/v2"
 )
 
@@ -102,11 +105,35 @@ func initBigtableClient(ctx context.Context) (*bigtableadmin.Service, error) {
 
 // processInstances lists and processes all Bigtable instances
 func processInstances(ctx context.Context, adminClient *bigtableadmin.Service, project string) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "google.bigtable.process_instances",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+	defer span.End()
+
+	// Create span for ListInstances call
+	_, listSpan := telemetry.StartSpan(ctx, "google.bigtable.list_instances",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+
 	projectParent := fmt.Sprintf("projects/%s", project)
 	instances, err := adminClient.Projects.Instances.List(projectParent).Do()
+
 	if err != nil {
+		telemetry.SetSpanError(listSpan, err)
+		listSpan.End()
+		telemetry.SetSpanError(span, err)
 		return nil, fmt.Errorf("failed to list instances: %w", err)
 	}
+
+	telemetry.AddSpanAttribute(listSpan, "google.bigtable.instances_found", len(instances.Instances))
+	telemetry.SetSpanSuccess(listSpan)
+	listSpan.End()
 
 	log.Info("Found instances", "count", len(instances.Instances))
 
@@ -119,6 +146,9 @@ func processInstances(ctx context.Context, adminClient *bigtableadmin.Service, p
 		}
 		resources = append(resources, resource)
 	}
+
+	telemetry.AddSpanAttribute(span, "google.bigtable.total_instances", len(resources))
+	telemetry.SetSpanSuccess(span)
 
 	return resources, nil
 }

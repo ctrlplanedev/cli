@@ -11,7 +11,10 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/charmbracelet/log"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/hashicorp/go-tfe"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -45,25 +48,57 @@ func getLinksMetadata(workspace *tfe.Workspace, baseURL url.URL) *string {
 }
 
 func getWorkspaceVariables(ctx context.Context, workspace *tfe.Workspace, client *tfe.Client) map[string]string {
+	ctx, span := telemetry.StartSpan(ctx, "terraform.get_workspace_variables",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("terraform.workspace_id", workspace.ID),
+			attribute.Int("terraform.variables_total", len(workspace.Variables)),
+		),
+	)
+	defer span.End()
+
 	variables := make(map[string]string)
+	processedCount := 0
+
 	for _, variable := range workspace.Variables {
 		if variable == nil || variable.Sensitive {
 			continue
 		}
 
-		fetchedVariable, err := client.Variables.Read(ctx, workspace.ID, variable.ID)
+		// Create a child span for each variable read
+		varCtx, varSpan := telemetry.StartSpan(ctx, "terraform.read_variable",
+			trace.WithSpanKind(trace.SpanKindClient),
+			trace.WithAttributes(
+				attribute.String("terraform.variable_key", variable.Key),
+				attribute.String("terraform.variable_id", variable.ID),
+			),
+		)
+
+		fetchedVariable, err := client.Variables.Read(varCtx, workspace.ID, variable.ID)
 		if err != nil {
 			log.Error("Failed to read variable", "error", err, "variable", variable.Key)
+			telemetry.SetSpanError(varSpan, err)
+			varSpan.End()
 			continue
 		}
 
 		if fetchedVariable.Category != tfe.CategoryTerraform || fetchedVariable.Sensitive {
+			telemetry.AddSpanAttribute(varSpan, "terraform.variable_skipped", true)
+			telemetry.AddSpanAttribute(varSpan, "terraform.variable_category", string(fetchedVariable.Category))
+			varSpan.End()
 			continue
 		}
 
 		variables[fetchedVariable.Key] = fetchedVariable.Value
+		processedCount++
+		telemetry.SetSpanSuccess(varSpan)
+		varSpan.End()
+
 		time.Sleep(50 * time.Millisecond)
 	}
+
+	telemetry.AddSpanAttribute(span, "terraform.variables_processed", processedCount)
+	telemetry.SetSpanSuccess(span)
 	return variables
 }
 
@@ -138,6 +173,16 @@ func convertWorkspaceToResource(ctx context.Context, workspace *tfe.Workspace, c
 }
 
 func listWorkspacesWithRetry(ctx context.Context, client *tfe.Client, organization string, pageNum, pageSize int) (*tfe.WorkspaceList, error) {
+	ctx, span := telemetry.StartSpan(ctx, "terraform.list_workspaces",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("terraform.organization", organization),
+			attribute.Int("terraform.page_number", pageNum),
+			attribute.Int("terraform.page_size", pageSize),
+		),
+	)
+	defer span.End()
+
 	var workspaces *tfe.WorkspaceList
 	err := retry.Do(
 		func() error {
@@ -154,10 +199,28 @@ func listWorkspacesWithRetry(ctx context.Context, client *tfe.Client, organizati
 		retry.Delay(time.Second),
 		retry.MaxDelay(5*time.Second),
 	)
+
+	if err != nil {
+		telemetry.SetSpanError(span, err)
+	} else {
+		telemetry.SetSpanSuccess(span)
+		if workspaces != nil {
+			telemetry.AddSpanAttribute(span, "terraform.workspaces_count", len(workspaces.Items))
+		}
+	}
+
 	return workspaces, err
 }
 
 func listAllWorkspaces(ctx context.Context, client *tfe.Client, organization string) ([]*tfe.Workspace, error) {
+	ctx, span := telemetry.StartSpan(ctx, "terraform.list_all_workspaces",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("terraform.organization", organization),
+		),
+	)
+	defer span.End()
+
 	var allWorkspaces []*tfe.Workspace
 	pageNum := 1
 	pageSize := 100
@@ -165,6 +228,7 @@ func listAllWorkspaces(ctx context.Context, client *tfe.Client, organization str
 	for {
 		workspaces, err := listWorkspacesWithRetry(ctx, client, organization, pageNum, pageSize)
 		if err != nil {
+			telemetry.SetSpanError(span, err)
 			return nil, fmt.Errorf("failed to list workspaces: %w", err)
 		}
 
@@ -175,12 +239,23 @@ func listAllWorkspaces(ctx context.Context, client *tfe.Client, organization str
 		pageNum++
 	}
 
+	telemetry.AddSpanAttribute(span, "terraform.total_workspaces", len(allWorkspaces))
+	telemetry.SetSpanSuccess(span)
 	return allWorkspaces, nil
 }
 
 func getWorkspacesInOrg(ctx context.Context, client *tfe.Client, organization string) ([]WorkspaceResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "terraform.get_workspaces_in_org",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("terraform.organization", organization),
+		),
+	)
+	defer span.End()
+
 	workspaces, err := listAllWorkspaces(ctx, client, organization)
 	if err != nil {
+		telemetry.SetSpanError(span, err)
 		return nil, err
 	}
 
@@ -194,5 +269,8 @@ func getWorkspacesInOrg(ctx context.Context, client *tfe.Client, organization st
 		workspaceResources = append(workspaceResources, workspaceResource)
 		time.Sleep(50 * time.Millisecond)
 	}
+
+	telemetry.AddSpanAttribute(span, "terraform.workspaces_processed", len(workspaceResources))
+	telemetry.SetSpanSuccess(span)
 	return workspaceResources, nil
 }

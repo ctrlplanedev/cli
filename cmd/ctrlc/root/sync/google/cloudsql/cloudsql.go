@@ -11,8 +11,11 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/sqladmin/v1"
 )
 
@@ -234,11 +237,35 @@ func initSQLAdminClient(ctx context.Context) (*sqladmin.Service, error) {
 }
 
 // processInstances lists and processes all Cloud SQL instances
-func processInstances(_ context.Context, sqlService *sqladmin.Service, project string) ([]api.CreateResource, error) {
+func processInstances(ctx context.Context, sqlService *sqladmin.Service, project string) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "google.cloudsql.process_instances",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+	defer span.End()
+
+	// Create span for ListInstances call
+	_, listSpan := telemetry.StartSpan(ctx, "google.cloudsql.list_instances",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+
 	instances, err := sqlService.Instances.List(project).Do()
+
 	if err != nil {
+		telemetry.SetSpanError(listSpan, err)
+		listSpan.End()
+		telemetry.SetSpanError(span, err)
 		return nil, fmt.Errorf("failed to list instances: %w", err)
 	}
+
+	telemetry.AddSpanAttribute(listSpan, "google.cloudsql.instances_found", len(instances.Items))
+	telemetry.SetSpanSuccess(listSpan)
+	listSpan.End()
 
 	log.Info("Found instances", "count", len(instances.Items))
 
@@ -247,6 +274,9 @@ func processInstances(_ context.Context, sqlService *sqladmin.Service, project s
 		resource := processInstance(instance, project)
 		resources = append(resources, resource)
 	}
+
+	telemetry.AddSpanAttribute(span, "google.cloudsql.total_instances", len(resources))
+	telemetry.SetSpanSuccess(span)
 
 	return resources, nil
 }

@@ -10,8 +10,11 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/run/v1"
 )
 
@@ -141,16 +144,33 @@ func runSync(project, providerName *string, regions *[]string) func(cmd *cobra.C
 			return fmt.Errorf("failed to initialize Cloud Run client: %w", err)
 		}
 
+		// Create span for listing Cloud Run services
+		_, listSpan := telemetry.StartSpan(ctx, "google.cloudrun.list_services",
+			trace.WithSpanKind(trace.SpanKindClient),
+			trace.WithAttributes(
+				attribute.String("google.project_id", *project),
+			),
+		)
+
 		services, err := cloudRunService.Projects.Locations.Services.List(fmt.Sprintf("projects/%s/locations/-", *project)).Do()
+
 		if err != nil {
+			telemetry.SetSpanError(listSpan, err)
+			listSpan.End()
 			return fmt.Errorf("failed to list Cloud Run services: %w", err)
 		}
+
+		telemetry.AddSpanAttribute(listSpan, "google.cloudrun.services_found", len(services.Items))
+		telemetry.SetSpanSuccess(listSpan)
+		listSpan.End()
 
 		allResources := make([]api.CreateResource, 0)
 		for _, service := range services.Items {
 			resource := processService(service)
 			allResources = append(allResources, resource)
 		}
+
+		log.Info("Found Cloud Run services", "count", len(allResources))
 
 		upsertResp, err := upsertToCtrlplane(ctx, allResources, project, providerName)
 		if err != nil {

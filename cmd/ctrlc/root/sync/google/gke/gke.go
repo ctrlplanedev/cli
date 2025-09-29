@@ -12,8 +12,11 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/container/v1"
 )
 
@@ -88,11 +91,35 @@ func initGKEClient(ctx context.Context) (*container.Service, error) {
 
 // processClusters lists and processes all GKE clusters
 func processClusters(ctx context.Context, gkeClient *container.Service, project string) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "google.gke.process_clusters",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+	defer span.End()
+
+	// Create span for ListClusters call
+	_, listSpan := telemetry.StartSpan(ctx, "google.gke.list_clusters",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+
 	parent := fmt.Sprintf("projects/%s/locations/-", project)
 	resp, err := gkeClient.Projects.Locations.Clusters.List(parent).Do()
+
 	if err != nil {
+		telemetry.SetSpanError(listSpan, err)
+		listSpan.End()
+		telemetry.SetSpanError(span, err)
 		return nil, fmt.Errorf("failed to list GKE clusters: %w", err)
 	}
+
+	telemetry.AddSpanAttribute(listSpan, "google.gke.clusters_found", len(resp.Clusters))
+	telemetry.SetSpanSuccess(listSpan)
+	listSpan.End()
 
 	log.Info("Found GKE clusters", "count", len(resp.Clusters))
 
@@ -105,6 +132,9 @@ func processClusters(ctx context.Context, gkeClient *container.Service, project 
 		}
 		resources = append(resources, resource)
 	}
+
+	telemetry.AddSpanAttribute(span, "google.gke.total_clusters", len(resources))
+	telemetry.SetSpanSuccess(span)
 
 	return resources, nil
 }

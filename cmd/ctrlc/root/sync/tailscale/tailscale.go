@@ -14,9 +14,12 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	tsclient "github.com/tailscale/tailscale-client-go/v2"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type TailscaleConfig struct {
@@ -89,10 +92,33 @@ func NewSyncTailscaleCmd() *cobra.Command {
 			}
 
 			ctx := context.Background()
+
+			ctx, span := telemetry.StartSpan(ctx, "tailscale.list_devices",
+				trace.WithSpanKind(trace.SpanKindClient),
+				trace.WithAttributes(
+					attribute.String("tailscale.tailnet", tailnet),
+				),
+			)
+
 			devices, err := tsc.Devices().List(ctx)
 			if err != nil {
+				telemetry.SetSpanError(span, err)
+				span.End()
 				return fmt.Errorf("failed to list devices: %w", err)
 			}
+
+			telemetry.AddSpanAttribute(span, "tailscale.devices_found", len(devices))
+			telemetry.SetSpanSuccess(span)
+			span.End()
+
+			log.Info("Found Tailscale devices", "count", len(devices))
+
+			processCtx, processSpan := telemetry.StartSpan(ctx, "tailscale.process_devices",
+				trace.WithSpanKind(trace.SpanKindInternal),
+				trace.WithAttributes(
+					attribute.Int("tailscale.devices_to_process", len(devices)),
+				),
+			)
 
 			resources := []api.CreateResource{}
 			for _, device := range devices {
@@ -141,19 +167,35 @@ func NewSyncTailscaleCmd() *cobra.Command {
 				})
 			}
 
+			telemetry.AddSpanAttribute(processSpan, "tailscale.devices_processed", len(resources))
+			telemetry.SetSpanSuccess(processSpan)
+			processSpan.End()
+
 			log.Info("Upserting resources", "count", len(resources))
+
+			upsertCtx, upsertSpan := telemetry.StartSpan(processCtx, "tailscale.upsert_resources",
+				trace.WithSpanKind(trace.SpanKindClient),
+				trace.WithAttributes(
+					attribute.Int("tailscale.resources_to_upsert", len(resources)),
+				),
+			)
+			defer upsertSpan.End()
 
 			providerName := fmt.Sprintf("tailscale-%s", tailnet)
 			rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, providerName)
 			if err != nil {
+				telemetry.SetSpanError(upsertSpan, err)
 				return fmt.Errorf("failed to create resource provider: %w", err)
 			}
 
-			upsertResp, err := rp.UpsertResource(ctx, resources)
-			log.Info("Response from upserting resources", "status", upsertResp.Status)
+			upsertResp, err := rp.UpsertResource(upsertCtx, resources)
 			if err != nil {
+				telemetry.SetSpanError(upsertSpan, err)
 				return fmt.Errorf("failed to upsert resources: %w", err)
 			}
+
+			log.Info("Response from upserting resources", "status", upsertResp.Status)
+			telemetry.SetSpanSuccess(upsertSpan)
 
 			return cliutil.HandleResponseOutput(cmd, upsertResp)
 		},

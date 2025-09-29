@@ -16,8 +16,11 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ConnectionMethod struct {
@@ -92,10 +95,21 @@ func NewSyncEC2Cmd() *cobra.Command {
 			workspaceId := viper.GetString("workspace")
 
 			// Get EC2 instances
+			ctx, span := telemetry.StartSpan(ctx, "aws.ec2.describe_instances",
+				trace.WithSpanKind(trace.SpanKindClient),
+				trace.WithAttributes(
+					attribute.String("aws.region", region),
+				),
+			)
+			defer span.End()
+
 			result, err := ec2Client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{})
 			if err != nil {
+				telemetry.SetSpanError(span, err)
 				return fmt.Errorf("failed to describe instances: %w", err)
 			}
+
+			telemetry.AddSpanAttribute(span, "aws.ec2.reservations_count", len(result.Reservations))
 
 			resources := []api.CreateResource{}
 			for _, reservation := range result.Reservations {
@@ -241,6 +255,9 @@ func NewSyncEC2Cmd() *cobra.Command {
 					})
 				}
 			}
+
+			telemetry.AddSpanAttribute(span, "aws.ec2.instances_processed", len(resources))
+			telemetry.SetSpanSuccess(span)
 
 			// Create or update resource provider
 			if name == "" {

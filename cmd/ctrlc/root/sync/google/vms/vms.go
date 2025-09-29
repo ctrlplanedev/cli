@@ -10,8 +10,11 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/compute/v1"
 )
 
@@ -86,11 +89,34 @@ func initComputeClient(ctx context.Context) (*compute.Service, error) {
 
 // processVMs lists and processes all VM instances
 func processVMs(ctx context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "google.compute.process_vms",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+	defer span.End()
+
+	// Create span for AggregatedList call
+	_, listSpan := telemetry.StartSpan(ctx, "google.compute.list_instances",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+
 	// Use AggregatedList to get VMs from all zones
 	resp, err := computeClient.Instances.AggregatedList(project).Do()
+
 	if err != nil {
+		telemetry.SetSpanError(listSpan, err)
+		listSpan.End()
+		telemetry.SetSpanError(span, err)
 		return nil, fmt.Errorf("failed to list VM instances: %w", err)
 	}
+
+	telemetry.SetSpanSuccess(listSpan)
+	listSpan.End()
 
 	resources := []api.CreateResource{}
 	vmCount := 0
@@ -112,6 +138,9 @@ func processVMs(ctx context.Context, computeClient *compute.Service, project str
 			vmCount++
 		}
 	}
+
+	telemetry.AddSpanAttribute(span, "google.compute.total_vms", vmCount)
+	telemetry.SetSpanSuccess(span)
 
 	log.Info("Found VM instances", "count", vmCount)
 	return resources, nil

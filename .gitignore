@@ -2,6 +2,7 @@
 test.bash
 
 /bin
+./ctrlc
 .idea
 .vscode
 *.test.yaml

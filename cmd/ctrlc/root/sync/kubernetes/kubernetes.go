@@ -8,8 +8,11 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,13 +31,13 @@ func processNamespace(_ context.Context, clusterName string, namespace corev1.Na
 	metadata["namespace/status"] = string(namespace.Status.Phase)
 
 	return api.CreateResource{
-		Version: "ctrlplane.dev/kubernetes/namespace/v1",
-		Kind: "KubernetesNamespace",
-		Name: fmt.Sprintf("%s/%s", clusterName, namespace.Name),
+		Version:    "ctrlplane.dev/kubernetes/namespace/v1",
+		Kind:       "KubernetesNamespace",
+		Name:       fmt.Sprintf("%s/%s", clusterName, namespace.Name),
 		Identifier: string(namespace.UID),
 		Config: map[string]any{
-			"id": string(namespace.UID),
-			"name": namespace.Name,
+			"id":     string(namespace.UID),
+			"name":   namespace.Name,
 			"status": namespace.Status.Phase,
 		},
 		Metadata: metadata,
@@ -52,13 +55,13 @@ func processDeployment(_ context.Context, clusterName string, deployment appsv1.
 	metadata["deployment/namespace"] = deployment.Namespace
 
 	return api.CreateResource{
-		Version: "ctrlplane.dev/kubernetes/deployment/v1",
-		Kind: "KubernetesDeployment",
-		Name: fmt.Sprintf("%s/%s/%s", clusterName, deployment.Namespace, deployment.Name),
+		Version:    "ctrlplane.dev/kubernetes/deployment/v1",
+		Kind:       "KubernetesDeployment",
+		Name:       fmt.Sprintf("%s/%s/%s", clusterName, deployment.Namespace, deployment.Name),
 		Identifier: string(deployment.UID),
 		Config: map[string]any{
-			"id": string(deployment.UID),
-			"name": deployment.Name,
+			"id":        string(deployment.UID),
+			"name":      deployment.Name,
 			"namespace": deployment.Namespace,
 		},
 		Metadata: metadata,
@@ -92,12 +95,12 @@ func NewSyncKubernetesCmd() *cobra.Command {
 			apiURL := viper.GetString("url")
 			apiKey := viper.GetString("api-key")
 			workspaceId := viper.GetString("workspace")
-		
+
 			ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
-			
+
 			ctx := context.Background()
 			clusterResource, _ := ctrlplaneClient.GetResourceByIdentifierWithResponse(ctx, workspaceId, clusterIdentifier)
 			if clusterResource.JSON200 != nil {
@@ -113,10 +116,24 @@ func NewSyncKubernetesCmd() *cobra.Command {
 				return err
 			}
 
-			namespaces, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+			// Create span for listing namespaces
+			listNsCtx, listNsSpan := telemetry.StartSpan(ctx, "kubernetes.namespaces.list",
+				trace.WithSpanKind(trace.SpanKindClient),
+				trace.WithAttributes(
+					attribute.String("kubernetes.cluster", clusterName),
+				),
+			)
+
+			namespaces, err := clientset.CoreV1().Namespaces().List(listNsCtx, metav1.ListOptions{})
 			if err != nil {
+				telemetry.SetSpanError(listNsSpan, err)
+				listNsSpan.End()
 				return err
 			}
+
+			telemetry.AddSpanAttribute(listNsSpan, "kubernetes.namespaces.resources_found", len(namespaces.Items))
+			telemetry.SetSpanSuccess(listNsSpan)
+			listNsSpan.End()
 
 			resources := []api.CreateResource{}
 			for _, namespace := range namespaces.Items {
@@ -124,10 +141,24 @@ func NewSyncKubernetesCmd() *cobra.Command {
 				resources = append(resources, resource)
 			}
 
-			deployments, err := clientset.AppsV1().Deployments(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
+			// Create span for listing deployments
+			listDeployCtx, listDeploySpan := telemetry.StartSpan(ctx, "kubernetes.deployments.list",
+				trace.WithSpanKind(trace.SpanKindClient),
+				trace.WithAttributes(
+					attribute.String("kubernetes.cluster", clusterName),
+				),
+			)
+
+			deployments, err := clientset.AppsV1().Deployments(metav1.NamespaceAll).List(listDeployCtx, metav1.ListOptions{})
 			if err != nil {
+				telemetry.SetSpanError(listDeploySpan, err)
+				listDeploySpan.End()
 				return err
 			}
+
+			telemetry.AddSpanAttribute(listDeploySpan, "kubernetes.deployments.resources_found", len(deployments.Items))
+			telemetry.SetSpanSuccess(listDeploySpan)
+			listDeploySpan.End()
 
 			for _, deployment := range deployments.Items {
 				resource := processDeployment(context.Background(), clusterName, deployment)
@@ -147,6 +178,8 @@ func NewSyncKubernetesCmd() *cobra.Command {
 					resource.Metadata["kubernetes/name"] = clusterResource.JSON200.Name
 				}
 			}
+
+			log.Info("Found Kubernetes resources", "cluster", clusterName, "namespaces", len(namespaces.Items), "deployments", len(deployments.Items), "total", len(resources))
 
 			return upsertToCtrlplane(ctrlplaneClient, resources, clusterIdentifier, clusterName, providerName)
 		},

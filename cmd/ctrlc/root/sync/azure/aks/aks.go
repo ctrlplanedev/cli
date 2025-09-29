@@ -19,8 +19,11 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // NewSyncAKSCmd creates a new cobra command for syncing AKS clusters
@@ -160,6 +163,14 @@ func getDefaultSubscriptionID(ctx context.Context, cred azcore.TokenCredential) 
 }
 
 func processClusters(ctx context.Context, cred azcore.TokenCredential, subscriptionID string, tenantID string) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "azure.aks.process_clusters",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("azure.subscription_id", subscriptionID),
+		),
+	)
+	defer span.End()
+
 	var resources []api.CreateResource
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -168,16 +179,32 @@ func processClusters(ctx context.Context, cred azcore.TokenCredential, subscript
 	// Create AKS client
 	aksClient, err := armcontainerservice.NewManagedClustersClient(subscriptionID, cred, nil)
 	if err != nil {
+		telemetry.SetSpanError(span, err)
 		return nil, fmt.Errorf("failed to create AKS client: %w", err)
 	}
 
+	var clustersFound int
+
 	// List all clusters in the subscription
+	// Create span for ListClusters call
+	listCtx, listSpan := telemetry.StartSpan(ctx, "azure.aks.list_clusters",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("azure.subscription_id", subscriptionID),
+		),
+	)
+
 	pager := aksClient.NewListPager(nil)
 	for pager.More() {
-		page, err := pager.NextPage(ctx)
+		page, err := pager.NextPage(listCtx)
 		if err != nil {
+			telemetry.SetSpanError(listSpan, err)
+			listSpan.End()
+			telemetry.SetSpanError(span, err)
 			return nil, fmt.Errorf("failed to list AKS clusters: %w", err)
 		}
+
+		clustersFound += len(page.Value)
 
 		for _, cluster := range page.Value {
 			wg.Add(1)
@@ -200,12 +227,19 @@ func processClusters(ctx context.Context, cred azcore.TokenCredential, subscript
 		}
 	}
 
+	telemetry.AddSpanAttribute(listSpan, "azure.aks.clusters_found", clustersFound)
+	telemetry.SetSpanSuccess(listSpan)
+	listSpan.End()
+
 	wg.Wait()
 
 	if len(syncErrors) > 0 {
 		log.Warn("Some clusters failed to sync", "errors", len(syncErrors))
 		// Continue with the clusters that succeeded
 	}
+
+	telemetry.AddSpanAttribute(span, "azure.aks.clusters_processed", len(resources))
+	telemetry.SetSpanSuccess(span)
 
 	log.Info("Found AKS clusters", "count", len(resources))
 	return resources, nil
