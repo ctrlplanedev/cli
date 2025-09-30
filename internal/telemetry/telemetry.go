@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -13,6 +14,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -24,37 +26,27 @@ var tracer trace.Tracer
 
 // InitTelemetry initializes OpenTelemetry with OTLP exporter
 func InitTelemetry(ctx context.Context) (func(context.Context) error, error) {
-	// Check if telemetry is enabled
-	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" && os.Getenv("CTRLPLANE_TELEMETRY_DISABLED") == "true" {
+	// Check if telemetry is disabled
+	if os.Getenv("TELEMETRY_DISABLED") == "true" {
 		// Return no-op shutdown function if telemetry is disabled
 		return func(context.Context) error { return nil }, nil
 	}
 
+	// Check if any telemetry endpoint is configured
+	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" &&
+		os.Getenv("DATADOG_ENABLED") != "true" {
+		// Return no-op shutdown function if no endpoint is configured
+		return func(context.Context) error { return nil }, nil
+	}
+
 	// Create resource with service information
-	res, err := resource.New(ctx,
-		resource.WithAttributes(
-			semconv.ServiceNameKey.String(serviceName),
-			semconv.ServiceVersionKey.String(serviceVersion),
-		),
-		resource.WithFromEnv(),
-		resource.WithProcessPID(),
-		resource.WithProcessExecutableName(),
-		resource.WithProcessExecutablePath(),
-		resource.WithProcessOwner(),
-		resource.WithProcessRuntimeName(),
-		resource.WithProcessRuntimeVersion(),
-		resource.WithProcessRuntimeDescription(),
-		resource.WithHost(),
-		resource.WithOS(),
-	)
+	res, err := createResource(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource: %w", err)
 	}
 
-	// Create OTLP trace exporter
-	exporter, err := otlptracegrpc.New(ctx,
-		otlptracegrpc.WithInsecure(), // Use secure connections in production
-	)
+	// Create OTLP trace exporter with appropriate configuration
+	exporter, err := createOTLPExporter(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OTLP exporter: %w", err)
 	}
@@ -69,17 +61,113 @@ func InitTelemetry(ctx context.Context) (func(context.Context) error, error) {
 	// Set global trace provider
 	otel.SetTracerProvider(tp)
 
-	// Set global propagator
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
-		propagation.TraceContext{},
-		propagation.Baggage{},
-	))
+	// Set global propagator (includes Datadog propagation if enabled)
+	otel.SetTextMapPropagator(createPropagator())
 
 	// Get tracer for this package
 	tracer = otel.Tracer(serviceName)
 
 	// Return shutdown function
 	return tp.Shutdown, nil
+}
+
+// createResource creates an OpenTelemetry resource with service information
+func createResource(ctx context.Context) (*resource.Resource, error) {
+	attrs := []attribute.KeyValue{
+		semconv.ServiceNameKey.String(serviceName),
+		semconv.ServiceVersionKey.String(serviceVersion),
+	}
+
+	// Add Datadog-specific attributes if enabled
+	if os.Getenv("DATADOG_ENABLED") == "true" {
+		if env := os.Getenv("DD_ENV"); env != "" {
+			attrs = append(attrs, attribute.String("deployment.environment", env))
+		}
+		if service := os.Getenv("DD_SERVICE"); service != "" {
+			// Override service name if DD_SERVICE is set
+			attrs[0] = semconv.ServiceNameKey.String(service)
+		}
+		if version := os.Getenv("DD_VERSION"); version != "" {
+			attrs[1] = semconv.ServiceVersionKey.String(version)
+		}
+		if tags := os.Getenv("DD_TAGS"); tags != "" {
+			// Parse DD_TAGS format: key1:value1,key2:value2
+			for _, tag := range strings.Split(tags, ",") {
+				parts := strings.SplitN(strings.TrimSpace(tag), ":", 2)
+				if len(parts) == 2 {
+					attrs = append(attrs, attribute.String(parts[0], parts[1]))
+				}
+			}
+		}
+	}
+
+	return resource.New(ctx,
+		resource.WithAttributes(attrs...),
+		resource.WithFromEnv(),
+		resource.WithProcessPID(),
+		resource.WithProcessExecutableName(),
+		resource.WithProcessExecutablePath(),
+		resource.WithProcessOwner(),
+		resource.WithProcessRuntimeName(),
+		resource.WithProcessRuntimeVersion(),
+		resource.WithProcessRuntimeDescription(),
+		resource.WithHost(),
+		resource.WithOS(),
+	)
+}
+
+// createOTLPExporter creates an OTLP exporter with Datadog or generic configuration
+func createOTLPExporter(ctx context.Context) (sdktrace.SpanExporter, error) {
+	var opts []otlptracegrpc.Option
+
+	// Check if Datadog is explicitly enabled
+	if os.Getenv("DATADOG_ENABLED") == "true" {
+		// Use Datadog Agent endpoint (default: localhost:4317)
+		endpoint := os.Getenv("DD_OTLP_GRPC_ENDPOINT")
+		if endpoint == "" {
+			endpoint = "localhost:4317"
+		}
+		opts = append(opts, otlptracegrpc.WithEndpoint(endpoint))
+
+		// Add Datadog API key as header if provided
+		// This is required when sending directly to Datadog intake (not via Agent)
+		if apiKey := os.Getenv("DD_API_KEY"); apiKey != "" {
+			opts = append(opts, otlptracegrpc.WithHeaders(map[string]string{
+				"dd-api-key": apiKey,
+			}))
+		}
+
+		// Datadog Agent typically doesn't require TLS for localhost
+		// But Datadog intake endpoints always require TLS
+		if strings.HasPrefix(endpoint, "localhost") || strings.HasPrefix(endpoint, "127.0.0.1") {
+			opts = append(opts, otlptracegrpc.WithInsecure())
+		} else {
+			// Use TLS for remote endpoints (Datadog intake or remote Agent)
+			opts = append(opts, otlptracegrpc.WithTLSCredentials(credentials.NewClientTLSFromCert(nil, "")))
+		}
+	} else {
+		// Standard OTLP configuration
+		// Check if insecure connection is requested
+		if os.Getenv("OTEL_EXPORTER_OTLP_INSECURE") == "true" {
+			opts = append(opts, otlptracegrpc.WithInsecure())
+		}
+	}
+
+	return otlptracegrpc.New(ctx, opts...)
+}
+
+// createPropagator creates a composite propagator
+func createPropagator() propagation.TextMapPropagator {
+	propagators := []propagation.TextMapPropagator{
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	}
+
+	// Datadog uses its own propagation format in addition to W3C
+	// The Datadog Agent will handle conversion from W3C TraceContext to Datadog format
+	// So we don't need a special propagator here - W3C TraceContext is sufficient
+
+	return propagation.NewCompositeTextMapPropagator(propagators...)
 }
 
 // StartRootSpan creates a root span for the CLI invocation

@@ -13,10 +13,27 @@ The Ctrlplane CLI now includes OpenTelemetry support for observability and distr
 
 ### Environment Variables
 
+#### Core Configuration
+
+- `TELEMETRY_DISABLED`: Set to `"true"` to disable telemetry completely
 - `OTEL_EXPORTER_OTLP_ENDPOINT`: OTLP endpoint URL (default: `http://localhost:4317`)
-- `CTRLPLANE_TELEMETRY_DISABLED`: Set to `"true"` to disable telemetry completely
+- `OTEL_EXPORTER_OTLP_INSECURE`: Set to `"true"` to use insecure (non-TLS) connection
 - `OTEL_SERVICE_NAME`: Override service name (default: `ctrlplane-cli`)
 - `OTEL_RESOURCE_ATTRIBUTES`: Additional resource attributes
+
+#### Datadog Configuration
+
+To send traces to Datadog (via Agent or directly):
+
+- `DATADOG_ENABLED`: Set to `"true"` to enable Datadog-specific configuration
+- `DD_API_KEY`: Datadog API key (required for direct intake, optional for Agent)
+- `DD_OTLP_GRPC_ENDPOINT`: Datadog endpoint (default: `localhost:4317`)
+  - For Agent: `localhost:4317`
+  - For direct intake: `api.datadoghq.com:4317` (US) or `api.datadoghq.eu:4317` (EU)
+- `DD_SERVICE`: Service name for Datadog (overrides `OTEL_SERVICE_NAME`)
+- `DD_ENV`: Environment name (e.g., `production`, `staging`, `development`)
+- `DD_VERSION`: Service version for Datadog
+- `DD_TAGS`: Additional tags in format `key1:value1,key2:value2`
 
 ### Standard OpenTelemetry Variables
 
@@ -59,11 +76,58 @@ export OTEL_EXPORTER_OTLP_HEADERS="api-key=your-api-key"
 ctrlc sync github pull-requests --repo owner/repo
 ```
 
+### Enable Telemetry with Datadog
+
+#### Option 1: Via Datadog Agent (Recommended)
+
+```bash
+# Configure Datadog integration (assumes Datadog Agent is running locally)
+export DATADOG_ENABLED=true
+export DD_SERVICE=ctrlplane-cli
+export DD_ENV=production
+export DD_VERSION=1.0.0
+export DD_TAGS="team:platform,component:cli"
+
+# Run CLI commands - traces will be sent to Datadog Agent on localhost:4317
+ctrlc sync aws eks --region us-west-2
+
+# If Datadog Agent is on a different host/port
+export DD_OTLP_GRPC_ENDPOINT=datadog-agent.example.com:4317
+ctrlc sync github pull-requests --repo owner/repo
+```
+
+**Agent Requirements**: Ensure your Datadog Agent has OTLP ingestion enabled:
+```yaml
+# datadog.yaml
+otlp_config:
+  receiver:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+```
+
+#### Option 2: Direct to Datadog Intake (Agentless)
+
+```bash
+# Send traces directly to Datadog without local Agent
+export DATADOG_ENABLED=true
+export DD_API_KEY=your_datadog_api_key_here
+export DD_OTLP_GRPC_ENDPOINT=api.datadoghq.com:4317  # US region
+# export DD_OTLP_GRPC_ENDPOINT=api.datadoghq.eu:4317  # EU region
+export DD_SERVICE=ctrlplane-cli
+export DD_ENV=production
+
+# Run CLI commands
+ctrlc sync aws eks --region us-west-2
+```
+
+**Note**: Direct intake requires a Datadog API key and uses TLS automatically.
+
 ### Disable Telemetry
 
 ```bash
 # Disable telemetry completely
-CTRLPLANE_TELEMETRY_DISABLED=true ctrlc version
+TELEMETRY_DISABLED=true ctrlc version
 ```
 
 ## Span Attributes
@@ -90,18 +154,23 @@ The CLI automatically traces all external API calls to:
 
 - **Terraform Cloud API** ✅ - Workspace listing, variable fetching
 - **GitHub API** ✅ - Pull request sync, commit fetching
-- **AWS SDK** ✅ - EKS cluster operations
-- **Azure SDK** - AKS and networking operations
-- **Google Cloud APIs** - GKE, Cloud SQL, Cloud Run operations
-- **Salesforce API** - SOQL queries for opportunities and accounts
-- **Tailscale API** - Device listing and management
-- **Kubernetes Client** - Pod and resource operations
+- **AWS SDK** ✅ - EKS, EC2, RDS, VPC operations
+- **Azure SDK** ✅ - AKS and networking operations
+- **Google Cloud APIs** ✅ - GKE, Cloud SQL, Cloud Run, and more
+- **Salesforce API** ✅ - SOQL queries for opportunities and accounts
+- **Tailscale API** ✅ - Device listing and management
+- **Kubernetes Client** ✅ - Namespace and deployment operations
+- **Ctrlplane API** ✅ - Resource provider operations with trace context propagation
 
 Each API call creates detailed spans with:
 - Service-specific attributes (region, project ID, organization, etc.)
 - Operation details (list, describe, query, etc.)
 - Success/error states
 - Result counts and pagination info
+
+### Distributed Tracing
+
+All API calls to the Ctrlplane backend automatically include trace context via the `traceparent` HTTP header (W3C Trace Context standard). This enables end-to-end distributed tracing from the CLI through to the backend services.
 
 See [API_TELEMETRY_GUIDE.md](./API_TELEMETRY_GUIDE.md) for implementation details.
 
@@ -166,11 +235,62 @@ If you see connection refused errors like:
 grpc: addrConn.createTransport failed to connect to {...}: connection refused
 ```
 
-This means the OTLP collector is not running. Either:
+This means the OTLP collector/agent is not running. Options:
 
-1. Start an OTLP-compatible collector (like Jaeger)
-2. Configure a different endpoint with `OTEL_EXPORTER_OTLP_ENDPOINT`
-3. Disable telemetry with `CTRLPLANE_TELEMETRY_DISABLED=true`
+1. **For Datadog**: Ensure Datadog Agent is running and OTLP is enabled
+2. **For Jaeger**: Start a Jaeger instance (see example above)
+3. **For other collectors**: Configure endpoint with `OTEL_EXPORTER_OTLP_ENDPOINT`
+4. **To disable**: Set `TELEMETRY_DISABLED=true`
+
+### Datadog-Specific Troubleshooting
+
+**Traces not appearing in Datadog:**
+
+1. Verify Datadog Agent is running:
+   ```bash
+   datadog-agent status
+   ```
+
+2. Check OTLP receiver is enabled in `datadog.yaml`:
+   ```yaml
+   otlp_config:
+     receiver:
+       protocols:
+         grpc:
+           endpoint: 0.0.0.0:4317
+   ```
+
+3. Verify connectivity:
+   ```bash
+   telnet localhost 4317
+   ```
+
+4. Check Agent logs for OTLP errors:
+   ```bash
+   tail -f /var/log/datadog/agent.log | grep -i otlp
+   ```
+
+**Service not showing correct name in Datadog:**
+
+Ensure you've set `DD_SERVICE` or it will default to `ctrlplane-cli`:
+```bash
+export DD_SERVICE=my-custom-service-name
+```
+
+**Authentication errors when sending directly to Datadog intake:**
+
+Ensure `DD_API_KEY` is set when using direct intake (not needed for Agent):
+```bash
+export DD_API_KEY=your_datadog_api_key
+export DD_OTLP_GRPC_ENDPOINT=api.datadoghq.com:4317
+```
+
+**Connection timeouts or TLS errors with direct intake:**
+
+Verify your API key is valid and you're using the correct regional endpoint:
+- US: `api.datadoghq.com:4317`
+- EU: `api.datadoghq.eu:4317`
+- US1-FED: `api.ddog-gov.com:4317`
 
 ### Debugging
 

@@ -4,17 +4,85 @@ This guide shows how to add OpenTelemetry tracing to each external API integrati
 
 ## Summary of Current Implementation
 
-✅ **Implemented**:
+✅ **Fully Implemented**:
 1. **Terraform Cloud API** - Complete tracing with retry logic and variable fetching
 2. **GitHub API** - Complete tracing for pull requests and commits with pagination
-3. **AWS SDK (EKS)** - Complete tracing for cluster listing and describing
+3. **AWS SDK** - Complete tracing for EKS, EC2, RDS, and VPC operations
+4. **Azure SDK** - Complete tracing for AKS clusters and virtual networks
+5. **Google Cloud APIs** - Complete tracing for GKE, Cloud SQL, Cloud Run, Storage, Redis, BigTable, VMs, Secrets, Projects, and Networks
+6. **Salesforce API** - Complete tracing for SOQL queries and pagination
+7. **Tailscale API** - Complete tracing for device listing and management
+8. **Kubernetes Client** - Complete tracing for namespace and deployment operations
+9. **Ctrlplane API** - Automatic trace context propagation via `traceparent` header
 
-🟡 **To be implemented** (patterns provided below):
-4. Azure SDK
-5. Google Cloud APIs
-6. Salesforce API
-7. Tailscale API
-8. Kubernetes Client
+## Datadog Integration
+
+Two ways to send traces to Datadog:
+
+### Option 1: Via Datadog Agent (Recommended)
+
+```bash
+# Enable Datadog integration with local Agent
+export DATADOG_ENABLED=true
+export DD_SERVICE=ctrlplane-cli
+export DD_ENV=production
+export DD_VERSION=1.0.0
+export DD_TAGS="team:platform,component:cli"
+
+# Run any CLI command
+ctrlc sync aws eks --region us-west-2
+```
+
+**Requirements:**
+- Datadog Agent must be running with OTLP enabled
+- Agent configuration should include:
+  ```yaml
+  otlp_config:
+    receiver:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+  ```
+
+### Option 2: Direct to Datadog Intake (Agentless)
+
+```bash
+# Send traces directly to Datadog without Agent
+export DATADOG_ENABLED=true
+export DD_API_KEY=your_datadog_api_key
+export DD_OTLP_GRPC_ENDPOINT=api.datadoghq.com:4317  # US
+# export DD_OTLP_GRPC_ENDPOINT=api.datadoghq.eu:4317  # EU
+export DD_SERVICE=ctrlplane-cli
+export DD_ENV=production
+
+# Run any CLI command
+ctrlc sync aws eks --region us-west-2
+```
+
+The CLI will automatically:
+- Connect to the specified Datadog endpoint
+- Include Datadog API key header for authentication (when provided)
+- Apply unified service tags (env, service, version)
+- Parse and apply custom tags from `DD_TAGS`
+- Use W3C Trace Context for distributed tracing
+- Enable TLS automatically for remote endpoints
+
+## Ctrlplane API Trace Propagation
+
+All API calls to the Ctrlplane backend automatically propagate trace context via the `traceparent` HTTP header (W3C Trace Context standard). This is handled transparently by the API client in `internal/api/client.go`.
+
+When you make API calls like:
+```go
+ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+rp.UpsertResource(ctx, resources)
+```
+
+The client automatically:
+1. Extracts the current span context from `ctx`
+2. Injects it into the HTTP request headers as `traceparent`
+3. Enables end-to-end distributed tracing from CLI → Ctrlplane API
+
+This means every API call is automatically part of the same distributed trace as the CLI command that initiated it.
 
 ## Implementation Patterns
 
@@ -111,127 +179,31 @@ func simpleAPICall(ctx context.Context, client APIClient, param string) (Result,
 }
 ```
 
-## Specific Implementation Guides
+## Reference Implementation Examples
 
-### 4. Azure SDK Integration
+All external API integrations now have complete telemetry tracing. Here are the key files to reference:
 
-**Files to modify:**
-- `cmd/ctrlc/root/sync/azure/aks/aks.go`
-- `cmd/ctrlc/root/sync/azure/networks/networks.go`
+### Azure SDK
+- **AKS**: `cmd/ctrlc/root/sync/azure/aks/aks.go` (lines 163-243)
+- **Networks**: `cmd/ctrlc/root/sync/azure/networks/networks.go` (lines 160-280)
 
-**Pattern:**
-```go
-// Add telemetry to Azure ARM calls
-ctx, span := telemetry.StartAPISpan(ctx, "azure.aks", "list_clusters",
-    attribute.String("azure.subscription_id", subscriptionID),
-    attribute.String("azure.resource_group", resourceGroup),
-)
-defer span.End()
+### Google Cloud APIs
+- **GKE**: `cmd/ctrlc/root/sync/google/gke/gke.go`
+- **Cloud SQL**: `cmd/ctrlc/root/sync/google/cloudsql/cloudsql.go`
+- **Cloud Run**: `cmd/ctrlc/root/sync/google/cloudrun/cloudrun.go`
+- **Storage**: `cmd/ctrlc/root/sync/google/buckets/buckets.go`
+- **And 6+ more Google Cloud services**
 
-result, err := aksClient.List(ctx, resourceGroup)
-if err != nil {
-    telemetry.SetSpanError(span, err)
-    return err
-}
+### Salesforce API
+- **Accounts**: `cmd/ctrlc/root/sync/salesforce/accounts/accounts.go`
+- **Opportunities**: `cmd/ctrlc/root/sync/salesforce/opportunities/opportunities.go`
+- **Common**: `cmd/ctrlc/root/sync/salesforce/common/util.go` (comprehensive pagination tracing)
 
-telemetry.AddSpanAttribute(span, "azure.clusters_found", len(result.Value))
-telemetry.SetSpanSuccess(span)
-```
+### Tailscale API
+- **Devices**: `cmd/ctrlc/root/sync/tailscale/tailscale.go` (lines 96-198)
 
-### 5. Google Cloud API Integration
-
-**Files to modify:**
-- `cmd/ctrlc/root/sync/google/gke/gke.go`
-- `cmd/ctrlc/root/sync/google/cloudsql/cloudsql.go`
-- `cmd/ctrlc/root/sync/google/cloudrun/cloudrun.go`
-
-**Pattern:**
-```go
-ctx, span := telemetry.StartAPISpan(ctx, "gcp.gke", "list_clusters",
-    attribute.String("gcp.project_id", projectID),
-    attribute.String("gcp.location", location),
-)
-defer span.End()
-
-clusters, err := gkeClient.Projects.Locations.Clusters.List(parent).Context(ctx).Do()
-if err != nil {
-    telemetry.SetSpanError(span, err)
-    return err
-}
-
-telemetry.AddSpanAttribute(span, "gcp.clusters_found", len(clusters.Clusters))
-telemetry.SetSpanSuccess(span)
-```
-
-### 6. Salesforce API Integration
-
-**Files to modify:**
-- `cmd/ctrlc/root/sync/salesforce/opportunities/opportunities.go`
-- `cmd/ctrlc/root/sync/salesforce/accounts/accounts.go`
-
-**Pattern:**
-```go
-ctx, span := telemetry.StartAPISpan(ctx, "salesforce", "soql_query",
-    attribute.String("salesforce.object_type", "Opportunity"),
-    attribute.String("salesforce.query", query),
-)
-defer span.End()
-
-records, err := sf.Query(query).Context(ctx).Do()
-if err != nil {
-    telemetry.SetSpanError(span, err)
-    return err
-}
-
-telemetry.AddSpanAttribute(span, "salesforce.records_found", len(records.Records))
-telemetry.SetSpanSuccess(span)
-```
-
-### 7. Tailscale API Integration
-
-**Files to modify:**
-- `cmd/ctrlc/root/sync/tailscale/tailscale.go`
-
-**Pattern:**
-```go
-ctx, span := telemetry.StartAPISpan(ctx, "tailscale", "list_devices",
-    attribute.String("tailscale.tailnet", tailnet),
-)
-defer span.End()
-
-devices, err := client.Devices(ctx, tailnet)
-if err != nil {
-    telemetry.SetSpanError(span, err)
-    return err
-}
-
-telemetry.AddSpanAttribute(span, "tailscale.devices_found", len(devices))
-telemetry.SetSpanSuccess(span)
-```
-
-### 8. Kubernetes Client Integration
-
-**Files to modify:**
-- `cmd/ctrlc/root/sync/kubernetes/kubernetes.go`
-- `cmd/ctrlc/root/sync/kubernetes/vcluster.go`
-
-**Pattern:**
-```go
-ctx, span := telemetry.StartAPISpan(ctx, "kubernetes", "list_pods",
-    attribute.String("k8s.namespace", namespace),
-    attribute.String("k8s.cluster", clusterName),
-)
-defer span.End()
-
-pods, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
-if err != nil {
-    telemetry.SetSpanError(span, err)
-    return err
-}
-
-telemetry.AddSpanAttribute(span, "k8s.pods_found", len(pods.Items))
-telemetry.SetSpanSuccess(span)
-```
+### Kubernetes Client
+- **Resources**: `cmd/ctrlc/root/sync/kubernetes/kubernetes.go` (lines 120-161)
 
 ## Standard Attributes
 
@@ -286,14 +258,15 @@ telemetry.SetSpanSuccess(span)
 
 For each API integration:
 
-- [ ] Add telemetry imports
-- [ ] Wrap main operation function with root span
-- [ ] Add spans for individual API calls
-- [ ] Include relevant attributes (service, operation, identifiers)
-- [ ] Handle pagination with child spans
-- [ ] Set success/error states
-- [ ] Add count attributes for results
-- [ ] Test with `go build` to ensure no compilation errors
+- [x] Add telemetry imports
+- [x] Wrap main operation function with root span
+- [x] Add spans for individual API calls
+- [x] Include relevant attributes (service, operation, identifiers)
+- [x] Handle pagination with child spans
+- [x] Set success/error states
+- [x] Add count attributes for results
+- [x] Test with `go build` to ensure no compilation errors
+- [x] Add trace context propagation to Ctrlplane API calls
 
 ## Testing
 
@@ -306,7 +279,7 @@ After implementing telemetry for each API:
 
 2. **Disabled telemetry test:**
    ```bash
-   CTRLPLANE_TELEMETRY_DISABLED=true ./ctrlc sync [service] [command] --help
+   TELEMETRY_DISABLED=true ./ctrlc sync [service] [command] --help
    ```
 
 3. **Enabled telemetry test:**
@@ -316,12 +289,33 @@ After implementing telemetry for each API:
 
 ## Benefits
 
-With this implementation, every external API call will be traced with:
+With this implementation, every external API call is traced with:
 
 - **Visibility**: See exactly which APIs are being called and how long they take
 - **Error tracking**: Automatic error recording with context
 - **Performance insights**: Understand API call patterns and bottlenecks
 - **Debugging**: Detailed trace information for troubleshooting
-- **Monitoring**: Integration with observability platforms like Jaeger, DataDog, etc.
+- **Monitoring**: Integration with observability platforms like Jaeger, Datadog, etc.
+- **Distributed tracing**: Full end-to-end traces from CLI → External APIs → Ctrlplane API
 
-Each API call creates a new trace that can be correlated back to the root CLI command invocation, providing end-to-end visibility into the entire sync operation.
+Each API call creates a span that's part of the root trace from the CLI command invocation, providing complete visibility into the entire operation including downstream calls to the Ctrlplane backend.
+
+## Datadog-Specific Features
+
+When using Datadog:
+
+- **Unified Service Tagging**: Automatic inclusion of `env`, `service`, and `version` tags
+- **Custom Tags**: Support for `DD_TAGS` environment variable
+- **APM Integration**: Traces appear in Datadog APM with service map
+- **Resource Names**: Automatic resource naming based on operation
+- **Infrastructure Correlation**: Links traces to host metrics via Datadog Agent
+
+Example trace in Datadog APM:
+```
+ctrlc sync aws eks
+├─ aws.eks.process_clusters (200ms)
+│  ├─ aws.eks.list_clusters (150ms)
+│  └─ aws.eks.describe_cluster (50ms)
+└─ POST /api/v1/workspaces/{id}/resource-providers/{id}/resources (300ms)
+   └─ [Ctrlplane backend spans continue the trace...]
+```
