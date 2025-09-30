@@ -78,43 +78,14 @@ ctrlc sync github pull-requests --repo owner/repo
 
 ### Enable Telemetry with Datadog
 
-#### Option 1: Via Datadog Agent (Recommended)
-
-```bash
-# Configure Datadog integration (assumes Datadog Agent is running locally)
-export DATADOG_ENABLED=true
-export DD_SERVICE=ctrlplane-cli
-export DD_ENV=production
-export DD_VERSION=1.0.0
-export DD_TAGS="team:platform,component:cli"
-
-# Run CLI commands - traces will be sent to Datadog Agent on localhost:4317
-ctrlc sync aws eks --region us-west-2
-
-# If Datadog Agent is on a different host/port
-export DD_OTLP_GRPC_ENDPOINT=datadog-agent.example.com:4317
-ctrlc sync github pull-requests --repo owner/repo
-```
-
-**Agent Requirements**: Ensure your Datadog Agent has OTLP ingestion enabled:
-```yaml
-# datadog.yaml
-otlp_config:
-  receiver:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-```
-
-#### Option 2: Direct to Datadog Intake (Agentless)
+#### Direct to Datadog Intake (Agentless)
 
 ```bash
 # Send traces directly to Datadog without local Agent
 export DATADOG_ENABLED=true
 export DD_API_KEY=your_datadog_api_key_here
-export DD_OTLP_GRPC_ENDPOINT=api.datadoghq.com:4317  # US region
-# export DD_OTLP_GRPC_ENDPOINT=api.datadoghq.eu:4317  # EU region
-export DD_SERVICE=ctrlplane-cli
+export OTLP_EXPORTER_GRPC_ENDPOINT=api.datadoghq.com:4317  # US region
+export OTEL_SERVICE_NAME=ctrlplane-cli
 export DD_ENV=production
 
 # Run CLI commands
@@ -171,8 +142,6 @@ Each API call creates detailed spans with:
 ### Distributed Tracing
 
 All API calls to the Ctrlplane backend automatically include trace context via the `traceparent` HTTP header (W3C Trace Context standard). This enables end-to-end distributed tracing from the CLI through to the backend services.
-
-See [API_TELEMETRY_GUIDE.md](./API_TELEMETRY_GUIDE.md) for implementation details.
 
 ## Integration in Subcommands
 

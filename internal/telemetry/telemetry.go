@@ -33,8 +33,7 @@ func InitTelemetry(ctx context.Context) (func(context.Context) error, error) {
 	}
 
 	// Check if any telemetry endpoint is configured
-	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" &&
-		os.Getenv("DATADOG_ENABLED") != "true" {
+	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" {
 		// Return no-op shutdown function if no endpoint is configured
 		return func(context.Context) error { return nil }, nil
 	}
@@ -83,10 +82,6 @@ func createResource(ctx context.Context) (*resource.Resource, error) {
 		if env := os.Getenv("DD_ENV"); env != "" {
 			attrs = append(attrs, attribute.String("deployment.environment", env))
 		}
-		if service := os.Getenv("DD_SERVICE"); service != "" {
-			// Override service name if DD_SERVICE is set
-			attrs[0] = semconv.ServiceNameKey.String(service)
-		}
 		if version := os.Getenv("DD_VERSION"); version != "" {
 			attrs[1] = semconv.ServiceVersionKey.String(version)
 		}
@@ -122,8 +117,7 @@ func createOTLPExporter(ctx context.Context) (sdktrace.SpanExporter, error) {
 
 	// Check if Datadog is explicitly enabled
 	if os.Getenv("DATADOG_ENABLED") == "true" {
-		// Use Datadog Agent endpoint (default: localhost:4317)
-		endpoint := os.Getenv("DD_OTLP_GRPC_ENDPOINT")
+		endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 		if endpoint == "" {
 			endpoint = "localhost:4317"
 		}
