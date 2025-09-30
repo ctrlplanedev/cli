@@ -7,15 +7,12 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
-	"github.com/ctrlplanedev/cli/internal/telemetry"
 
 	// "github.com/ctrlplanedev/cli/internal/cliutil"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-tfe"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 func NewSyncTerraformCmd() *cobra.Command {
