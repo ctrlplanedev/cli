@@ -11,8 +11,11 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/redis/v1"
 )
 
@@ -87,11 +90,35 @@ func initRedisClient(ctx context.Context) (*redis.Service, error) {
 
 // processInstances lists and processes all Redis instances
 func processInstances(ctx context.Context, redisClient *redis.Service, project string) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "google.redis.process_instances",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+	defer span.End()
+
+	// Create span for ListInstances call
+	_, listSpan := telemetry.StartSpan(ctx, "google.redis.list_instances",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+
 	parent := fmt.Sprintf("projects/%s/locations/-", project)
 	instances, err := redisClient.Projects.Locations.Instances.List(parent).Do()
+
 	if err != nil {
+		telemetry.SetSpanError(listSpan, err)
+		listSpan.End()
+		telemetry.SetSpanError(span, err)
 		return nil, fmt.Errorf("failed to list Redis instances: %w", err)
 	}
+
+	telemetry.AddSpanAttribute(listSpan, "google.redis.instances_found", len(instances.Instances))
+	telemetry.SetSpanSuccess(listSpan)
+	listSpan.End()
 
 	log.Info("Found Redis instances", "count", len(instances.Instances))
 
@@ -104,6 +131,9 @@ func processInstances(ctx context.Context, redisClient *redis.Service, project s
 		}
 		resources = append(resources, resource)
 	}
+
+	telemetry.AddSpanAttribute(span, "google.redis.total_instances", len(resources))
+	telemetry.SetSpanSuccess(span)
 
 	return resources, nil
 }

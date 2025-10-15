@@ -17,8 +17,11 @@ import (
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/aws/common"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // NewSyncEKSCmd creates a new cobra command for syncing EKS clusters
@@ -131,30 +134,69 @@ func initEKSClient(ctx context.Context, region string) (*eks.Client, aws.Config,
 }
 
 func processClusters(ctx context.Context, eksClient *eks.Client, region string, cfg aws.Config) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "aws.eks.process_clusters",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("aws.region", region),
+		),
+	)
+	defer span.End()
+
 	var resources []api.CreateResource
 	var nextToken *string
 
 	accountID, err := common.GetAccountID(ctx, cfg)
 	if err != nil {
+		telemetry.SetSpanError(span, err)
 		return nil, fmt.Errorf("failed to get AWS account ID: %w", err)
 	}
 
 	for {
-		resp, err := eksClient.ListClusters(ctx, &eks.ListClustersInput{
+		// Create span for ListClusters call
+		listCtx, listSpan := telemetry.StartSpan(ctx, "aws.eks.list_clusters",
+			trace.WithSpanKind(trace.SpanKindClient),
+			trace.WithAttributes(
+				attribute.String("aws.region", region),
+			),
+		)
+
+		resp, err := eksClient.ListClusters(listCtx, &eks.ListClustersInput{
 			NextToken: nextToken,
 		})
+
 		if err != nil {
+			telemetry.SetSpanError(listSpan, err)
+			listSpan.End()
 			return nil, fmt.Errorf("failed to list EKS clusters: %w", err)
 		}
 
+		telemetry.AddSpanAttribute(listSpan, "aws.eks.clusters_found", len(resp.Clusters))
+		telemetry.SetSpanSuccess(listSpan)
+		listSpan.End()
+
 		for _, clusterName := range resp.Clusters {
-			cluster, err := eksClient.DescribeCluster(ctx, &eks.DescribeClusterInput{
+			// Create span for DescribeCluster call
+			descCtx, descSpan := telemetry.StartSpan(ctx, "aws.eks.describe_cluster",
+				trace.WithSpanKind(trace.SpanKindClient),
+				trace.WithAttributes(
+					attribute.String("aws.region", region),
+					attribute.String("aws.eks.cluster_name", clusterName),
+				),
+			)
+
+			cluster, err := eksClient.DescribeCluster(descCtx, &eks.DescribeClusterInput{
 				Name: &clusterName,
 			})
+
 			if err != nil {
 				log.Error("Failed to describe cluster", "name", clusterName, "error", err)
+				telemetry.SetSpanError(descSpan, err)
+				descSpan.End()
 				continue
 			}
+
+			telemetry.SetSpanSuccess(descSpan)
+			descSpan.End()
 
 			resource, err := processCluster(ctx, cluster.Cluster, region, accountID)
 			if err != nil {
@@ -169,6 +211,9 @@ func processClusters(ctx context.Context, eksClient *eks.Client, region string, 
 		}
 		nextToken = resp.NextToken
 	}
+
+	telemetry.AddSpanAttribute(span, "aws.eks.total_clusters", len(resources))
+	telemetry.SetSpanSuccess(span)
 
 	log.Info("Found EKS clusters", "region", region, "count", len(resources))
 	return resources, nil

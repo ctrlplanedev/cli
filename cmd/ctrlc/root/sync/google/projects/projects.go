@@ -7,8 +7,10 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/cloudresourcemanager/v1"
 )
 
@@ -17,7 +19,7 @@ func NewSyncProjectsCmd() *cobra.Command {
 	var name string
 
 	cmd := &cobra.Command{
-		Use:   "projects", 
+		Use:   "projects",
 		Short: "Sync Google Cloud projects into Ctrlplane",
 		Example: heredoc.Doc(`
 			# Make sure Google Cloud credentials are configured via environment variables or application default credentials
@@ -36,29 +38,43 @@ func NewSyncProjectsCmd() *cobra.Command {
 				return fmt.Errorf("failed to create Cloud Resource Manager client: %w", err)
 			}
 
+			// Create span for listing projects
+			_, listSpan := telemetry.StartSpan(ctx, "google.cloudresourcemanager.list_projects",
+				trace.WithSpanKind(trace.SpanKindClient),
+			)
+
 			// List all projects
 			resp, err := crm.Projects.List().Do()
+
 			if err != nil {
+				telemetry.SetSpanError(listSpan, err)
+				listSpan.End()
 				return fmt.Errorf("failed to list projects: %w", err)
 			}
+
+			telemetry.AddSpanAttribute(listSpan, "google.projects.projects_found", len(resp.Projects))
+			telemetry.SetSpanSuccess(listSpan)
+			listSpan.End()
+
+			log.Info("Found projects", "count", len(resp.Projects))
 
 			resources := []api.CreateResource{}
 
 			// Process each project
 			for _, project := range resp.Projects {
 				metadata := map[string]string{
-					"account/id":   project.ProjectId,
-					"account/name": project.Name,
-					"account/number": fmt.Sprintf("%d", project.ProjectNumber),
-					"account/state": project.LifecycleState,
-					"account/parent-id": project.Parent.Id,
+					"account/id":          project.ProjectId,
+					"account/name":        project.Name,
+					"account/number":      fmt.Sprintf("%d", project.ProjectNumber),
+					"account/state":       project.LifecycleState,
+					"account/parent-id":   project.Parent.Id,
 					"account/parent-type": project.Parent.Type,
 
-					"google/project":      project.ProjectId,
-					"google/number":       fmt.Sprintf("%d", project.ProjectNumber),
-					"google/state":        project.LifecycleState,
-					"google/parent-id":    project.Parent.Id,
-					"google/parent-type":  project.Parent.Type,
+					"google/project":     project.ProjectId,
+					"google/number":      fmt.Sprintf("%d", project.ProjectNumber),
+					"google/state":       project.LifecycleState,
+					"google/parent-id":   project.Parent.Id,
+					"google/parent-type": project.Parent.Type,
 				}
 
 				// Add labels as metadata
@@ -68,7 +84,7 @@ func NewSyncProjectsCmd() *cobra.Command {
 
 				resources = append(resources, api.CreateResource{
 					Version:    "ctrlplane.dev/cloud/account/v1",
-					Kind:       "GoogleProject", 
+					Kind:       "GoogleProject",
 					Name:       project.Name,
 					Identifier: project.ProjectId,
 					Config: map[string]any{

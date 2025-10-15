@@ -9,9 +9,12 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/salesforce/common"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/k-capehart/go-salesforce/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func NewSalesforceOpportunitiesCmd() *cobra.Command {
@@ -97,6 +100,20 @@ func NewSalesforceOpportunitiesCmd() *cobra.Command {
 
 // processOpportunities queries and transforms opportunities
 func processOpportunities(ctx context.Context, sf *salesforce.Salesforce, metadataMappings map[string]string, limit int, listAllFields bool, whereClause string) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "salesforce.opportunities.process",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("salesforce.object", "Opportunity"),
+			attribute.Int("salesforce.limit", limit),
+			attribute.Bool("salesforce.list_all_fields", listAllFields),
+		),
+	)
+	defer span.End()
+
+	if whereClause != "" {
+		telemetry.AddSpanAttribute(span, "salesforce.where_clause", whereClause)
+	}
+
 	additionalFields := make([]string, 0, len(metadataMappings))
 	for _, fieldName := range metadataMappings {
 		additionalFields = append(additionalFields, fieldName)
@@ -105,16 +122,22 @@ func processOpportunities(ctx context.Context, sf *salesforce.Salesforce, metada
 	var opportunities []map[string]any
 	err := common.QuerySalesforceObject(ctx, sf, "Opportunity", limit, listAllFields, &opportunities, additionalFields, whereClause)
 	if err != nil {
+		log.Error("Failed to query Salesforce opportunities", "error", err)
+		telemetry.SetSpanError(span, err)
 		return nil, err
 	}
 
 	log.Info("Found Salesforce opportunities", "count", len(opportunities))
+	telemetry.AddSpanAttribute(span, "salesforce.records_found", len(opportunities))
 
 	resources := []api.CreateResource{}
 	for _, opp := range opportunities {
 		resource := transformOpportunityToResource(opp, metadataMappings)
 		resources = append(resources, resource)
 	}
+
+	telemetry.AddSpanAttribute(span, "salesforce.records_processed", len(resources))
+	telemetry.SetSpanSuccess(span)
 
 	return resources, nil
 }

@@ -3,6 +3,10 @@ package networks
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+	"sync"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
@@ -13,11 +17,11 @@ import (
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/azure/common"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"os"
-	"strconv"
-	"sync"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func NewSyncNetworksCmd() *cobra.Command {
@@ -157,20 +161,32 @@ func getDefaultSubscriptionID(ctx context.Context, cred azcore.TokenCredential) 
 func processNetworks(
 	ctx context.Context, cred azcore.TokenCredential, subscriptionID string, tenantID string,
 ) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "azure.networks.process_networks",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("azure.subscription_id", subscriptionID),
+		),
+	)
+	defer span.End()
+
 	var allResources []api.CreateResource
 	var resourceGroups []common.ResourceGroupInfo
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	var err error
 	var syncErrors []error
+	var networksFound int
+	var subnetsFound int
 
 	if resourceGroups, err = common.GetResourceGroupInfo(ctx, cred, subscriptionID); err != nil {
+		telemetry.SetSpanError(span, err)
 		return nil, err
 	}
 
 	// Create virtual network client
 	client, err := armnetwork.NewVirtualNetworksClient(subscriptionID, cred, nil)
 	if err != nil {
+		telemetry.SetSpanError(span, err)
 		return nil, fmt.Errorf("failed to create Virtual Network client: %w", err)
 	}
 
@@ -180,15 +196,32 @@ func processNetworks(
 		go func(resourceGroup string) {
 			defer wg.Done()
 
+			// Create span for list virtual networks call
+			listCtx, listSpan := telemetry.StartSpan(ctx, "azure.networks.list_virtual_networks",
+				trace.WithSpanKind(trace.SpanKindClient),
+				trace.WithAttributes(
+					attribute.String("azure.subscription_id", subscriptionID),
+					attribute.String("azure.resource_group", resourceGroup),
+				),
+			)
+
 			pager := client.NewListPager(resourceGroup, nil)
+			var localNetworksFound int
+			var localSubnetsFound int
+
 			for pager.More() {
-				page, err := pager.NextPage(ctx)
+				page, err := pager.NextPage(listCtx)
 				if err != nil {
+					telemetry.SetSpanError(listSpan, err)
+					listSpan.End()
 					mu.Lock()
 					syncErrors = append(syncErrors, fmt.Errorf("failed to list networks: %w", err))
 					mu.Unlock()
 					return
 				}
+
+				localNetworksFound += len(page.Value)
+
 				for _, network := range page.Value {
 					resources, err := processNetwork(ctx, network, resourceGroup, subscriptionID, tenantID)
 					if err != nil {
@@ -196,22 +229,55 @@ func processNetworks(
 						mu.Lock()
 						syncErrors = append(syncErrors, fmt.Errorf("network %s: %w", *network.Name, err))
 						mu.Unlock()
-						return
+						continue
 					}
+
+					// Count subnets (each network returns 1 network resource + N subnet resources)
+					if len(resources) > 0 {
+						localSubnetsFound += len(resources) - 1
+					}
+
 					mu.Lock()
 					allResources = append(allResources, resources...)
 					mu.Unlock()
 				}
 			}
+
+			telemetry.AddSpanAttribute(listSpan, "azure.networks.networks_found", localNetworksFound)
+			telemetry.AddSpanAttribute(listSpan, "azure.networks.subnets_found", localSubnetsFound)
+			telemetry.SetSpanSuccess(listSpan)
+			listSpan.End()
+
+			mu.Lock()
+			networksFound += localNetworksFound
+			subnetsFound += localSubnetsFound
+			mu.Unlock()
 		}(rgName)
 	}
 
 	wg.Wait()
 
 	if len(syncErrors) > 0 {
-		log.Warn("Some clusters failed to sync", "errors", len(syncErrors))
-		// Continue with the clusters that succeeded
+		log.Warn("Some networks failed to sync", "errors", len(syncErrors))
+		// Continue with the networks that succeeded
 	}
+
+	// Calculate processed counts (networks + subnets)
+	var networksProcessed int
+	var subnetsProcessed int
+	for _, resource := range allResources {
+		if resource.Kind == "AzureNetwork" {
+			networksProcessed++
+		} else if resource.Kind == "AzureSubnet" {
+			subnetsProcessed++
+		}
+	}
+
+	telemetry.AddSpanAttribute(span, "azure.networks.networks_found", networksFound)
+	telemetry.AddSpanAttribute(span, "azure.networks.networks_processed", networksProcessed)
+	telemetry.AddSpanAttribute(span, "azure.networks.subnets_found", subnetsFound)
+	telemetry.AddSpanAttribute(span, "azure.networks.subnets_processed", subnetsProcessed)
+	telemetry.SetSpanSuccess(span)
 
 	log.Info("Found network resources", "count", len(allResources))
 	return allResources, nil

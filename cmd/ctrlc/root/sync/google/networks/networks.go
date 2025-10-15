@@ -10,8 +10,11 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/compute/v1"
 )
 
@@ -108,11 +111,35 @@ func initComputeClient(ctx context.Context) (*compute.Service, error) {
 }
 
 // processNetworks lists and processes all VPC networks
-func processNetworks(_ context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
+func processNetworks(ctx context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "google.compute.process_networks",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+	defer span.End()
+
+	// Create span for ListNetworks call
+	_, listSpan := telemetry.StartSpan(ctx, "google.compute.list_networks",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+
 	networks, err := computeClient.Networks.List(project).Do()
+
 	if err != nil {
+		telemetry.SetSpanError(listSpan, err)
+		listSpan.End()
+		telemetry.SetSpanError(span, err)
 		return nil, fmt.Errorf("failed to list networks: %w", err)
 	}
+
+	telemetry.AddSpanAttribute(listSpan, "google.compute.networks_found", len(networks.Items))
+	telemetry.SetSpanSuccess(listSpan)
+	listSpan.End()
 
 	log.Info("Found networks", "count", len(networks.Items))
 
@@ -136,6 +163,9 @@ func processNetworks(_ context.Context, computeClient *compute.Service, project 
 		}
 		resources = append(resources, resource)
 	}
+
+	telemetry.AddSpanAttribute(span, "google.compute.total_networks", len(resources))
+	telemetry.SetSpanSuccess(span)
 
 	return resources, nil
 }
@@ -237,12 +267,35 @@ func initNetworkMetadata(network *compute.Network, project string, subnetCount i
 }
 
 // processSubnets lists and processes all subnetworks
-func processSubnets(_ context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
+func processSubnets(ctx context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "google.compute.process_subnets",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+	defer span.End()
+
+	// Create span for AggregatedList call
+	_, listSpan := telemetry.StartSpan(ctx, "google.compute.list_subnetworks",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+
 	// Use AggregatedList to get subnets from all regions
 	resp, err := computeClient.Subnetworks.AggregatedList(project).Do()
+
 	if err != nil {
+		telemetry.SetSpanError(listSpan, err)
+		listSpan.End()
+		telemetry.SetSpanError(span, err)
 		return nil, fmt.Errorf("failed to list subnetworks: %w", err)
 	}
+
+	telemetry.SetSpanSuccess(listSpan)
+	listSpan.End()
 
 	resources := []api.CreateResource{}
 	subnetCount := 0
@@ -264,6 +317,9 @@ func processSubnets(_ context.Context, computeClient *compute.Service, project s
 			subnetCount++
 		}
 	}
+
+	telemetry.AddSpanAttribute(span, "google.compute.total_subnets", subnetCount)
+	telemetry.SetSpanSuccess(span)
 
 	log.Info("Found subnets", "count", subnetCount)
 	return resources, nil
@@ -390,11 +446,35 @@ func initSubnetMetadata(subnet *compute.Subnetwork, project string, region strin
 }
 
 // processFirewalls lists and processes all firewall rules
-func processFirewalls(_ context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
+func processFirewalls(ctx context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "google.compute.process_firewalls",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+	defer span.End()
+
+	// Create span for ListFirewalls call
+	_, listSpan := telemetry.StartSpan(ctx, "google.compute.list_firewalls",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+
 	firewalls, err := computeClient.Firewalls.List(project).Do()
+
 	if err != nil {
+		telemetry.SetSpanError(listSpan, err)
+		listSpan.End()
+		telemetry.SetSpanError(span, err)
 		return nil, fmt.Errorf("failed to list firewalls: %w", err)
 	}
+
+	telemetry.AddSpanAttribute(listSpan, "google.compute.firewalls_found", len(firewalls.Items))
+	telemetry.SetSpanSuccess(listSpan)
+	listSpan.End()
 
 	log.Info("Found firewall rules", "count", len(firewalls.Items))
 
@@ -407,6 +487,9 @@ func processFirewalls(_ context.Context, computeClient *compute.Service, project
 		}
 		resources = append(resources, resource)
 	}
+
+	telemetry.AddSpanAttribute(span, "google.compute.total_firewalls", len(resources))
+	telemetry.SetSpanSuccess(span)
 
 	return resources, nil
 }
@@ -558,12 +641,35 @@ func initFirewallMetadata(firewall *compute.Firewall, project string) map[string
 }
 
 // processForwardingRules lists and processes all forwarding rules (load balancers)
-func processForwardingRules(_ context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
+func processForwardingRules(ctx context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "google.compute.process_forwarding_rules",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+	defer span.End()
+
+	// Create span for AggregatedList call
+	_, listSpan := telemetry.StartSpan(ctx, "google.compute.list_forwarding_rules",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+
 	// Use AggregatedList to get forwarding rules from all regions
 	resp, err := computeClient.ForwardingRules.AggregatedList(project).Do()
+
 	if err != nil {
+		telemetry.SetSpanError(listSpan, err)
+		listSpan.End()
+		telemetry.SetSpanError(span, err)
 		return nil, fmt.Errorf("failed to list forwarding rules: %w", err)
 	}
+
+	telemetry.SetSpanSuccess(listSpan)
+	listSpan.End()
 
 	resources := []api.CreateResource{}
 	ruleCount := 0
@@ -585,6 +691,9 @@ func processForwardingRules(_ context.Context, computeClient *compute.Service, p
 			ruleCount++
 		}
 	}
+
+	telemetry.AddSpanAttribute(span, "google.compute.total_forwarding_rules", ruleCount)
+	telemetry.SetSpanSuccess(span)
 
 	log.Info("Found forwarding rules", "count", ruleCount)
 	return resources, nil

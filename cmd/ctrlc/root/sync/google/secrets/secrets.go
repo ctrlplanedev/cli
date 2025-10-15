@@ -10,8 +10,11 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/secretmanager/v1"
 )
 
@@ -86,6 +89,14 @@ func initSecretManagerClient(ctx context.Context) (*secretmanager.Service, error
 
 // processSecrets lists and processes all secrets
 func processSecrets(ctx context.Context, secretClient *secretmanager.Service, project string) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "google.secretmanager.process_secrets",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("google.project_id", project),
+		),
+	)
+	defer span.End()
+
 	// Build the parent name for listing secrets
 	parent := fmt.Sprintf("projects/%s", project)
 
@@ -94,6 +105,14 @@ func processSecrets(ctx context.Context, secretClient *secretmanager.Service, pr
 	pageToken := ""
 
 	for {
+		// Create span for ListSecrets call
+		_, listSpan := telemetry.StartSpan(ctx, "google.secretmanager.list_secrets",
+			trace.WithSpanKind(trace.SpanKindClient),
+			trace.WithAttributes(
+				attribute.String("google.project_id", project),
+			),
+		)
+
 		// List secrets with pagination
 		call := secretClient.Projects.Secrets.List(parent)
 		if pageToken != "" {
@@ -103,9 +122,17 @@ func processSecrets(ctx context.Context, secretClient *secretmanager.Service, pr
 		log.Info("Listing secrets", "parent", parent, "pageToken", pageToken, "secretCount", secretCount)
 
 		response, err := call.Do()
+
 		if err != nil {
+			telemetry.SetSpanError(listSpan, err)
+			listSpan.End()
+			telemetry.SetSpanError(span, err)
 			return nil, fmt.Errorf("failed to list secrets: %w", err)
 		}
+
+		telemetry.AddSpanAttribute(listSpan, "google.secretmanager.secrets_in_page", len(response.Secrets))
+		telemetry.SetSpanSuccess(listSpan)
+		listSpan.End()
 
 		// Process secrets from current page
 		for _, secret := range response.Secrets {
@@ -124,6 +151,9 @@ func processSecrets(ctx context.Context, secretClient *secretmanager.Service, pr
 		}
 		pageToken = response.NextPageToken
 	}
+
+	telemetry.AddSpanAttribute(span, "google.secretmanager.total_secrets", secretCount)
+	telemetry.SetSpanSuccess(span)
 
 	log.Info("Found secrets", "count", secretCount)
 	return resources, nil

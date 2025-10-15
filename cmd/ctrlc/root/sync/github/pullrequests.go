@@ -12,9 +12,12 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/google/go-github/v57/github"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/oauth2"
 )
 
@@ -288,6 +291,16 @@ func processPullRequests(ctx context.Context, client *github.Client, owner, repo
 
 // fetchPRs fetches pull requests with the given state from GitHub
 func fetchPRs(ctx context.Context, client *github.Client, owner, repo, state string) ([]*github.PullRequest, error) {
+	ctx, span := telemetry.StartSpan(ctx, "github.fetch_pull_requests",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("github.owner", owner),
+			attribute.String("github.repo", repo),
+			attribute.String("github.state", state),
+		),
+	)
+	defer span.End()
+
 	log.Debug("Fetching pull requests", "owner", owner, "repo", repo, "state", state)
 	opts := &github.PullRequestListOptions{
 		State: state,
@@ -298,14 +311,38 @@ func fetchPRs(ctx context.Context, client *github.Client, owner, repo, state str
 
 	var prs []*github.PullRequest
 	page := 1
+	totalApiCalls := 0
+
 	for {
 		log.Debug("Fetching page of pull requests", "page", page, "state", state)
-		batch, resp, err := client.PullRequests.List(ctx, owner, repo, opts)
+
+		// Create a child span for each API call
+		pageCtx, pageSpan := telemetry.StartSpan(ctx, "github.list_pull_requests_page",
+			trace.WithSpanKind(trace.SpanKindClient),
+			trace.WithAttributes(
+				attribute.String("github.owner", owner),
+				attribute.String("github.repo", repo),
+				attribute.String("github.state", state),
+				attribute.Int("github.page", page),
+			),
+		)
+
+		batch, resp, err := client.PullRequests.List(pageCtx, owner, repo, opts)
+		totalApiCalls++
+
 		if err != nil {
 			log.Error("Failed to list pull requests", "state", state, "page", page, "error", err)
+			telemetry.SetSpanError(pageSpan, err)
+			pageSpan.End()
+			telemetry.SetSpanError(span, err)
 			return nil, fmt.Errorf("failed to list %s pull requests: %w", state, err)
 		}
+
 		log.Debug("Fetched pull requests", "state", state, "page", page, "count", len(batch))
+		telemetry.AddSpanAttribute(pageSpan, "github.prs_fetched", len(batch))
+		telemetry.SetSpanSuccess(pageSpan)
+		pageSpan.End()
+
 		prs = append(prs, batch...)
 		if resp.NextPage == 0 {
 			log.Debug("No more pages to fetch", "state", state)
@@ -315,29 +352,63 @@ func fetchPRs(ctx context.Context, client *github.Client, owner, repo, state str
 		page = resp.NextPage
 	}
 
+	telemetry.AddSpanAttribute(span, "github.total_prs", len(prs))
+	telemetry.AddSpanAttribute(span, "github.total_api_calls", totalApiCalls)
+	telemetry.SetSpanSuccess(span)
+
 	log.Debug("Completed fetching pull requests", "state", state, "total", len(prs))
 	return prs, nil
 }
 
 // fetchAllCommits fetches all commits for a pull request with pagination support
 func fetchAllCommits(ctx context.Context, client *github.Client, owner, repo string, prNumber int) ([]*github.RepositoryCommit, error) {
+	ctx, span := telemetry.StartSpan(ctx, "github.fetch_pr_commits",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("github.owner", owner),
+			attribute.String("github.repo", repo),
+			attribute.Int("github.pr_number", prNumber),
+		),
+	)
+	defer span.End()
+
 	var allCommits []*github.RepositoryCommit
 	page := 1
+	totalApiCalls := 0
 
 	for {
 		log.Debug("Fetching PR commits", "pr", prNumber, "page", page)
 
-		commits, resp, err := client.PullRequests.ListCommits(ctx, owner, repo, prNumber, &github.ListOptions{
+		// Create child span for each page request
+		pageCtx, pageSpan := telemetry.StartSpan(ctx, "github.list_pr_commits_page",
+			trace.WithSpanKind(trace.SpanKindClient),
+			trace.WithAttributes(
+				attribute.String("github.owner", owner),
+				attribute.String("github.repo", repo),
+				attribute.Int("github.pr_number", prNumber),
+				attribute.Int("github.page", page),
+			),
+		)
+
+		commits, resp, err := client.PullRequests.ListCommits(pageCtx, owner, repo, prNumber, &github.ListOptions{
 			Page:    page,
 			PerPage: 100,
 		})
+		totalApiCalls++
 
 		if err != nil {
 			log.Error("Failed to list commits", "pr", prNumber, "page", page, "error", err)
+			telemetry.SetSpanError(pageSpan, err)
+			pageSpan.End()
+			telemetry.SetSpanError(span, err)
 			return nil, fmt.Errorf("failed to list commits for PR #%d (page %d): %w", prNumber, page, err)
 		}
 
 		log.Debug("Fetched commits", "pr", prNumber, "page", page, "count", len(commits))
+		telemetry.AddSpanAttribute(pageSpan, "github.commits_fetched", len(commits))
+		telemetry.SetSpanSuccess(pageSpan)
+		pageSpan.End()
+
 		allCommits = append(allCommits, commits...)
 
 		if resp.NextPage == 0 {
@@ -347,6 +418,10 @@ func fetchAllCommits(ctx context.Context, client *github.Client, owner, repo str
 
 		page = resp.NextPage
 	}
+
+	telemetry.AddSpanAttribute(span, "github.total_commits", len(allCommits))
+	telemetry.AddSpanAttribute(span, "github.total_api_calls", totalApiCalls)
+	telemetry.SetSpanSuccess(span)
 
 	log.Debug("Retrieved all commits for PR", "pr", prNumber, "count", len(allCommits))
 	return allCommits, nil

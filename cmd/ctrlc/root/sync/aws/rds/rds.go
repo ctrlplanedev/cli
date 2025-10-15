@@ -15,8 +15,11 @@ import (
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/aws/common"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/internal/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // NewSyncRDSCmd creates a new cobra command for syncing AWS RDS instances
@@ -152,16 +155,38 @@ func initRDSClient(ctx context.Context, region string) (*rds.Client, error) {
 }
 
 func processInstances(ctx context.Context, rdsClient *rds.Client, region string) ([]api.CreateResource, error) {
+	ctx, span := telemetry.StartSpan(ctx, "aws.rds.process_instances",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("aws.region", region),
+		),
+	)
+	defer span.End()
+
 	var resources []api.CreateResource
 	var marker *string
 
 	for {
-		resp, err := rdsClient.DescribeDBInstances(ctx, &rds.DescribeDBInstancesInput{
+		describeCtx, describeSpan := telemetry.StartSpan(ctx, "aws.rds.describe_db_instances",
+			trace.WithSpanKind(trace.SpanKindClient),
+			trace.WithAttributes(
+				attribute.String("aws.region", region),
+			),
+		)
+
+		resp, err := rdsClient.DescribeDBInstances(describeCtx, &rds.DescribeDBInstancesInput{
 			Marker: marker,
 		})
 		if err != nil {
+			telemetry.SetSpanError(describeSpan, err)
+			describeSpan.End()
+			telemetry.SetSpanError(span, err)
 			return nil, fmt.Errorf("failed to list RDS instances: %w", err)
 		}
+
+		telemetry.AddSpanAttribute(describeSpan, "aws.rds.instances_found", len(resp.DBInstances))
+		telemetry.SetSpanSuccess(describeSpan)
+		describeSpan.End()
 
 		for _, instance := range resp.DBInstances {
 			resource, err := processInstance(ctx, &instance, region, rdsClient)
@@ -178,6 +203,8 @@ func processInstances(ctx context.Context, rdsClient *rds.Client, region string)
 		marker = resp.Marker
 	}
 
+	telemetry.AddSpanAttribute(span, "aws.rds.instances_processed", len(resources))
+	telemetry.SetSpanSuccess(span)
 	log.Info("Found RDS instances", "region", region, "count", len(resources))
 	return resources, nil
 }
@@ -477,6 +504,14 @@ var relationshipRules = []api.CreateResourceRelationshipRule{
 
 // fetchParameterGroupDetails retrieves parameters from a parameter group and adds them to metadata
 func fetchParameterGroupDetails(ctx context.Context, rdsClient *rds.Client, parameterGroupName string, metadata map[string]string) {
+	ctx, span := telemetry.StartSpan(ctx, "aws.rds.fetch_parameter_group",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("aws.rds.parameter_group", parameterGroupName),
+		),
+	)
+	defer span.End()
+
 	metadata["database/parameter-group"] = parameterGroupName
 
 	// Get the parameters for this parameter group
@@ -490,6 +525,7 @@ func fetchParameterGroupDetails(ctx context.Context, rdsClient *rds.Client, para
 		})
 		if err != nil {
 			log.Error("Failed to get parameter group details", "parameter_group", parameterGroupName, "error", err)
+			telemetry.SetSpanError(span, err)
 			return
 		}
 
@@ -511,6 +547,9 @@ func fetchParameterGroupDetails(ctx context.Context, rdsClient *rds.Client, para
 	if paramCount > 0 {
 		metadata["database/parameter-count"] = strconv.Itoa(paramCount)
 	}
+
+	telemetry.AddSpanAttribute(span, "aws.rds.parameters_fetched", paramCount)
+	telemetry.SetSpanSuccess(span)
 }
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
