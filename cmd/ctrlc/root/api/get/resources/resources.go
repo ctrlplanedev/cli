@@ -14,11 +14,11 @@ func NewGetResourcesCmd() *cobra.Command {
 	var workspace string
 
 	cmd := &cobra.Command{
-		Use:   "resource [flags]",
-		Short: "Get a resource",
-		Long:  `Get a resource by specifying either an ID or both a workspace and an identifier.`,
+		Use:   "resources [flags]",
+		Short: "Get resources",
+		Long:  `Get resources by specifying a workspace.`,
 		Example: heredoc.Doc(`
-            # Get a resource by workspace and identifier
+            # Get resources by workspace
             $ ctrlc get resource --workspace 00000000-0000-0000-0000-000000000000
         `),
 		RunE: func(cmd *cobra.Command, args []string) error {
