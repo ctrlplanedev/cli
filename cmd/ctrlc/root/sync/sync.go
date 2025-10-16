@@ -7,6 +7,7 @@ import (
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/clickhouse"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/github"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/google"
+	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/helm"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/kubernetes"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/salesforce"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/tailscale"
@@ -33,13 +34,14 @@ func NewSyncCmd() *cobra.Command {
 	cmd.AddCommand(cliutil.AddIntervalSupport(terraform.NewSyncTerraformCmd(), ""))
 	cmd.AddCommand(cliutil.AddIntervalSupport(tailscale.NewSyncTailscaleCmd(), ""))
 	cmd.AddCommand(cliutil.AddIntervalSupport(clickhouse.NewSyncClickhouseCmd(), ""))
-	cmd.AddCommand(aws.NewAWSCmd())
-	cmd.AddCommand(google.NewGoogleCloudCmd())
-	cmd.AddCommand(azure.NewAzureCmd())
-	cmd.AddCommand(kubernetes.NewSyncKubernetesCmd())
-	cmd.AddCommand(kubernetes.NewSyncVclusterCmd())
-	cmd.AddCommand(github.NewSyncGitHubCmd())
-	cmd.AddCommand(salesforce.NewSalesforceCmd())
+	cmd.AddCommand(cliutil.AddIntervalSupport(aws.NewAWSCmd(), ""))
+	cmd.AddCommand(cliutil.AddIntervalSupport(google.NewGoogleCloudCmd(), ""))
+	cmd.AddCommand(cliutil.AddIntervalSupport(azure.NewAzureCmd(), ""))
+	cmd.AddCommand(cliutil.AddIntervalSupport(kubernetes.NewSyncKubernetesCmd(), ""))
+	cmd.AddCommand(cliutil.AddIntervalSupport(kubernetes.NewSyncVclusterCmd(), ""))
+	cmd.AddCommand(cliutil.AddIntervalSupport(helm.NewSyncHelmCmd(), ""))
+	cmd.AddCommand(cliutil.AddIntervalSupport(github.NewSyncGitHubCmd(), ""))
+	cmd.AddCommand(cliutil.AddIntervalSupport(salesforce.NewSalesforceCmd(), ""))
 
 	return cmd
 }
