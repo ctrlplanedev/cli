@@ -1,7 +1,6 @@
 package run
 
 import (
-	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/run/exec"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +13,7 @@ func NewRunCmd() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(exec.NewRunExecCmd())
+	// cmd.AddCommand(exec.NewRunExecCmd())
 
 	return cmd
 }

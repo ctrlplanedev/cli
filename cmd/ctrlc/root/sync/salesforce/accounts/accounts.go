@@ -96,7 +96,7 @@ func NewSalesforceAccountsCmd() *cobra.Command {
 	return cmd
 }
 
-func processAccounts(ctx context.Context, sf *salesforce.Salesforce, metadataMappings map[string]string, limit int, listAllFields bool, whereClause string) ([]api.CreateResource, error) {
+func processAccounts(ctx context.Context, sf *salesforce.Salesforce, metadataMappings map[string]string, limit int, listAllFields bool, whereClause string) ([]api.ResourceProviderResource, error) {
 	additionalFields := make([]string, 0, len(metadataMappings))
 	for _, fieldName := range metadataMappings {
 		additionalFields = append(additionalFields, fieldName)
@@ -110,7 +110,7 @@ func processAccounts(ctx context.Context, sf *salesforce.Salesforce, metadataMap
 
 	log.Info("Found Salesforce accounts", "count", len(accounts))
 
-	resources := []api.CreateResource{}
+	resources := []api.ResourceProviderResource{}
 	for _, account := range accounts {
 		resource := transformAccountToResource(account, metadataMappings)
 		resources = append(resources, resource)
@@ -119,7 +119,7 @@ func processAccounts(ctx context.Context, sf *salesforce.Salesforce, metadataMap
 	return resources, nil
 }
 
-func transformAccountToResource(account map[string]any, metadataMappings map[string]string) api.CreateResource {
+func transformAccountToResource(account map[string]any, metadataMappings map[string]string) api.ResourceProviderResource {
 	metadata := map[string]string{}
 	common.AddToMetadata(metadata, "account/id", account["Id"])
 	common.AddToMetadata(metadata, "account/owner-id", account["OwnerId"])
@@ -182,7 +182,7 @@ func transformAccountToResource(account map[string]any, metadataMappings map[str
 		},
 	}
 
-	return api.CreateResource{
+	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/crm/account/v1",
 		Kind:       "SalesforceAccount",
 		Name:       fmt.Sprintf("%v", account["Name"]),

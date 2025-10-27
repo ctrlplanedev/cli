@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/api/sqladmin/v1"
@@ -234,7 +235,7 @@ func initSQLAdminClient(ctx context.Context) (*sqladmin.Service, error) {
 }
 
 // processInstances lists and processes all Cloud SQL instances
-func processInstances(_ context.Context, sqlService *sqladmin.Service, project string) ([]api.CreateResource, error) {
+func processInstances(_ context.Context, sqlService *sqladmin.Service, project string) ([]api.ResourceProviderResource, error) {
 	instances, err := sqlService.Instances.List(project).Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list instances: %w", err)
@@ -242,7 +243,7 @@ func processInstances(_ context.Context, sqlService *sqladmin.Service, project s
 
 	log.Info("Found instances", "count", len(instances.Items))
 
-	resources := []api.CreateResource{}
+	resources := []api.ResourceProviderResource{}
 	for _, instance := range instances.Items {
 		resource := processInstance(instance, project)
 		resources = append(resources, resource)
@@ -252,7 +253,7 @@ func processInstances(_ context.Context, sqlService *sqladmin.Service, project s
 }
 
 // processInstance handles processing of a single Cloud SQL instance
-func processInstance(instance *sqladmin.DatabaseInstance, project string) api.CreateResource {
+func processInstance(instance *sqladmin.DatabaseInstance, project string) api.ResourceProviderResource {
 	// Extract region from zone
 	region := strings.Join(strings.Split(instance.GceZone, "-")[:2], "-")
 
@@ -265,7 +266,7 @@ func processInstance(instance *sqladmin.DatabaseInstance, project string) api.Cr
 
 	metadata := buildInstanceMetadata(instance, project, region, host, port, consoleUrl)
 
-	return api.CreateResource{
+	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/database/v1",
 		Kind:       "GoogleCloudSQL",
 		Name:       instance.Name,
@@ -371,26 +372,26 @@ func buildInstanceMetadata(instance *sqladmin.DatabaseInstance, project, region,
 	return metadata
 }
 
-var relationshipRules = []api.CreateResourceRelationshipRule{
-	{
-		Reference:      "network",
-		Name:           "Google Cloud SQL Network",
-		DependencyType: api.ProvisionedIn,
-
-		SourceVersion: "ctrlplane.dev/database/v1",
-		SourceKind:    "GoogleCloudSQL",
-		TargetVersion: "ctrlplane.dev/network/v1",
-		TargetKind:    "GoogleNetwork",
-
-		MetadataKeysMatches: &[]api.MetadataKeyMatchConstraint{
-			{SourceKey: "google/project", TargetKey: "google/project"},
-			{SourceKey: "network/id", TargetKey: "network/id"},
-		},
-	},
-}
+// var relationshipRules = []api.ResourceProviderResourceRelationshipRule{
+// 	{
+// 		Reference:      "network",
+// 		Name:           "Google Cloud SQL Network",
+// 		DependencyType: api.ProvisionedIn,
+//
+// 		SourceVersion: "ctrlplane.dev/database/v1",
+// 		SourceKind:    "GoogleCloudSQL",
+// 		TargetVersion: "ctrlplane.dev/network/v1",
+// 		TargetKind:    "GoogleNetwork",
+//
+// 		MetadataKeysMatches: &[]api.MetadataKeyMatchConstraint{
+// 			{SourceKey: "google/project", TargetKey: "google/project"},
+// 			{SourceKey: "network/id", TargetKey: "network/id"},
+// 		},
+// 	},
+// }
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, project, providerName *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, project, providerName *string) error {
 	if *providerName == "" {
 		*providerName = fmt.Sprintf("google-cloudsql-%s", *project)
 	}
@@ -405,15 +406,15 @@ func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, proj
 	}
 
 	log.Info("Upserting resource provider", "name", *providerName)
-	rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, *providerName)
+	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *providerName)
 	if err != nil {
 		return fmt.Errorf("failed to create resource provider: %w", err)
 	}
 
-	err = rp.AddResourceRelationshipRule(ctx, relationshipRules)
-	if err != nil {
-		log.Error("Failed to add resource relationship rule", "name", *providerName, "error", err)
-	}
+	// err = rp.AddResourceRelationshipRule(ctx, relationshipRules)
+	// if err != nil {
+	// 	log.Error("Failed to add resource relationship rule", "name", *providerName, "error", err)
+	// }
 
 	upsertResp, err := rp.UpsertResource(ctx, resources)
 	if err != nil {

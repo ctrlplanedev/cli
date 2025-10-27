@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	tsclient "github.com/tailscale/tailscale-client-go/v2"
@@ -94,7 +95,7 @@ func NewSyncTailscaleCmd() *cobra.Command {
 				return fmt.Errorf("failed to list devices: %w", err)
 			}
 
-			resources := []api.CreateResource{}
+			resources := []api.ResourceProviderResource{}
 			for _, device := range devices {
 				metadata := map[string]string{}
 				metadata["tailscale/id"] = device.ID
@@ -131,7 +132,7 @@ func NewSyncTailscaleCmd() *cobra.Command {
 				}
 
 				name := strings.Split(device.Name, ".")[0]
-				resources = append(resources, api.CreateResource{
+				resources = append(resources, api.ResourceProviderResource{
 					Version:    "tailscale/v1",
 					Kind:       "Device",
 					Name:       name,
@@ -144,7 +145,7 @@ func NewSyncTailscaleCmd() *cobra.Command {
 			log.Info("Upserting resources", "count", len(resources))
 
 			providerName := fmt.Sprintf("tailscale-%s", tailnet)
-			rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, providerName)
+			rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, providerName)
 			if err != nil {
 				return fmt.Errorf("failed to create resource provider: %w", err)
 			}

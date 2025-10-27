@@ -15,6 +15,7 @@ import (
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/aws/common"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -61,7 +62,7 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 		log.Info("Syncing RDS instances", "regions", regionsToSync)
 
 		// Process each region
-		var allResources []api.CreateResource
+		var allResources []api.ResourceProviderResource
 		var mu sync.Mutex
 		var wg sync.WaitGroup
 		var syncErrors []error
@@ -151,8 +152,8 @@ func initRDSClient(ctx context.Context, region string) (*rds.Client, error) {
 	return rds.NewFromConfig(cfg), nil
 }
 
-func processInstances(ctx context.Context, rdsClient *rds.Client, region string) ([]api.CreateResource, error) {
-	var resources []api.CreateResource
+func processInstances(ctx context.Context, rdsClient *rds.Client, region string) ([]api.ResourceProviderResource, error) {
+	var resources []api.ResourceProviderResource
 	var marker *string
 
 	for {
@@ -182,7 +183,7 @@ func processInstances(ctx context.Context, rdsClient *rds.Client, region string)
 	return resources, nil
 }
 
-func processInstance(ctx context.Context, instance *types.DBInstance, region string, rdsClient *rds.Client) (api.CreateResource, error) {
+func processInstance(ctx context.Context, instance *types.DBInstance, region string, rdsClient *rds.Client) (api.ResourceProviderResource, error) {
 	// Get default port based on engine
 	port := int32(5432) // Default to PostgreSQL port
 	if instance.Endpoint != nil && instance.Endpoint.Port != nil && *instance.Endpoint.Port != 0 {
@@ -218,7 +219,7 @@ func processInstance(ctx context.Context, instance *types.DBInstance, region str
 		}
 	}
 
-	return api.CreateResource{
+	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/database/v1",
 		Kind:       "AmazonRelationalDatabaseService",
 		Name:       *instance.DBInstanceIdentifier,
@@ -456,24 +457,24 @@ func buildInstanceMetadata(instance *types.DBInstance, region, host string, port
 	return metadata
 }
 
-var relationshipRules = []api.CreateResourceRelationshipRule{
-	{
-		Reference:      "network",
-		Name:           "AWS RDS Network",
-		DependencyType: api.ProvisionedIn,
-
-		SourceVersion: "ctrlplane.dev/database/v1",
-		SourceKind:    "AmazonRelationalDatabaseService",
-
-		TargetVersion: "ctrlplane.dev/network/v1",
-		TargetKind:    "AmazonNetwork",
-
-		MetadataKeysMatches: &[]api.MetadataKeyMatchConstraint{
-			{SourceKey: "aws/region", TargetKey: "aws/region"},
-			{SourceKey: "network/name", TargetKey: "network/name"},
-		},
-	},
-}
+// var relationshipRules = []api.ResourceProviderResourceRelationshipRule{
+// 	{
+// 		Reference:      "network",
+// 		Name:           "AWS RDS Network",
+// 		DependencyType: api.ProvisionedIn,
+//
+// 		SourceVersion: "ctrlplane.dev/database/v1",
+// 		SourceKind:    "AmazonRelationalDatabaseService",
+//
+// 		TargetVersion: "ctrlplane.dev/network/v1",
+// 		TargetKind:    "AmazonNetwork",
+//
+// 		MetadataKeysMatches: &[]api.MetadataKeyMatchConstraint{
+// 			{SourceKey: "aws/region", TargetKey: "aws/region"},
+// 			{SourceKey: "network/name", TargetKey: "network/name"},
+// 		},
+// 	},
+// }
 
 // fetchParameterGroupDetails retrieves parameters from a parameter group and adds them to metadata
 func fetchParameterGroupDetails(ctx context.Context, rdsClient *rds.Client, parameterGroupName string, metadata map[string]string) {
@@ -514,7 +515,7 @@ func fetchParameterGroupDetails(ctx context.Context, rdsClient *rds.Client, para
 }
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, region, name *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, region, name *string) error {
 	if *name == "" {
 		*name = fmt.Sprintf("aws-rds-%s", *region)
 	}
@@ -528,15 +529,15 @@ func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, regi
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, *name)
+	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *name)
 	if err != nil {
 		return fmt.Errorf("failed to create resource provider: %w", err)
 	}
 
-	err = rp.AddResourceRelationshipRule(ctx, relationshipRules)
-	if err != nil {
-		log.Error("Failed to add resource relationship rule", "name", *name, "error", err)
-	}
+	// err = rp.AddResourceRelationshipRule(ctx, relationshipRules)
+	// if err != nil {
+	// 	log.Error("Failed to add resource relationship rule", "name", *name, "error", err)
+	// }
 
 	upsertResp, err := rp.UpsertResource(ctx, resources)
 	if err != nil {

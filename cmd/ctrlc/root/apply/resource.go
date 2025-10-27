@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 )
 
 func processResourceProvider(ctx context.Context, client *api.ClientWithResponses, workspaceID string, provider ResourceProvider) {
@@ -14,13 +15,13 @@ func processResourceProvider(ctx context.Context, client *api.ClientWithResponse
 		return
 	}
 
-	rp, err := api.NewResourceProvider(client, workspaceID, provider.Name)
+	rp, err := resourceprovider.New(client, workspaceID, provider.Name)
 	if err != nil {
 		log.Error("Failed to create resource provider", "name", provider.Name, "error", err)
 		return
 	}
 
-	resources := make([]api.CreateResource, 0)
+	resources := make([]api.ResourceProviderResource, 0)
 	for _, resource := range provider.Resources {
 
 		vars := make([]api.Variable, 0)
@@ -76,7 +77,7 @@ func processResourceProvider(ctx context.Context, client *api.ClientWithResponse
 			}
 		}
 
-		resources = append(resources, api.CreateResource{
+		resources = append(resources, api.ResourceProviderResource{
 			Identifier: resource.Identifier,
 			Name:       resource.Name,
 			Version:    resource.Version,

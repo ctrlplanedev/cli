@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 
 	"github.com/loft-sh/vcluster/pkg/cli/find"
 	"github.com/loft-sh/vcluster/pkg/platform/kube"
@@ -68,7 +69,7 @@ func getNormalizedVclusterStatus(status find.Status) string {
 	}
 }
 
-func generateVclusterMetadata(vcluster find.VCluster, clusterMetadata api.MetadataMap) (map[string]string, error) {
+func generateVclusterMetadata(vcluster find.VCluster, clusterMetadata map[string]string) (map[string]string, error) {
 	metadata := make(map[string]string)
 	parsedVersion, err := semver.NewVersion(vcluster.Version)
 	if err != nil {
@@ -114,7 +115,7 @@ func generateVclusterConfig(vcluster find.VCluster, clusterConfig map[string]any
 
 type ClusterResource struct {
 	Config     map[string]interface{}
-	Metadata   api.MetadataMap
+	Metadata   map[string]string
 	Name       string
 	Identifier string
 	Kind       string
@@ -125,18 +126,18 @@ func generateVclusterKind(clusterResource ClusterResource) string {
 	return fmt.Sprintf("%s/%s", clusterResource.Kind, kinds.KindVCluster)
 }
 
-func getCreateResourceFromVcluster(vcluster find.VCluster, clusterResource ClusterResource) (api.CreateResource, error) {
+func getCreateResourceFromVcluster(vcluster find.VCluster, clusterResource ClusterResource) (api.ResourceProviderResource, error) {
 	metadata, err := generateVclusterMetadata(vcluster, clusterResource.Metadata)
 	if err != nil {
-		return api.CreateResource{}, fmt.Errorf("failed to generate vcluster metadata: %w", err)
+		return api.ResourceProviderResource{}, fmt.Errorf("failed to generate vcluster metadata: %w", err)
 	}
 
 	clonedParentConfig, err := deepClone(clusterResource.Config)
 	if err != nil {
-		return api.CreateResource{}, fmt.Errorf("failed to clone parent config: %w", err)
+		return api.ResourceProviderResource{}, fmt.Errorf("failed to clone parent config: %w", err)
 	}
 
-	resource := api.CreateResource{
+	resource := api.ResourceProviderResource{
 		Name:       fmt.Sprintf("%s/%s/%s", clusterResource.Name, vcluster.Namespace, vcluster.Name),
 		Identifier: fmt.Sprintf("%s/%s/vcluster/%s", clusterResource.Identifier, vcluster.Namespace, vcluster.Name),
 		Kind:       generateVclusterKind(clusterResource),
@@ -148,35 +149,35 @@ func getCreateResourceFromVcluster(vcluster find.VCluster, clusterResource Clust
 	return resource, nil
 }
 
-func createResourceRelationshipRule(ctx context.Context, resourceProvider *api.ResourceProvider, clusterResource ClusterResource) error {
-	var metadataKey string
-	switch clusterResource.Kind {
-	case kinds.KindGoogleKubernetesEngine:
-		metadataKey = kinds.GoogleMetadataSelfLink
-	case kinds.KindAmazonElasticKubernetesService:
-		metadataKey = kinds.AWSMetadataARN
-	case kinds.KindAzureKubernetesService:
-		metadataKey = kinds.AzureMetadataId
-	default:
-		return fmt.Errorf("unsupported cluster kind: %s", clusterResource.Kind)
-	}
-
-	metadataKeysMatches := []api.MetadataKeyMatchConstraint{
-		{SourceKey: metadataKey, TargetKey: metadataKey},
-	}
-
-	resourceRelationshipRule := api.CreateResourceRelationshipRule{
-		DependencyType:      api.ProvisionedIn,
-		Reference:           "vcluster",
-		TargetKind:          clusterResource.Kind,
-		TargetVersion:       clusterResource.Version,
-		SourceKind:          generateVclusterKind(clusterResource),
-		SourceVersion:       clusterResource.Version,
-		MetadataKeysMatches: &metadataKeysMatches,
-	}
-
-	return resourceProvider.AddResourceRelationshipRule(ctx, []api.CreateResourceRelationshipRule{resourceRelationshipRule})
-}
+// func createResourceRelationshipRule(ctx context.Context, resourceProvider *resourceprovider.ResourceProvider, clusterResource ClusterResource) error {
+// 	var metadataKey string
+// 	switch clusterResource.Kind {
+// 	case kinds.KindGoogleKubernetesEngine:
+// 		metadataKey = kinds.GoogleMetadataSelfLink
+// 	case kinds.KindAmazonElasticKubernetesService:
+// 		metadataKey = kinds.AWSMetadataARN
+// 	case kinds.KindAzureKubernetesService:
+// 		metadataKey = kinds.AzureMetadataId
+// 	default:
+// 		return fmt.Errorf("unsupported cluster kind: %s", clusterResource.Kind)
+// 	}
+//
+// 	metadataKeysMatches := []api.MetadataKeyMatchConstraint{
+// 		{SourceKey: metadataKey, TargetKey: metadataKey},
+// 	}
+//
+// 	resourceRelationshipRule := api.ResourceProviderResourceRelationshipRule{
+// 		DependencyType:      api.ProvisionedIn,
+// 		Reference:           "vcluster",
+// 		TargetKind:          clusterResource.Kind,
+// 		TargetVersion:       clusterResource.Version,
+// 		SourceKind:          generateVclusterKind(clusterResource),
+// 		SourceVersion:       clusterResource.Version,
+// 		MetadataKeysMatches: &metadataKeysMatches,
+// 	}
+//
+// 	return resourceProvider.AddResourceRelationshipRule(ctx, []api.ResourceProviderResourceRelationshipRule{resourceRelationshipRule})
+// }
 
 func NewSyncVclusterCmd() *cobra.Command {
 	var clusterIdentifier string
@@ -230,12 +231,12 @@ func NewSyncVclusterCmd() *cobra.Command {
 				providerName = fmt.Sprintf("%s-vcluster-scanner", clusterResource.Name)
 			}
 
-			rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, providerName)
+			rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, providerName)
 			if err != nil {
 				return fmt.Errorf("failed to create resource provider: %w", err)
 			}
 
-			resourcesToUpsert := []api.CreateResource{}
+			resourcesToUpsert := []api.ResourceProviderResource{}
 			for _, vcluster := range vclusters {
 				resource, err := getCreateResourceFromVcluster(vcluster, clusterResource)
 				if err != nil {
@@ -249,7 +250,7 @@ func NewSyncVclusterCmd() *cobra.Command {
 			}
 			log.Infof("Upserted %d resources", len(resourcesToUpsert))
 
-			createResourceRelationshipRule(cmd.Context(), rp, clusterResource)
+			// createResourceRelationshipRule(cmd.Context(), rp, clusterResource)
 			
 			return nil
 		},

@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/api/run/v1"
@@ -86,8 +87,8 @@ func processServiceMetadata(service *run.Service) map[string]string {
 	return metadata
 }
 
-func processService(service *run.Service) api.CreateResource {
-	resource := api.CreateResource{
+func processService(service *run.Service) api.ResourceProviderResource {
+	resource := api.ResourceProviderResource{
 		Name:       service.Metadata.Name,
 		Identifier: service.Metadata.SelfLink,
 		Version:    "ctrlplane.dev/container/service/v1",
@@ -101,7 +102,7 @@ func processService(service *run.Service) api.CreateResource {
 	return resource
 }
 
-func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, project *string, providerName *string) (*http.Response, error) {
+func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, project *string, providerName *string) (*http.Response, error) {
 	if *providerName == "" {
 		*providerName = fmt.Sprintf("google-cloudrun-%s", *project)
 	}
@@ -116,7 +117,7 @@ func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, proj
 	}
 
 	log.Info("Upserting resource provider", "name", *providerName)
-	rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, *providerName)
+	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *providerName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource provider: %w", err)
 	}
@@ -146,7 +147,7 @@ func runSync(project, providerName *string, regions *[]string) func(cmd *cobra.C
 			return fmt.Errorf("failed to list Cloud Run services: %w", err)
 		}
 
-		allResources := make([]api.CreateResource, 0)
+		allResources := make([]api.ResourceProviderResource, 0)
 		for _, service := range services.Items {
 			resource := processService(service)
 			allResources = append(allResources, resource)

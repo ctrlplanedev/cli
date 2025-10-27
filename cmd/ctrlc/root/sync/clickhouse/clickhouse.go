@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -224,7 +225,7 @@ func NewSyncClickhouseCmd() *cobra.Command {
 				return fmt.Errorf("failed to list ClickHouse services: %w", err)
 			}
 
-			resources := []api.CreateResource{}
+			resources := []api.ResourceProviderResource{}
 			for _, service := range services {
 				var endpoints []string
 				for _, endpoint := range service.Endpoints {
@@ -275,7 +276,7 @@ func NewSyncClickhouseCmd() *cobra.Command {
 
 				// Create a sanitized name
 				name := strings.Split(service.Name, ".")[0]
-				resources = append(resources, api.CreateResource{
+				resources = append(resources, api.ResourceProviderResource{
 					Version:    "ctrlplane.dev/database/v1",
 					Kind:       "ClickhouseCloud",
 					Name:       name,
@@ -304,7 +305,7 @@ func NewSyncClickhouseCmd() *cobra.Command {
 			if providerName == "" {
 				providerName = fmt.Sprintf("clickhouse-%s", organizationID)
 			}
-			rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, providerName)
+			rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, providerName)
 			if err != nil {
 				return fmt.Errorf("failed to create resource provider: %w", err)
 			}

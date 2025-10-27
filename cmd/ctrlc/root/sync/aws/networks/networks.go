@@ -3,6 +3,10 @@ package networks
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+	"sync"
+
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -11,11 +15,9 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/aws/common"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"os"
-	"strconv"
-	"sync"
 )
 
 // NewSyncNetworksCmd creates a new cobra command for syncing AWS Networks
@@ -53,7 +55,7 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 			return err
 		}
 
-		allResources := make([]api.CreateResource, 0)
+		allResources := make([]api.ResourceProviderResource, 0)
 
 		var mu sync.Mutex
 		var wg sync.WaitGroup
@@ -173,7 +175,7 @@ func initComputeClient(ctx context.Context, region string) (*ec2.Client, aws.Con
 // processNetworks lists and processes all VPCs and subnets
 func processNetworks(
 	ctx context.Context, ec2Client *ec2.Client, awsSubnets []types.Subnet, region string, accountId string,
-) ([]api.CreateResource, error) {
+) ([]api.ResourceProviderResource, error) {
 	var nextToken *string
 	vpcs := make([]types.Vpc, 0)
 	subnetsByVpc := make(map[string][]types.Subnet)
@@ -205,7 +207,7 @@ func processNetworks(
 
 	log.Info("Found vpcOutput", "count", len(vpcs))
 
-	resources := make([]api.CreateResource, 0)
+	resources := make([]api.ResourceProviderResource, 0)
 	for _, vpc := range vpcs {
 		if awsVpcSubnets, exists = subnetsByVpc[*vpc.VpcId]; !exists {
 			awsVpcSubnets = []types.Subnet{}
@@ -224,7 +226,7 @@ func processNetworks(
 // processNetwork handles processing of a single VPC network
 func processNetwork(
 	vpc types.Vpc, subnets []types.Subnet, region string, accountId string,
-) (api.CreateResource, error) {
+) (api.ResourceProviderResource, error) {
 	metadata := initNetworkMetadata(vpc, region, len(subnets))
 	vpcName := getVpcName(vpc)
 
@@ -232,7 +234,7 @@ func processNetwork(
 	consoleUrl := getVpcConsoleUrl(vpc, region)
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"AWS Console\": \"%s\" }", consoleUrl)
 
-	return api.CreateResource{
+	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/network/v1",
 		Kind:       "AmazonNetwork",
 		Name:       vpcName,
@@ -312,8 +314,8 @@ func getAwsSubnets(ctx context.Context, ec2Client *ec2.Client, region string) ([
 }
 
 // processSubnets lists and processes all subnetworks
-func processSubnets(_ context.Context, subnets []types.Subnet, region string) ([]api.CreateResource, error) {
-	resources := make([]api.CreateResource, 0)
+func processSubnets(_ context.Context, subnets []types.Subnet, region string) ([]api.ResourceProviderResource, error) {
+	resources := make([]api.ResourceProviderResource, 0)
 	subnetCount := 0
 
 	// Process subnets from all regions
@@ -332,13 +334,13 @@ func processSubnets(_ context.Context, subnets []types.Subnet, region string) ([
 }
 
 // processSubnet handles processing of a single subnet
-func processSubnet(subnet types.Subnet, region string) (api.CreateResource, error) {
+func processSubnet(subnet types.Subnet, region string) (api.ResourceProviderResource, error) {
 	metadata := initSubnetMetadata(subnet, region)
 	subnetName := getSubnetName(subnet)
 	consoleUrl := getSubnetConsoleUrl(subnet, region)
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"AWS Console\": \"%s\" }", consoleUrl)
 
-	return api.CreateResource{
+	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/network/subnet/v1",
 		Kind:       "AmazonSubnet",
 		Name:       subnetName,
@@ -421,7 +423,7 @@ func getSubnetName(subnet types.Subnet) string {
 }
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, name *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, name *string) error {
 	apiURL := viper.GetString("url")
 	apiKey := viper.GetString("api-key")
 	workspaceId := viper.GetString("workspace")
@@ -431,7 +433,7 @@ func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, name
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, *name)
+	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *name)
 	if err != nil {
 		return fmt.Errorf("failed to create resource provider: %w", err)
 	}

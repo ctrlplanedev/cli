@@ -7,6 +7,7 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/api/cloudresourcemanager/v1"
@@ -42,7 +43,7 @@ func NewSyncProjectsCmd() *cobra.Command {
 				return fmt.Errorf("failed to list projects: %w", err)
 			}
 
-			resources := []api.CreateResource{}
+			resources := []api.ResourceProviderResource{}
 
 			// Process each project
 			for _, project := range resp.Projects {
@@ -66,7 +67,7 @@ func NewSyncProjectsCmd() *cobra.Command {
 					metadata[fmt.Sprintf("labels/%s", key)] = value
 				}
 
-				resources = append(resources, api.CreateResource{
+				resources = append(resources, api.ResourceProviderResource{
 					Version:    "ctrlplane.dev/cloud/account/v1",
 					Kind:       "GoogleProject", 
 					Name:       project.Name,
@@ -101,7 +102,7 @@ func NewSyncProjectsCmd() *cobra.Command {
 			}
 
 			log.Info("Upserting resource provider", "name", name)
-			rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, name)
+			rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, name)
 			if err != nil {
 				return fmt.Errorf("failed to create resource provider: %w", err)
 			}

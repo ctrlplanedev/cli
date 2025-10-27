@@ -10,6 +10,7 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/api/compute/v1"
@@ -85,14 +86,14 @@ func initComputeClient(ctx context.Context) (*compute.Service, error) {
 }
 
 // processVMs lists and processes all VM instances
-func processVMs(ctx context.Context, computeClient *compute.Service, project string) ([]api.CreateResource, error) {
+func processVMs(ctx context.Context, computeClient *compute.Service, project string) ([]api.ResourceProviderResource, error) {
 	// Use AggregatedList to get VMs from all zones
 	resp, err := computeClient.Instances.AggregatedList(project).Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list VM instances: %w", err)
 	}
 
-	resources := []api.CreateResource{}
+	resources := []api.ResourceProviderResource{}
 	vmCount := 0
 
 	// Process VMs from all zones
@@ -118,7 +119,7 @@ func processVMs(ctx context.Context, computeClient *compute.Service, project str
 }
 
 // processVM handles processing of a single VM instance
-func processVM(instance *compute.Instance, project string, zone string) (api.CreateResource, error) {
+func processVM(instance *compute.Instance, project string, zone string) (api.ResourceProviderResource, error) {
 	metadata := initVMMetadata(instance, project, zone)
 
 	// Extract region from zone (e.g. us-central1-a -> us-central1)
@@ -150,7 +151,7 @@ func processVM(instance *compute.Instance, project string, zone string) (api.Cre
 		networkName = getResourceName(instance.NetworkInterfaces[0].Network)
 	}
 
-	return api.CreateResource{
+	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/compute/machine/v1",
 		Kind:       "GoogleComputeEngine",
 		Name:       instance.Name,
@@ -395,7 +396,7 @@ func getResourceName(fullPath string) string {
 }
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, project, name *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, project, name *string) error {
 	if *name == "" {
 		*name = fmt.Sprintf("google-vms-project-%s", *project)
 	}
@@ -409,7 +410,7 @@ func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, proj
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, *name)
+	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *name)
 	if err != nil {
 		return fmt.Errorf("failed to create resource provider: %w", err)
 	}

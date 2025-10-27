@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/api/redis/v1"
@@ -86,7 +87,7 @@ func initRedisClient(ctx context.Context) (*redis.Service, error) {
 }
 
 // processInstances lists and processes all Redis instances
-func processInstances(ctx context.Context, redisClient *redis.Service, project string) ([]api.CreateResource, error) {
+func processInstances(ctx context.Context, redisClient *redis.Service, project string) ([]api.ResourceProviderResource, error) {
 	parent := fmt.Sprintf("projects/%s/locations/-", project)
 	instances, err := redisClient.Projects.Locations.Instances.List(parent).Do()
 	if err != nil {
@@ -95,7 +96,7 @@ func processInstances(ctx context.Context, redisClient *redis.Service, project s
 
 	log.Info("Found Redis instances", "count", len(instances.Instances))
 
-	resources := []api.CreateResource{}
+	resources := []api.ResourceProviderResource{}
 	for _, instance := range instances.Instances {
 		resource, err := processInstance(ctx, instance, project)
 		if err != nil {
@@ -109,7 +110,7 @@ func processInstances(ctx context.Context, redisClient *redis.Service, project s
 }
 
 // processInstance handles processing of a single Redis instance
-func processInstance(_ context.Context, instance *redis.Instance, project string) (api.CreateResource, error) {
+func processInstance(_ context.Context, instance *redis.Instance, project string) (api.ResourceProviderResource, error) {
 	metadata := initInstanceMetadata(instance, project)
 
 	// Extract location from name (e.g. projects/myproject/locations/us-central1/instances/myinstance -> us-central1)
@@ -125,7 +126,7 @@ func processInstance(_ context.Context, instance *redis.Instance, project string
 		location, instanceName, project)
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"Google Cloud Console\": \"%s\" }", consoleUrl)
 
-	return api.CreateResource{
+	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/database/v1",
 		Kind:       "GoogleRedis",
 		Name:       instanceName,
@@ -289,7 +290,7 @@ func getInstanceName(fullName string) string {
 }
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, project, name *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, project, name *string) error {
 	if *name == "" {
 		*name = fmt.Sprintf("google-redis-project-%s", *project)
 	}
@@ -303,7 +304,7 @@ func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, proj
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, *name)
+	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *name)
 	if err != nil {
 		return fmt.Errorf("failed to create resource provider: %w", err)
 	}

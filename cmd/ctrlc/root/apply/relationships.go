@@ -67,8 +67,8 @@ func createMetadataKeysMatch(match MetadataKeysMatch) (*struct {
 	}, nil
 }
 
-func createRelationshipRequestBody(workspaceId string, relationship ResourceRelationship) api.CreateResourceRelationshipRule {
-	config := api.CreateResourceRelationshipRule{
+func createRelationshipRequestBody(workspaceId string, relationship ResourceRelationship) api.ResourceProviderResourceRelationshipRule {
+	config := api.ResourceProviderResourceRelationshipRule{
 		WorkspaceId:          workspaceId,
 		Reference:            relationship.Reference,
 		DependencyType:       api.ResourceRelationshipRuleDependencyType(relationship.DependencyType),

@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/google/go-github/v57/github"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -179,7 +180,7 @@ func initGitHubClient(ctx context.Context, token string) (*github.Client, error)
 }
 
 // processPullRequests lists and processes all pull requests
-func processPullRequests(ctx context.Context, client *github.Client, owner, repo string, states []string) ([]api.CreateResource, error) {
+func processPullRequests(ctx context.Context, client *github.Client, owner, repo string, states []string) ([]api.ResourceProviderResource, error) {
 	log.Debug("Processing pull requests", "owner", owner, "repo", repo, "states", states)
 
 	// If no states specified or "all" is specified, include everything
@@ -270,7 +271,7 @@ func processPullRequests(ctx context.Context, client *github.Client, owner, repo
 		"filtered", len(filteredPRs),
 		"states", states)
 
-	resources := []api.CreateResource{}
+	resources := []api.ResourceProviderResource{}
 	for _, pr := range filteredPRs {
 		log.Info("Processing pull request", "number", pr.GetNumber(), "source", pr.GetHead().GetRef(), "target", pr.GetBase().GetRef())
 		resource, err := processPullRequest(ctx, client, owner, repo, pr)
@@ -454,7 +455,7 @@ func getNormalizedStatus(pr *github.PullRequest) string {
 }
 
 // processPullRequest handles processing of a single pull request
-func processPullRequest(ctx context.Context, client *github.Client, owner, repo string, pr *github.PullRequest) (api.CreateResource, error) {
+func processPullRequest(ctx context.Context, client *github.Client, owner, repo string, pr *github.PullRequest) (api.ResourceProviderResource, error) {
 	prNumber := pr.GetNumber()
 	log.Debug("Processing pull request", "number", prNumber, "title", pr.GetTitle())
 
@@ -498,7 +499,7 @@ func processPullRequest(ctx context.Context, client *github.Client, owner, repo 
 	resourceName := fmt.Sprintf("%s-%s-%d", owner, repo, prNumber)
 	log.Debug("Creating resource", "number", prNumber, "name", resourceName)
 
-	return api.CreateResource{
+	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/git/pull-request/v1",
 		Kind:       "GitHubPullRequest",
 		Name:       resourceName,
@@ -605,10 +606,10 @@ func initPullRequestMetadata(pr *github.PullRequest, owner, repo string) map[str
 	return metadata
 }
 
-var relationshipRules = []api.CreateResourceRelationshipRule{}
+// var relationshipRules = []api.Relationship{}
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, owner, repo, name string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, owner, repo, name string) error {
 	log.Debug("Upserting resources to Ctrlplane", "count", len(resources))
 
 	if name == "" {
@@ -632,19 +633,19 @@ func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, owne
 	}
 
 	log.Debug("Creating resource provider", "name", name)
-	rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, name)
+	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, name)
 	if err != nil {
 		log.Error("Failed to create resource provider", "name", name, "error", err)
 		return fmt.Errorf("failed to create resource provider: %w", err)
 	}
 
-	log.Debug("Adding resource relationship rules", "rules_count", len(relationshipRules))
-	err = rp.AddResourceRelationshipRule(ctx, relationshipRules)
-	if err != nil {
-		log.Error("Failed to add resource relationship rule", "name", name, "error", err)
-	} else {
-		log.Debug("Successfully added relationship rules")
-	}
+	// log.Debug("Adding resource relationship rules", "rules_count", len(relationshipRules))
+	// err = rp.AddResourceRelationshipRule(ctx, relationshipRules)
+	// if err != nil {
+	// 	log.Error("Failed to add resource relationship rule", "name", name, "error", err)
+	// } else {
+	// 	log.Debug("Successfully added relationship rules")
+	// }
 
 	log.Debug("Upserting resources", "count", len(resources))
 	upsertResp, err := rp.UpsertResource(ctx, resources)

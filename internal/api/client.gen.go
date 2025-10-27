@@ -19,1274 +19,459 @@ import (
 )
 
 const (
-	BearerAuthScopes = "bearerAuth.Scopes"
+	ApiKeyAuthScopes = "ApiKeyAuth.Scopes"
+	BearerAuthScopes = "BearerAuth.Scopes"
 )
 
-// Defines values for ApprovalRecordStatus.
+// Defines values for ApprovalStatus.
 const (
-	ApprovalRecordStatusApproved ApprovalRecordStatus = "approved"
-	ApprovalRecordStatusRejected ApprovalRecordStatus = "rejected"
+	ApprovalStatusApproved ApprovalStatus = "approved"
+	ApprovalStatusRejected ApprovalStatus = "rejected"
 )
 
 // Defines values for DeploymentVersionStatus.
 const (
-	DeploymentVersionStatusBuilding DeploymentVersionStatus = "building"
-	DeploymentVersionStatusFailed   DeploymentVersionStatus = "failed"
-	DeploymentVersionStatusReady    DeploymentVersionStatus = "ready"
-)
-
-// Defines values for EnvironmentVersionRolloutRolloutType.
-const (
-	EnvironmentVersionRolloutRolloutTypeExponential           EnvironmentVersionRolloutRolloutType = "exponential"
-	EnvironmentVersionRolloutRolloutTypeExponentialNormalized EnvironmentVersionRolloutRolloutType = "exponential-normalized"
-	EnvironmentVersionRolloutRolloutTypeLinear                EnvironmentVersionRolloutRolloutType = "linear"
-	EnvironmentVersionRolloutRolloutTypeLinearNormalized      EnvironmentVersionRolloutRolloutType = "linear-normalized"
-)
-
-// Defines values for InsertEnvironmentVersionRolloutRolloutType.
-const (
-	InsertEnvironmentVersionRolloutRolloutTypeExponential           InsertEnvironmentVersionRolloutRolloutType = "exponential"
-	InsertEnvironmentVersionRolloutRolloutTypeExponentialNormalized InsertEnvironmentVersionRolloutRolloutType = "exponential-normalized"
-	InsertEnvironmentVersionRolloutRolloutTypeLinear                InsertEnvironmentVersionRolloutRolloutType = "linear"
-	InsertEnvironmentVersionRolloutRolloutTypeLinearNormalized      InsertEnvironmentVersionRolloutRolloutType = "linear-normalized"
+	DeploymentVersionStatusBuilding    DeploymentVersionStatus = "building"
+	DeploymentVersionStatusFailed      DeploymentVersionStatus = "failed"
+	DeploymentVersionStatusReady       DeploymentVersionStatus = "ready"
+	DeploymentVersionStatusRejected    DeploymentVersionStatus = "rejected"
+	DeploymentVersionStatusUnspecified DeploymentVersionStatus = "unspecified"
 )
 
 // Defines values for JobStatus.
 const (
-	ActionRequired      JobStatus = "action_required"
+	ActionRequired      JobStatus = "actionRequired"
 	Cancelled           JobStatus = "cancelled"
-	ExternalRunNotFound JobStatus = "external_run_not_found"
+	ExternalRunNotFound JobStatus = "externalRunNotFound"
 	Failure             JobStatus = "failure"
-	InProgress          JobStatus = "in_progress"
-	InvalidIntegration  JobStatus = "invalid_integration"
-	InvalidJobAgent     JobStatus = "invalid_job_agent"
+	InProgress          JobStatus = "inProgress"
+	InvalidIntegration  JobStatus = "invalidIntegration"
+	InvalidJobAgent     JobStatus = "invalidJobAgent"
 	Pending             JobStatus = "pending"
 	Skipped             JobStatus = "skipped"
 	Successful          JobStatus = "successful"
 )
 
-// Defines values for JobWithTriggerApprovalStatus.
+// Defines values for RelatableEntityType.
 const (
-	JobWithTriggerApprovalStatusApproved JobWithTriggerApprovalStatus = "approved"
-	JobWithTriggerApprovalStatusPending  JobWithTriggerApprovalStatus = "pending"
-	JobWithTriggerApprovalStatusRejected JobWithTriggerApprovalStatus = "rejected"
+	RelatableEntityTypeDeployment  RelatableEntityType = "deployment"
+	RelatableEntityTypeEnvironment RelatableEntityType = "environment"
+	RelatableEntityTypeResource    RelatableEntityType = "resource"
 )
 
-// Defines values for ResourceRelationshipRuleDependencyType.
-const (
-	CreatedAfter        ResourceRelationshipRuleDependencyType = "created_after"
-	DependsIndirectlyOn ResourceRelationshipRuleDependencyType = "depends_indirectly_on"
-	DependsOn           ResourceRelationshipRuleDependencyType = "depends_on"
-	InheritsFrom        ResourceRelationshipRuleDependencyType = "inherits_from"
-	ProvisionedIn       ResourceRelationshipRuleDependencyType = "provisioned_in"
-	UsesAtRuntime       ResourceRelationshipRuleDependencyType = "uses_at_runtime"
-)
-
-// Defines values for GetCloudProviderRegionsParamsProvider.
-const (
-	Aws   GetCloudProviderRegionsParamsProvider = "aws"
-	Azure GetCloudProviderRegionsParamsProvider = "azure"
-	Gcp   GetCloudProviderRegionsParamsProvider = "gcp"
-)
-
-// Defines values for UpsertDeploymentVersionJSONBodyStatus.
-const (
-	UpsertDeploymentVersionJSONBodyStatusBuilding UpsertDeploymentVersionJSONBodyStatus = "building"
-	UpsertDeploymentVersionJSONBodyStatusFailed   UpsertDeploymentVersionJSONBodyStatus = "failed"
-	UpsertDeploymentVersionJSONBodyStatusReady    UpsertDeploymentVersionJSONBodyStatus = "ready"
-	UpsertDeploymentVersionJSONBodyStatusRejected UpsertDeploymentVersionJSONBodyStatus = "rejected"
-)
-
-// Defines values for UpdateDeploymentVersionJSONBodyStatus.
-const (
-	UpdateDeploymentVersionJSONBodyStatusBuilding UpdateDeploymentVersionJSONBodyStatus = "building"
-	UpdateDeploymentVersionJSONBodyStatusFailed   UpdateDeploymentVersionJSONBodyStatus = "failed"
-	UpdateDeploymentVersionJSONBodyStatusReady    UpdateDeploymentVersionJSONBodyStatus = "ready"
-	UpdateDeploymentVersionJSONBodyStatusRejected UpdateDeploymentVersionJSONBodyStatus = "rejected"
-)
-
-// Defines values for ListDeploymentVersionsParamsStatus.
-const (
-	ListDeploymentVersionsParamsStatusBuilding ListDeploymentVersionsParamsStatus = "building"
-	ListDeploymentVersionsParamsStatusFailed   ListDeploymentVersionsParamsStatus = "failed"
-	ListDeploymentVersionsParamsStatusReady    ListDeploymentVersionsParamsStatus = "ready"
-	ListDeploymentVersionsParamsStatusRejected ListDeploymentVersionsParamsStatus = "rejected"
-)
-
-// Defines values for UpsertReleaseJSONBodyStatus.
-const (
-	UpsertReleaseJSONBodyStatusBuilding UpsertReleaseJSONBodyStatus = "building"
-	UpsertReleaseJSONBodyStatusFailed   UpsertReleaseJSONBodyStatus = "failed"
-	UpsertReleaseJSONBodyStatusReady    UpsertReleaseJSONBodyStatus = "ready"
-	UpsertReleaseJSONBodyStatusRejected UpsertReleaseJSONBodyStatus = "rejected"
-)
-
-// Defines values for UpdateReleaseJSONBodyStatus.
-const (
-	UpdateReleaseJSONBodyStatusBuilding UpdateReleaseJSONBodyStatus = "building"
-	UpdateReleaseJSONBodyStatusFailed   UpdateReleaseJSONBodyStatus = "failed"
-	UpdateReleaseJSONBodyStatusReady    UpdateReleaseJSONBodyStatus = "ready"
-	UpdateReleaseJSONBodyStatusRejected UpdateReleaseJSONBodyStatus = "rejected"
-)
-
-// ApprovalRecord defines model for ApprovalRecord.
-type ApprovalRecord struct {
-	ApprovedAt          *time.Time           `json:"approvedAt"`
-	CreatedAt           time.Time            `json:"createdAt"`
-	DeploymentVersionId openapi_types.UUID   `json:"deploymentVersionId"`
-	EnvironmentId       openapi_types.UUID   `json:"environmentId"`
-	Id                  openapi_types.UUID   `json:"id"`
-	Reason              *string              `json:"reason,omitempty"`
-	Status              ApprovalRecordStatus `json:"status"`
-	UpdatedAt           time.Time            `json:"updatedAt"`
-	UserId              openapi_types.UUID   `json:"userId"`
+// AnyApprovalRule defines model for AnyApprovalRule.
+type AnyApprovalRule struct {
+	MinApprovals int32 `json:"minApprovals"`
 }
 
-// ApprovalRecordStatus defines model for ApprovalRecord.Status.
-type ApprovalRecordStatus string
+// ApprovalStatus defines model for ApprovalStatus.
+type ApprovalStatus string
 
-// BaseDeploymentVariableValue defines model for BaseDeploymentVariableValue.
-type BaseDeploymentVariableValue struct {
-	IsDefault        *bool                   `json:"isDefault,omitempty"`
-	Priority         *int                    `json:"priority,omitempty"`
-	ResourceSelector *map[string]interface{} `json:"resourceSelector"`
+// CelMatcher defines model for CelMatcher.
+type CelMatcher struct {
+	Cel string `json:"cel"`
 }
 
-// CloudRegionGeoData defines model for CloudRegionGeoData.
-type CloudRegionGeoData struct {
-	// Latitude Latitude coordinate for the region
-	Latitude float32 `json:"latitude"`
-
-	// Longitude Longitude coordinate for the region
-	Longitude float32 `json:"longitude"`
-
-	// Timezone Timezone of the region in UTC format
-	Timezone string `json:"timezone"`
+// CelSelector defines model for CelSelector.
+type CelSelector struct {
+	Cel string `json:"cel"`
 }
 
-// CreateResource defines model for CreateResource.
-type CreateResource struct {
-	Config     map[string]interface{} `json:"config"`
-	Identifier string                 `json:"identifier"`
-	Kind       string                 `json:"kind"`
-	Metadata   map[string]string      `json:"metadata"`
-	Name       string                 `json:"name"`
-	Variables  *[]Variable            `json:"variables,omitempty"`
-	Version    string                 `json:"version"`
-}
+// CreateWorkspaceRequest defines model for CreateWorkspaceRequest.
+type CreateWorkspaceRequest struct {
+	// Name Display name of the workspace
+	Name string `json:"name"`
 
-// CreateResourceRelationshipRule defines model for CreateResourceRelationshipRule.
-type CreateResourceRelationshipRule struct {
-	DependencyDescription *string                                `json:"dependencyDescription,omitempty"`
-	DependencyType        ResourceRelationshipRuleDependencyType `json:"dependencyType"`
-	Description           *string                                `json:"description,omitempty"`
-	MetadataKeysMatches   *[]MetadataKeyMatchConstraint          `json:"metadataKeysMatches,omitempty"`
-	Name                  string                                 `json:"name"`
-	Reference             string                                 `json:"reference"`
-	SourceKind            string                                 `json:"sourceKind"`
-	SourceMetadataEquals  *[]MetadataEqualsConstraint            `json:"sourceMetadataEquals,omitempty"`
-	SourceVersion         string                                 `json:"sourceVersion"`
-	TargetKind            string                                 `json:"targetKind"`
-	TargetMetadataEquals  *[]MetadataEqualsConstraint            `json:"targetMetadataEquals,omitempty"`
-	TargetVersion         string                                 `json:"targetVersion"`
-	WorkspaceId           string                                 `json:"workspaceId"`
-}
-
-// DenyWindow defines model for DenyWindow.
-type DenyWindow struct {
-	Dtend    *time.Time             `json:"dtend,omitempty"`
-	Rrule    map[string]interface{} `json:"rrule"`
-	TimeZone string                 `json:"timeZone"`
+	// Slug URL-friendly unique identifier (lowercase, no spaces)
+	Slug string `json:"slug"`
 }
 
 // Deployment defines model for Deployment.
 type Deployment struct {
-	Description    string                 `json:"description"`
-	Id             openapi_types.UUID     `json:"id"`
-	JobAgentConfig map[string]interface{} `json:"jobAgentConfig"`
-	JobAgentId     *openapi_types.UUID    `json:"jobAgentId"`
-	Name           string                 `json:"name"`
-	RetryCount     *int                   `json:"retryCount,omitempty"`
-	Slug           string                 `json:"slug"`
-	SystemId       openapi_types.UUID     `json:"systemId"`
-	Timeout        *int                   `json:"timeout"`
+	Description      *string                `json:"description,omitempty"`
+	Id               string                 `json:"id"`
+	JobAgentConfig   map[string]interface{} `json:"jobAgentConfig"`
+	JobAgentId       *string                `json:"jobAgentId,omitempty"`
+	Name             string                 `json:"name"`
+	ResourceSelector *Selector              `json:"resourceSelector,omitempty"`
+	Slug             string                 `json:"slug"`
+	SystemId         string                 `json:"systemId"`
 }
 
-// DeploymentVariable defines model for DeploymentVariable.
-type DeploymentVariable struct {
-	Config          map[string]interface{}                   `json:"config"`
-	DefaultValue    *DeploymentVariable_DefaultValue         `json:"defaultValue,omitempty"`
-	Description     string                                   `json:"description"`
-	DirectValues    []DirectDeploymentVariableValueWithId    `json:"directValues"`
-	Id              openapi_types.UUID                       `json:"id"`
-	Key             string                                   `json:"key"`
-	ReferenceValues []ReferenceDeploymentVariableValueWithId `json:"referenceValues"`
-}
-
-// DeploymentVariable_DefaultValue defines model for DeploymentVariable.DefaultValue.
-type DeploymentVariable_DefaultValue struct {
-	union json.RawMessage
+// DeploymentAndSystem defines model for DeploymentAndSystem.
+type DeploymentAndSystem struct {
+	Deployment Deployment `json:"deployment"`
+	System     System     `json:"system"`
 }
 
 // DeploymentVersion defines model for DeploymentVersion.
 type DeploymentVersion struct {
-	Config         map[string]interface{}   `json:"config"`
-	CreatedAt      time.Time                `json:"createdAt"`
-	DeploymentId   openapi_types.UUID       `json:"deploymentId"`
-	Id             openapi_types.UUID       `json:"id"`
-	JobAgentConfig map[string]interface{}   `json:"jobAgentConfig"`
-	Metadata       *map[string]string       `json:"metadata,omitempty"`
-	Name           string                   `json:"name"`
-	Status         *DeploymentVersionStatus `json:"status,omitempty"`
-	Tag            string                   `json:"tag"`
+	Config         map[string]interface{}  `json:"config"`
+	CreatedAt      time.Time               `json:"createdAt"`
+	DeploymentId   string                  `json:"deploymentId"`
+	Id             string                  `json:"id"`
+	JobAgentConfig map[string]interface{}  `json:"jobAgentConfig"`
+	Message        *string                 `json:"message,omitempty"`
+	Metadata       *map[string]string      `json:"metadata,omitempty"`
+	Name           string                  `json:"name"`
+	Status         DeploymentVersionStatus `json:"status"`
+	Tag            string                  `json:"tag"`
 }
 
-// DeploymentVersionStatus defines model for DeploymentVersion.Status.
+// DeploymentVersionStatus defines model for DeploymentVersionStatus.
 type DeploymentVersionStatus string
-
-// DeploymentVersionSelector defines model for DeploymentVersionSelector.
-type DeploymentVersionSelector struct {
-	DeploymentVersionSelector map[string]interface{} `json:"deploymentVersionSelector"`
-	Description               *string                `json:"description,omitempty"`
-	Name                      string                 `json:"name"`
-}
-
-// DirectDeploymentVariableValue defines model for DirectDeploymentVariableValue.
-type DirectDeploymentVariableValue struct {
-	IsDefault        *bool                                `json:"isDefault,omitempty"`
-	Priority         *int                                 `json:"priority,omitempty"`
-	ResourceSelector *map[string]interface{}              `json:"resourceSelector"`
-	Sensitive        *bool                                `json:"sensitive,omitempty"`
-	Value            *DirectDeploymentVariableValue_Value `json:"value"`
-}
-
-// DirectDeploymentVariableValueValue0 defines model for .
-type DirectDeploymentVariableValueValue0 = string
-
-// DirectDeploymentVariableValueValue1 defines model for .
-type DirectDeploymentVariableValueValue1 = float32
-
-// DirectDeploymentVariableValueValue2 defines model for .
-type DirectDeploymentVariableValueValue2 = bool
-
-// DirectDeploymentVariableValueValue3 defines model for .
-type DirectDeploymentVariableValueValue3 = map[string]interface{}
-
-// DirectDeploymentVariableValueValue4 defines model for .
-type DirectDeploymentVariableValueValue4 = []interface{}
-
-// DirectDeploymentVariableValue_Value defines model for DirectDeploymentVariableValue.Value.
-type DirectDeploymentVariableValue_Value struct {
-	union json.RawMessage
-}
-
-// DirectDeploymentVariableValueWithId defines model for DirectDeploymentVariableValueWithId.
-type DirectDeploymentVariableValueWithId struct {
-	Id               openapi_types.UUID                         `json:"id"`
-	IsDefault        *bool                                      `json:"isDefault,omitempty"`
-	Priority         *int                                       `json:"priority,omitempty"`
-	ResourceSelector *map[string]interface{}                    `json:"resourceSelector"`
-	Sensitive        *bool                                      `json:"sensitive,omitempty"`
-	Value            *DirectDeploymentVariableValueWithId_Value `json:"value"`
-}
-
-// DirectDeploymentVariableValueWithIdValue0 defines model for .
-type DirectDeploymentVariableValueWithIdValue0 = string
-
-// DirectDeploymentVariableValueWithIdValue1 defines model for .
-type DirectDeploymentVariableValueWithIdValue1 = float32
-
-// DirectDeploymentVariableValueWithIdValue2 defines model for .
-type DirectDeploymentVariableValueWithIdValue2 = bool
-
-// DirectDeploymentVariableValueWithIdValue3 defines model for .
-type DirectDeploymentVariableValueWithIdValue3 = map[string]interface{}
-
-// DirectDeploymentVariableValueWithIdValue4 defines model for .
-type DirectDeploymentVariableValueWithIdValue4 = []interface{}
-
-// DirectDeploymentVariableValueWithId_Value defines model for DirectDeploymentVariableValueWithId.Value.
-type DirectDeploymentVariableValueWithId_Value struct {
-	union json.RawMessage
-}
-
-// DirectVariable defines model for DirectVariable.
-type DirectVariable struct {
-	Key       string               `json:"key"`
-	Sensitive *bool                `json:"sensitive,omitempty"`
-	Value     DirectVariable_Value `json:"value"`
-}
-
-// DirectVariableValue0 defines model for .
-type DirectVariableValue0 = string
-
-// DirectVariableValue1 defines model for .
-type DirectVariableValue1 = float32
-
-// DirectVariableValue2 defines model for .
-type DirectVariableValue2 = bool
-
-// DirectVariableValue3 defines model for .
-type DirectVariableValue3 = map[string]interface{}
-
-// DirectVariableValue4 defines model for .
-type DirectVariableValue4 = []interface{}
-
-// DirectVariable_Value defines model for DirectVariable.Value.
-type DirectVariable_Value struct {
-	union json.RawMessage
-}
 
 // Environment defines model for Environment.
 type Environment struct {
-	CreatedAt   time.Time `json:"createdAt"`
-	Description *string   `json:"description,omitempty"`
-
-	// Directory The directory path of the environment
-	Directory        string                  `json:"directory"`
-	Id               openapi_types.UUID      `json:"id"`
-	Metadata         *map[string]string      `json:"metadata,omitempty"`
-	Name             string                  `json:"name"`
-	Policy           *Policy                 `json:"policy,omitempty"`
-	PolicyId         *openapi_types.UUID     `json:"policyId"`
-	ResourceSelector *map[string]interface{} `json:"resourceSelector"`
-	SystemId         openapi_types.UUID      `json:"systemId"`
+	CreatedAt        time.Time `json:"createdAt"`
+	Description      *string   `json:"description,omitempty"`
+	Id               string    `json:"id"`
+	Name             string    `json:"name"`
+	ResourceSelector *Selector `json:"resourceSelector,omitempty"`
+	SystemId         string    `json:"systemId"`
 }
 
-// EnvironmentVersionRollout defines model for EnvironmentVersionRollout.
-type EnvironmentVersionRollout struct {
-	// PositionGrowthFactor Controls how strongly queue position influences delay — higher values result in a smoother, slower rollout curve.
-	PositionGrowthFactor float32 `json:"positionGrowthFactor"`
-
-	// RolloutType Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval.
-	RolloutType EnvironmentVersionRolloutRolloutType `json:"rolloutType"`
-
-	// TimeScaleInterval Defines the base time interval that each unit of rollout progression is scaled by — larger values stretch the deployment timeline.
-	TimeScaleInterval float32 `json:"timeScaleInterval"`
+// EnvironmentAndSystem defines model for EnvironmentAndSystem.
+type EnvironmentAndSystem struct {
+	Environment Environment `json:"environment"`
+	System      System      `json:"system"`
 }
 
-// EnvironmentVersionRolloutRolloutType Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval.
-type EnvironmentVersionRolloutRolloutType string
+// EnvironmentProgressionRule defines model for EnvironmentProgressionRule.
+type EnvironmentProgressionRule struct {
+	DependsOnEnvironmentSelector Selector `json:"dependsOnEnvironmentSelector"`
+	Id                           string   `json:"id"`
 
-// Event defines model for Event.
-type Event struct {
-	Action    string                 `json:"action"`
-	CreatedAt time.Time              `json:"createdAt"`
-	Id        openapi_types.UUID     `json:"id"`
-	Payload   map[string]interface{} `json:"payload"`
+	// MaximumAgeHours Maximum age of dependency deployment before blocking progression (prevents stale promotions)
+	MaximumAgeHours *int32 `json:"maximumAgeHours,omitempty"`
+
+	// MinimumSockTimeMinutes Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
+	MinimumSockTimeMinutes   *int32       `json:"minimumSockTimeMinutes,omitempty"`
+	MinimumSuccessPercentage *float32     `json:"minimumSuccessPercentage,omitempty"`
+	PolicyId                 string       `json:"policyId"`
+	SuccessStatuses          *[]JobStatus `json:"successStatuses,omitempty"`
 }
 
-// ExitHook defines model for ExitHook.
-type ExitHook struct {
-	// JobAgentConfig The configuration for the job agent
-	JobAgentConfig map[string]interface{} `json:"jobAgentConfig"`
+// Error defines model for Error.
+type Error struct {
+	// Code Error code
+	Code *string `json:"code,omitempty"`
 
-	// JobAgentId The ID of the job agent to use for the exit hook
-	JobAgentId openapi_types.UUID `json:"jobAgentId"`
+	// Details Additional error details
+	Details *map[string]interface{} `json:"details,omitempty"`
 
-	// Name The name of the exit hook
-	Name string `json:"name"`
+	// Message Error message
+	Message string `json:"message"`
 }
 
-// InsertEnvironmentVersionRollout defines model for InsertEnvironmentVersionRollout.
-type InsertEnvironmentVersionRollout struct {
-	// PositionGrowthFactor Controls how strongly queue position influences delay — higher values result in a smoother, slower rollout curve. Defaults to 1 if not specified.
-	PositionGrowthFactor *float32 `json:"positionGrowthFactor,omitempty"`
-
-	// RolloutType Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval. Defaults to a linear rollout if not specified.
-	RolloutType *InsertEnvironmentVersionRolloutRolloutType `json:"rolloutType,omitempty"`
-
-	// TimeScaleInterval Defines the base time interval that each unit of rollout progression is scaled by — larger values stretch the deployment timeline.
-	TimeScaleInterval float32 `json:"timeScaleInterval"`
-}
-
-// InsertEnvironmentVersionRolloutRolloutType Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval. Defaults to a linear rollout if not specified.
-type InsertEnvironmentVersionRolloutRolloutType string
-
-// Job defines model for Job.
-type Job struct {
-	CompletedAt *time.Time `json:"completedAt"`
-	CreatedAt   time.Time  `json:"createdAt"`
-
-	// ExternalId External job identifier (e.g. GitHub workflow run ID)
-	ExternalId *string            `json:"externalId"`
-	Id         openapi_types.UUID `json:"id"`
-
-	// JobAgentConfig Configuration for the Job Agent
-	JobAgentConfig map[string]interface{} `json:"jobAgentConfig"`
-	JobAgentId     *openapi_types.UUID    `json:"jobAgentId,omitempty"`
-	Message        *string                `json:"message,omitempty"`
-	Reason         *string                `json:"reason,omitempty"`
-	StartedAt      *time.Time             `json:"startedAt"`
-	Status         JobStatus              `json:"status"`
-	UpdatedAt      time.Time              `json:"updatedAt"`
+// ErrorResponse defines model for ErrorResponse.
+type ErrorResponse struct {
+	Error *string `json:"error,omitempty"`
 }
 
 // JobStatus defines model for JobStatus.
 type JobStatus string
 
-// JobWithTrigger defines model for JobWithTrigger.
-type JobWithTrigger struct {
-	Approval *struct {
-		// Approver Null when status is pending, contains approver details when approved or rejected
-		Approver *struct {
-			Id   string `json:"id"`
-			Name string `json:"name"`
-		} `json:"approver"`
-		Id     string                       `json:"id"`
-		Status JobWithTriggerApprovalStatus `json:"status"`
-	} `json:"approval"`
-	CompletedAt *time.Time   `json:"completedAt"`
-	CreatedAt   time.Time    `json:"createdAt"`
-	Deployment  *Deployment  `json:"deployment,omitempty"`
-	Environment *Environment `json:"environment,omitempty"`
-
-	// ExternalId External job identifier (e.g. GitHub workflow run ID)
-	ExternalId *string            `json:"externalId"`
-	Id         openapi_types.UUID `json:"id"`
-
-	// JobAgentConfig Configuration for the Job Agent
-	JobAgentConfig map[string]interface{} `json:"jobAgentConfig"`
-	JobAgentId     *openapi_types.UUID    `json:"jobAgentId,omitempty"`
-	Links          *map[string]string     `json:"links,omitempty"`
-	Message        *string                `json:"message,omitempty"`
-	Metadata       *map[string]string     `json:"metadata,omitempty"`
-	Reason         *string                `json:"reason,omitempty"`
-	Release        *Release               `json:"release,omitempty"`
-	Resource       *struct {
-		Config        map[string]interface{} `json:"config"`
-		CreatedAt     time.Time              `json:"createdAt"`
-		DeletedAt     *time.Time             `json:"deletedAt"`
-		Id            openapi_types.UUID     `json:"id"`
-		Identifier    string                 `json:"identifier"`
-		Kind          string                 `json:"kind"`
-		Metadata      MetadataMap            `json:"metadata"`
-		Name          string                 `json:"name"`
-		ProviderId    *openapi_types.UUID    `json:"providerId,omitempty"`
-		Relationships *map[string]Resource   `json:"relationships,omitempty"`
-		UpdatedAt     time.Time              `json:"updatedAt"`
-		Variables     *VariableMap           `json:"variables,omitempty"`
-		Version       string                 `json:"version"`
-		WorkspaceId   openapi_types.UUID     `json:"workspaceId"`
-	} `json:"resource,omitempty"`
-	Runbook   *Runbook           `json:"runbook,omitempty"`
-	StartedAt *time.Time         `json:"startedAt"`
-	Status    JobStatus          `json:"status"`
-	UpdatedAt time.Time          `json:"updatedAt"`
-	Variables VariableMap        `json:"variables"`
-	Version   *DeploymentVersion `json:"version,omitempty"`
+// JsonSelector defines model for JsonSelector.
+type JsonSelector struct {
+	Json map[string]interface{} `json:"json"`
 }
-
-// JobWithTriggerApprovalStatus defines model for JobWithTrigger.Approval.Status.
-type JobWithTriggerApprovalStatus string
-
-// MaxRetries defines model for MaxRetries.
-type MaxRetries = int32
-
-// MetadataEqualsConstraint defines model for MetadataEqualsConstraint.
-type MetadataEqualsConstraint struct {
-	Key   *string `json:"key,omitempty"`
-	Value *string `json:"value,omitempty"`
-}
-
-// MetadataKeyMatchConstraint defines model for MetadataKeyMatchConstraint.
-type MetadataKeyMatchConstraint struct {
-	SourceKey string `json:"sourceKey"`
-	TargetKey string `json:"targetKey"`
-}
-
-// MetadataMap defines model for MetadataMap.
-type MetadataMap map[string]string
 
 // Policy defines model for Policy.
 type Policy struct {
-	Concurrency               *PolicyConcurrency         `json:"concurrency"`
-	CreatedAt                 time.Time                  `json:"createdAt"`
-	DenyWindows               []DenyWindow               `json:"denyWindows"`
-	DeploymentVersionSelector *DeploymentVersionSelector `json:"deploymentVersionSelector,omitempty"`
-	Description               *string                    `json:"description,omitempty"`
-	Enabled                   bool                       `json:"enabled"`
-	EnvironmentVersionRollout *EnvironmentVersionRollout `json:"environmentVersionRollout,omitempty"`
-	Id                        openapi_types.UUID         `json:"id"`
-	MaxRetries                *MaxRetries                `json:"maxRetries"`
-	Name                      string                     `json:"name"`
-	Priority                  float32                    `json:"priority"`
-	Targets                   []PolicyTarget             `json:"targets"`
-	VersionAnyApprovals       *VersionAnyApproval        `json:"versionAnyApprovals,omitempty"`
-	VersionRoleApprovals      []VersionRoleApproval      `json:"versionRoleApprovals"`
-	VersionUserApprovals      []VersionUserApproval      `json:"versionUserApprovals"`
-	WorkspaceId               openapi_types.UUID         `json:"workspaceId"`
+	CreatedAt   string  `json:"createdAt"`
+	Description *string `json:"description,omitempty"`
+	Enabled     bool    `json:"enabled"`
+	Id          string  `json:"id"`
+
+	// Metadata Arbitrary metadata for the policy (record<string, string>)
+	Metadata    map[string]string      `json:"metadata"`
+	Name        string                 `json:"name"`
+	Priority    int                    `json:"priority"`
+	Rules       []PolicyRule           `json:"rules"`
+	Selectors   []PolicyTargetSelector `json:"selectors"`
+	WorkspaceId string                 `json:"workspaceId"`
 }
 
-// PolicyConcurrency defines model for PolicyConcurrency.
-type PolicyConcurrency = int32
-
-// PolicyTarget defines model for PolicyTarget.
-type PolicyTarget struct {
-	DeploymentSelector  *map[string]interface{} `json:"deploymentSelector"`
-	EnvironmentSelector *map[string]interface{} `json:"environmentSelector"`
-	ResourceSelector    *map[string]interface{} `json:"resourceSelector"`
+// PolicyRule defines model for PolicyRule.
+type PolicyRule struct {
+	AnyApproval            *AnyApprovalRule            `json:"anyApproval,omitempty"`
+	CreatedAt              string                      `json:"createdAt"`
+	EnvironmentProgression *EnvironmentProgressionRule `json:"environmentProgression,omitempty"`
+	Id                     string                      `json:"id"`
+	PolicyId               string                      `json:"policyId"`
 }
 
-// ReferenceDeploymentVariableValue defines model for ReferenceDeploymentVariableValue.
-type ReferenceDeploymentVariableValue struct {
-	DefaultValue     *ReferenceDeploymentVariableValue_DefaultValue `json:"defaultValue"`
-	IsDefault        *bool                                          `json:"isDefault,omitempty"`
-	Path             []string                                       `json:"path"`
-	Priority         *int                                           `json:"priority,omitempty"`
-	Reference        string                                         `json:"reference"`
-	ResourceSelector *map[string]interface{}                        `json:"resourceSelector"`
+// PolicyTargetSelector defines model for PolicyTargetSelector.
+type PolicyTargetSelector struct {
+	DeploymentSelector  *Selector `json:"deploymentSelector,omitempty"`
+	EnvironmentSelector *Selector `json:"environmentSelector,omitempty"`
+	Id                  string    `json:"id"`
+	ResourceSelector    *Selector `json:"resourceSelector,omitempty"`
 }
 
-// ReferenceDeploymentVariableValueDefaultValue0 defines model for .
-type ReferenceDeploymentVariableValueDefaultValue0 = string
+// RelatableEntityType defines model for RelatableEntityType.
+type RelatableEntityType string
 
-// ReferenceDeploymentVariableValueDefaultValue1 defines model for .
-type ReferenceDeploymentVariableValueDefaultValue1 = float32
+// RelationshipRule defines model for RelationshipRule.
+type RelationshipRule struct {
+	Description      *string                  `json:"description,omitempty"`
+	FromSelector     *Selector                `json:"fromSelector,omitempty"`
+	FromType         RelatableEntityType      `json:"fromType"`
+	Id               string                   `json:"id"`
+	Matcher          RelationshipRule_Matcher `json:"matcher"`
+	Metadata         map[string]string        `json:"metadata"`
+	Name             string                   `json:"name"`
+	Reference        string                   `json:"reference"`
+	RelationshipType string                   `json:"relationshipType"`
+	ToSelector       *Selector                `json:"toSelector,omitempty"`
+	ToType           RelatableEntityType      `json:"toType"`
+	WorkspaceId      string                   `json:"workspaceId"`
+}
 
-// ReferenceDeploymentVariableValueDefaultValue2 defines model for .
-type ReferenceDeploymentVariableValueDefaultValue2 = bool
-
-// ReferenceDeploymentVariableValueDefaultValue3 defines model for .
-type ReferenceDeploymentVariableValueDefaultValue3 = map[string]interface{}
-
-// ReferenceDeploymentVariableValueDefaultValue4 defines model for .
-type ReferenceDeploymentVariableValueDefaultValue4 = []interface{}
-
-// ReferenceDeploymentVariableValue_DefaultValue defines model for ReferenceDeploymentVariableValue.DefaultValue.
-type ReferenceDeploymentVariableValue_DefaultValue struct {
+// RelationshipRule_Matcher defines model for RelationshipRule.Matcher.
+type RelationshipRule_Matcher struct {
 	union json.RawMessage
-}
-
-// ReferenceDeploymentVariableValueWithId defines model for ReferenceDeploymentVariableValueWithId.
-type ReferenceDeploymentVariableValueWithId struct {
-	DefaultValue     *ReferenceDeploymentVariableValueWithId_DefaultValue `json:"defaultValue"`
-	Id               openapi_types.UUID                                   `json:"id"`
-	IsDefault        *bool                                                `json:"isDefault,omitempty"`
-	Path             []string                                             `json:"path"`
-	Priority         *int                                                 `json:"priority,omitempty"`
-	Reference        string                                               `json:"reference"`
-	ResourceSelector *map[string]interface{}                              `json:"resourceSelector"`
-}
-
-// ReferenceDeploymentVariableValueWithIdDefaultValue0 defines model for .
-type ReferenceDeploymentVariableValueWithIdDefaultValue0 = string
-
-// ReferenceDeploymentVariableValueWithIdDefaultValue1 defines model for .
-type ReferenceDeploymentVariableValueWithIdDefaultValue1 = float32
-
-// ReferenceDeploymentVariableValueWithIdDefaultValue2 defines model for .
-type ReferenceDeploymentVariableValueWithIdDefaultValue2 = bool
-
-// ReferenceDeploymentVariableValueWithIdDefaultValue3 defines model for .
-type ReferenceDeploymentVariableValueWithIdDefaultValue3 = map[string]interface{}
-
-// ReferenceDeploymentVariableValueWithIdDefaultValue4 defines model for .
-type ReferenceDeploymentVariableValueWithIdDefaultValue4 = []interface{}
-
-// ReferenceDeploymentVariableValueWithId_DefaultValue defines model for ReferenceDeploymentVariableValueWithId.DefaultValue.
-type ReferenceDeploymentVariableValueWithId_DefaultValue struct {
-	union json.RawMessage
-}
-
-// ReferenceVariable defines model for ReferenceVariable.
-type ReferenceVariable struct {
-	DefaultValue *ReferenceVariable_DefaultValue `json:"defaultValue,omitempty"`
-	Key          string                          `json:"key"`
-	Path         []string                        `json:"path"`
-	Reference    string                          `json:"reference"`
-}
-
-// ReferenceVariableDefaultValue0 defines model for .
-type ReferenceVariableDefaultValue0 = string
-
-// ReferenceVariableDefaultValue1 defines model for .
-type ReferenceVariableDefaultValue1 = float32
-
-// ReferenceVariableDefaultValue2 defines model for .
-type ReferenceVariableDefaultValue2 = bool
-
-// ReferenceVariableDefaultValue3 defines model for .
-type ReferenceVariableDefaultValue3 = map[string]interface{}
-
-// ReferenceVariableDefaultValue4 defines model for .
-type ReferenceVariableDefaultValue4 = []interface{}
-
-// ReferenceVariable_DefaultValue defines model for ReferenceVariable.DefaultValue.
-type ReferenceVariable_DefaultValue struct {
-	union json.RawMessage
-}
-
-// Release defines model for Release.
-type Release struct {
-	Config         map[string]interface{}  `json:"config"`
-	CreatedAt      time.Time               `json:"createdAt"`
-	DeploymentId   openapi_types.UUID      `json:"deploymentId"`
-	Id             openapi_types.UUID      `json:"id"`
-	JobAgentConfig map[string]interface{}  `json:"jobAgentConfig"`
-	Metadata       *map[string]interface{} `json:"metadata,omitempty"`
-	Name           string                  `json:"name"`
-	Version        string                  `json:"version"`
-}
-
-// ReleaseTarget defines model for ReleaseTarget.
-type ReleaseTarget struct {
-	Deployment  Deployment         `json:"deployment"`
-	Environment Environment        `json:"environment"`
-	Id          openapi_types.UUID `json:"id"`
-	Resource    Resource           `json:"resource"`
-}
-
-// ReleaseTargetLockRecord defines model for ReleaseTargetLockRecord.
-type ReleaseTargetLockRecord struct {
-	Id       openapi_types.UUID `json:"id"`
-	LockedAt time.Time          `json:"lockedAt"`
-	LockedBy struct {
-		Email string             `json:"email"`
-		Id    openapi_types.UUID `json:"id"`
-		Name  *string            `json:"name,omitempty"`
-	} `json:"lockedBy"`
-	ReleaseTargetId openapi_types.UUID `json:"releaseTargetId"`
-	UnlockedAt      *time.Time         `json:"unlockedAt"`
 }
 
 // Resource defines model for Resource.
 type Resource struct {
 	Config      map[string]interface{} `json:"config"`
 	CreatedAt   time.Time              `json:"createdAt"`
-	DeletedAt   *time.Time             `json:"deletedAt"`
-	Id          openapi_types.UUID     `json:"id"`
+	DeletedAt   *time.Time             `json:"deletedAt,omitempty"`
 	Identifier  string                 `json:"identifier"`
 	Kind        string                 `json:"kind"`
-	Metadata    map[string]interface{} `json:"metadata"`
+	LockedAt    *time.Time             `json:"lockedAt,omitempty"`
+	Metadata    map[string]string      `json:"metadata"`
 	Name        string                 `json:"name"`
-	ProviderId  *openapi_types.UUID    `json:"providerId,omitempty"`
-	UpdatedAt   time.Time              `json:"updatedAt"`
+	ProviderId  *string                `json:"providerId,omitempty"`
+	UpdatedAt   *time.Time             `json:"updatedAt,omitempty"`
 	Version     string                 `json:"version"`
-	WorkspaceId openapi_types.UUID     `json:"workspaceId"`
+	WorkspaceId string                 `json:"workspaceId"`
 }
 
-// ResourceRelationshipRule defines model for ResourceRelationshipRule.
-type ResourceRelationshipRule struct {
-	DependencyDescription *string                                `json:"dependencyDescription,omitempty"`
-	DependencyType        ResourceRelationshipRuleDependencyType `json:"dependencyType"`
-	Description           *string                                `json:"description,omitempty"`
-	Id                    openapi_types.UUID                     `json:"id"`
-	MetadataKeysMatches   *[]MetadataKeyMatchConstraint          `json:"metadataKeysMatches,omitempty"`
-	Name                  string                                 `json:"name"`
-	Reference             string                                 `json:"reference"`
-	SourceKind            string                                 `json:"sourceKind"`
-	SourceMetadataEquals  *[]MetadataEqualsConstraint            `json:"sourceMetadataEquals,omitempty"`
-	SourceVersion         string                                 `json:"sourceVersion"`
-	TargetKind            *string                                `json:"targetKind,omitempty"`
-	TargetMetadataEquals  *[]MetadataEqualsConstraint            `json:"targetMetadataEquals,omitempty"`
-	TargetVersion         *string                                `json:"targetVersion,omitempty"`
-	WorkspaceId           openapi_types.UUID                     `json:"workspaceId"`
+// ResourceProvider defines model for ResourceProvider.
+type ResourceProvider struct {
+	CreatedAt time.Time `json:"createdAt"`
+	Id        string    `json:"id"`
+
+	// Metadata Arbitrary metadata for the resource provider (record<string, string>)
+	Metadata    *map[string]string `json:"metadata,omitempty"`
+	Name        string             `json:"name"`
+	WorkspaceId openapi_types.UUID `json:"workspaceId"`
 }
 
-// ResourceRelationshipRuleDependencyType defines model for ResourceRelationshipRuleDependencyType.
-type ResourceRelationshipRuleDependencyType string
-
-// ResourceWithMetadata defines model for ResourceWithMetadata.
-type ResourceWithMetadata struct {
-	Config      map[string]interface{} `json:"config"`
-	CreatedAt   time.Time              `json:"createdAt"`
-	DeletedAt   *time.Time             `json:"deletedAt"`
-	Id          openapi_types.UUID     `json:"id"`
-	Identifier  string                 `json:"identifier"`
-	Kind        string                 `json:"kind"`
-	Metadata    MetadataMap            `json:"metadata"`
-	Name        string                 `json:"name"`
-	ProviderId  *openapi_types.UUID    `json:"providerId,omitempty"`
-	UpdatedAt   time.Time              `json:"updatedAt"`
-	Version     string                 `json:"version"`
-	WorkspaceId openapi_types.UUID     `json:"workspaceId"`
+// ResourceProviderResource defines model for ResourceProviderResource.
+type ResourceProviderResource struct {
+	Config     map[string]interface{} `json:"config"`
+	CreatedAt  time.Time              `json:"createdAt"`
+	DeletedAt  *time.Time             `json:"deletedAt,omitempty"`
+	Identifier string                 `json:"identifier"`
+	Kind       string                 `json:"kind"`
+	LockedAt   *time.Time             `json:"lockedAt,omitempty"`
+	Metadata   map[string]string      `json:"metadata"`
+	Name       string                 `json:"name"`
+	UpdatedAt  *time.Time             `json:"updatedAt,omitempty"`
+	Version    string                 `json:"version"`
 }
 
-// ResourceWithVariables defines model for ResourceWithVariables.
-type ResourceWithVariables struct {
-	Config      map[string]interface{} `json:"config"`
-	CreatedAt   time.Time              `json:"createdAt"`
-	DeletedAt   *time.Time             `json:"deletedAt"`
-	Id          openapi_types.UUID     `json:"id"`
-	Identifier  string                 `json:"identifier"`
-	Kind        string                 `json:"kind"`
-	Metadata    map[string]interface{} `json:"metadata"`
-	Name        string                 `json:"name"`
-	ProviderId  *openapi_types.UUID    `json:"providerId,omitempty"`
-	UpdatedAt   time.Time              `json:"updatedAt"`
-	Variables   *VariableMap           `json:"variables,omitempty"`
-	Version     string                 `json:"version"`
-	WorkspaceId openapi_types.UUID     `json:"workspaceId"`
-}
-
-// ResourceWithVariablesAndMetadata defines model for ResourceWithVariablesAndMetadata.
-type ResourceWithVariablesAndMetadata struct {
-	Config      map[string]interface{} `json:"config"`
-	CreatedAt   time.Time              `json:"createdAt"`
-	DeletedAt   *time.Time             `json:"deletedAt"`
-	Id          openapi_types.UUID     `json:"id"`
-	Identifier  string                 `json:"identifier"`
-	Kind        string                 `json:"kind"`
-	Metadata    MetadataMap            `json:"metadata"`
-	Name        string                 `json:"name"`
-	ProviderId  *openapi_types.UUID    `json:"providerId,omitempty"`
-	UpdatedAt   time.Time              `json:"updatedAt"`
-	Variables   *VariableMap           `json:"variables,omitempty"`
-	Version     string                 `json:"version"`
-	WorkspaceId openapi_types.UUID     `json:"workspaceId"`
-}
-
-// Runbook defines model for Runbook.
-type Runbook struct {
-	Id         openapi_types.UUID `json:"id"`
-	JobAgentId openapi_types.UUID `json:"jobAgentId"`
-	Name       string             `json:"name"`
-	SystemId   openapi_types.UUID `json:"systemId"`
+// Selector defines model for Selector.
+type Selector struct {
+	union json.RawMessage
 }
 
 // System defines model for System.
 type System struct {
-	// Description The description of the system
 	Description *string `json:"description,omitempty"`
-
-	// Id The system ID
-	Id openapi_types.UUID `json:"id"`
-
-	// Name The name of the system
-	Name string `json:"name"`
-
-	// Slug The slug of the system
-	Slug string `json:"slug"`
-
-	// WorkspaceId The workspace ID of the system
-	WorkspaceId openapi_types.UUID `json:"workspaceId"`
+	Id          string  `json:"id"`
+	Name        string  `json:"name"`
+	WorkspaceId string  `json:"workspaceId"`
 }
 
-// UpdateResourceRelationshipRule defines model for UpdateResourceRelationshipRule.
-type UpdateResourceRelationshipRule struct {
-	DependencyDescription *string                                 `json:"dependencyDescription,omitempty"`
-	DependencyType        *ResourceRelationshipRuleDependencyType `json:"dependencyType,omitempty"`
-	Description           *string                                 `json:"description,omitempty"`
-	MetadataKeysMatches   *[]MetadataKeyMatchConstraint           `json:"metadataKeysMatches,omitempty"`
-	Name                  *string                                 `json:"name,omitempty"`
-	Reference             *string                                 `json:"reference,omitempty"`
-	SourceKind            *string                                 `json:"sourceKind,omitempty"`
-	SourceMetadataEquals  *[]MetadataEqualsConstraint             `json:"sourceMetadataEquals,omitempty"`
-	SourceVersion         *string                                 `json:"sourceVersion,omitempty"`
-	TargetKind            *string                                 `json:"targetKind,omitempty"`
-	TargetMetadataEquals  *[]MetadataEqualsConstraint             `json:"targetMetadataEquals,omitempty"`
-	TargetVersion         *string                                 `json:"targetVersion,omitempty"`
+// UpdateWorkspaceRequest defines model for UpdateWorkspaceRequest.
+type UpdateWorkspaceRequest struct {
+	// Name Display name of the workspace
+	Name *string `json:"name,omitempty"`
+
+	// Slug URL-friendly unique identifier (lowercase, no spaces)
+	Slug *string `json:"slug,omitempty"`
 }
 
-// Variable defines model for Variable.
-type Variable struct {
-	union json.RawMessage
+// UpsertDeploymentRequest defines model for UpsertDeploymentRequest.
+type UpsertDeploymentRequest struct {
+	Description      *string                 `json:"description,omitempty"`
+	JobAgentConfig   *map[string]interface{} `json:"jobAgentConfig,omitempty"`
+	JobAgentId       *string                 `json:"jobAgentId,omitempty"`
+	Name             string                  `json:"name"`
+	ResourceSelector *Selector               `json:"resourceSelector,omitempty"`
+	Slug             string                  `json:"slug"`
+	SystemId         string                  `json:"systemId"`
 }
 
-// VariableMap defines model for VariableMap.
-type VariableMap map[string]*VariableMap_AdditionalProperties
-
-// VariableMap0 defines model for .
-type VariableMap0 = string
-
-// VariableMap1 defines model for .
-type VariableMap1 = bool
-
-// VariableMap2 defines model for .
-type VariableMap2 = float32
-
-// VariableMap3 defines model for .
-type VariableMap3 = map[string]interface{}
-
-// VariableMap4 defines model for .
-type VariableMap4 = []interface{}
-
-// VariableMap_AdditionalProperties defines model for VariableMap.AdditionalProperties.
-type VariableMap_AdditionalProperties struct {
-	union json.RawMessage
+// UpsertDeploymentVersionRequest defines model for UpsertDeploymentVersionRequest.
+type UpsertDeploymentVersionRequest struct {
+	Config         *map[string]interface{}  `json:"config,omitempty"`
+	CreatedAt      *time.Time               `json:"createdAt,omitempty"`
+	DeploymentId   string                   `json:"deploymentId"`
+	JobAgentConfig *map[string]interface{}  `json:"jobAgentConfig,omitempty"`
+	Metadata       *map[string]string       `json:"metadata,omitempty"`
+	Name           *string                  `json:"name,omitempty"`
+	Status         *DeploymentVersionStatus `json:"status,omitempty"`
+	Tag            string                   `json:"tag"`
 }
 
-// VersionAnyApproval defines model for VersionAnyApproval.
-type VersionAnyApproval struct {
-	RequiredApprovalsCount float32 `json:"requiredApprovalsCount"`
+// UpsertEnvironmentRequest defines model for UpsertEnvironmentRequest.
+type UpsertEnvironmentRequest struct {
+	Description      *string   `json:"description,omitempty"`
+	Name             string    `json:"name"`
+	ResourceSelector *Selector `json:"resourceSelector,omitempty"`
+	SystemId         string    `json:"systemId"`
 }
 
-// VersionRoleApproval defines model for VersionRoleApproval.
-type VersionRoleApproval struct {
-	RequiredApprovalsCount float32 `json:"requiredApprovalsCount"`
-	RoleId                 string  `json:"roleId"`
+// UpsertPolicyRequest defines model for UpsertPolicyRequest.
+type UpsertPolicyRequest struct {
+	Description *string `json:"description,omitempty"`
+	Enabled     *bool   `json:"enabled,omitempty"`
+
+	// Metadata Arbitrary metadata for the policy (record<string, string>)
+	Metadata  *map[string]string      `json:"metadata,omitempty"`
+	Name      string                  `json:"name"`
+	Priority  *int                    `json:"priority,omitempty"`
+	Rules     *[]PolicyRule           `json:"rules,omitempty"`
+	Selectors *[]PolicyTargetSelector `json:"selectors,omitempty"`
 }
 
-// VersionUserApproval defines model for VersionUserApproval.
-type VersionUserApproval struct {
-	UserId string `json:"userId"`
+// UpsertResourceProviderRequest defines model for UpsertResourceProviderRequest.
+type UpsertResourceProviderRequest struct {
+	Id string `json:"id"`
+
+	// Metadata Arbitrary metadata for the resource provider (record<string, string>)
+	Metadata *map[string]string `json:"metadata,omitempty"`
+	Name     string             `json:"name"`
+}
+
+// UpsertUserApprovalRecordRequest defines model for UpsertUserApprovalRecordRequest.
+type UpsertUserApprovalRecordRequest struct {
+	EnvironmentIds *[]string      `json:"environmentIds,omitempty"`
+	Reason         *string        `json:"reason,omitempty"`
+	Status         ApprovalStatus `json:"status"`
 }
 
 // Workspace defines model for Workspace.
 type Workspace struct {
-	// AwsRoleArn The ARN of the AWS role attached to the workspace
+	// AwsRoleArn AWS IAM role ARN for integrations
 	AwsRoleArn *string `json:"awsRoleArn"`
 
-	// GoogleServiceAccountEmail The email of the Google service account attached to the workspace
-	GoogleServiceAccountEmail *string `json:"googleServiceAccountEmail"`
+	// CreatedAt Timestamp when workspace was created
+	CreatedAt time.Time `json:"createdAt"`
 
-	// Id The workspace ID
+	// GoogleServiceAccountEmail Google service account email for integrations
+	GoogleServiceAccountEmail *openapi_types.Email `json:"googleServiceAccountEmail"`
+
+	// Id Unique identifier for the workspace
 	Id openapi_types.UUID `json:"id"`
 
-	// Name The name of the workspace
+	// Name Display name of the workspace
 	Name string `json:"name"`
 
-	// Slug The slug of the workspace
+	// Slug URL-friendly unique identifier
 	Slug string `json:"slug"`
 }
 
-// GetCloudProviderRegionsParamsProvider defines parameters for GetCloudProviderRegions.
-type GetCloudProviderRegionsParamsProvider string
-
-// UpsertDeploymentVersionJSONBody defines parameters for UpsertDeploymentVersion.
-type UpsertDeploymentVersionJSONBody struct {
-	Config         *map[string]interface{}                `json:"config,omitempty"`
-	CreatedAt      *time.Time                             `json:"createdAt,omitempty"`
-	DeploymentId   string                                 `json:"deploymentId"`
-	JobAgentConfig *map[string]interface{}                `json:"jobAgentConfig,omitempty"`
-	Message        *string                                `json:"message,omitempty"`
-	Metadata       *map[string]string                     `json:"metadata,omitempty"`
-	Name           *string                                `json:"name,omitempty"`
-	Status         *UpsertDeploymentVersionJSONBodyStatus `json:"status,omitempty"`
-	Tag            string                                 `json:"tag"`
+// WorkspaceList defines model for WorkspaceList.
+type WorkspaceList struct {
+	// Total Total number of workspaces
+	Total      int         `json:"total"`
+	Workspaces []Workspace `json:"workspaces"`
 }
 
-// UpsertDeploymentVersionJSONBodyStatus defines parameters for UpsertDeploymentVersion.
-type UpsertDeploymentVersionJSONBodyStatus string
+// ListDeploymentsParams defines parameters for ListDeployments.
+type ListDeploymentsParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
-// UpdateDeploymentVersionJSONBody defines parameters for UpdateDeploymentVersion.
-type UpdateDeploymentVersionJSONBody struct {
-	Config         *map[string]interface{}                `json:"config,omitempty"`
-	CreatedAt      *time.Time                             `json:"createdAt,omitempty"`
-	DeploymentId   *string                                `json:"deploymentId,omitempty"`
-	JobAgentConfig *map[string]interface{}                `json:"jobAgentConfig,omitempty"`
-	Message        *string                                `json:"message,omitempty"`
-	Metadata       *map[string]string                     `json:"metadata,omitempty"`
-	Name           *string                                `json:"name,omitempty"`
-	Status         *UpdateDeploymentVersionJSONBodyStatus `json:"status,omitempty"`
-	Tag            *string                                `json:"tag,omitempty"`
-}
-
-// UpdateDeploymentVersionJSONBodyStatus defines parameters for UpdateDeploymentVersion.
-type UpdateDeploymentVersionJSONBodyStatus string
-
-// ApproveDeploymentVersionJSONBody defines parameters for ApproveDeploymentVersion.
-type ApproveDeploymentVersionJSONBody struct {
-	ApprovedAt *time.Time `json:"approvedAt"`
-	Reason     *string    `json:"reason,omitempty"`
-}
-
-// ApproveDeploymentVersionForEnvironmentJSONBody defines parameters for ApproveDeploymentVersionForEnvironment.
-type ApproveDeploymentVersionForEnvironmentJSONBody struct {
-	ApprovedAt *time.Time `json:"approvedAt,omitempty"`
-	Reason     *string    `json:"reason,omitempty"`
-}
-
-// RejectDeploymentVersionJSONBody defines parameters for RejectDeploymentVersion.
-type RejectDeploymentVersionJSONBody struct {
-	Reason *string `json:"reason,omitempty"`
-}
-
-// RejectDeploymentVersionForEnvironmentJSONBody defines parameters for RejectDeploymentVersionForEnvironment.
-type RejectDeploymentVersionForEnvironmentJSONBody struct {
-	Reason *string `json:"reason,omitempty"`
-}
-
-// CreateDeploymentJSONBody defines parameters for CreateDeployment.
-type CreateDeploymentJSONBody struct {
-	// Description The description of the deployment
-	Description *string     `json:"description,omitempty"`
-	ExitHooks   *[]ExitHook `json:"exitHooks,omitempty"`
-
-	// JobAgentConfig The configuration for the job agent
-	JobAgentConfig *map[string]interface{} `json:"jobAgentConfig,omitempty"`
-
-	// JobAgentId The ID of the job agent to use for the deployment
-	JobAgentId *openapi_types.UUID `json:"jobAgentId,omitempty"`
-
-	// Name The name of the deployment
-	Name string `json:"name"`
-
-	// ResourceSelector The resource selector for the deployment
-	ResourceSelector *map[string]interface{} `json:"resourceSelector,omitempty"`
-
-	// RetryCount The number of times to retry the deployment
-	RetryCount *float32 `json:"retryCount,omitempty"`
-
-	// Slug The slug of the deployment
-	Slug string `json:"slug"`
-
-	// SystemId The ID of the system to create the deployment for
-	SystemId openapi_types.UUID `json:"systemId"`
-
-	// Timeout The timeout for the deployment
-	Timeout *float32 `json:"timeout,omitempty"`
-}
-
-// UpdateDeploymentJSONBody defines parameters for UpdateDeployment.
-type UpdateDeploymentJSONBody struct {
-	Description      *string                 `json:"description,omitempty"`
-	ExitHooks        *[]ExitHook             `json:"exitHooks,omitempty"`
-	JobAgentConfig   *map[string]interface{} `json:"jobAgentConfig,omitempty"`
-	JobAgentId       *openapi_types.UUID     `json:"jobAgentId"`
-	Name             *string                 `json:"name,omitempty"`
-	ResourceSelector *map[string]interface{} `json:"resourceSelector"`
-	RetryCount       *int                    `json:"retryCount,omitempty"`
-	Slug             *string                 `json:"slug,omitempty"`
-	SystemId         *openapi_types.UUID     `json:"systemId,omitempty"`
-	Timeout          *int                    `json:"timeout"`
-}
-
-// CreateDeploymentVariableJSONBody defines parameters for CreateDeploymentVariable.
-type CreateDeploymentVariableJSONBody struct {
-	Config          map[string]interface{}              `json:"config"`
-	Description     *string                             `json:"description,omitempty"`
-	DirectValues    *[]DirectDeploymentVariableValue    `json:"directValues,omitempty"`
-	Key             string                              `json:"key"`
-	ReferenceValues *[]ReferenceDeploymentVariableValue `json:"referenceValues,omitempty"`
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // ListDeploymentVersionsParams defines parameters for ListDeploymentVersions.
 type ListDeploymentVersionsParams struct {
-	Status *ListDeploymentVersionsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
-// ListDeploymentVersionsParamsStatus defines parameters for ListDeploymentVersions.
-type ListDeploymentVersionsParamsStatus string
+// ListEnvironmentsParams defines parameters for ListEnvironments.
+type ListEnvironmentsParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
-// CreateEnvironmentJSONBody defines parameters for CreateEnvironment.
-type CreateEnvironmentJSONBody struct {
-	Description *string `json:"description,omitempty"`
-
-	// Directory The directory path of the environment
-	Directory        *string                 `json:"directory,omitempty"`
-	Metadata         *map[string]string      `json:"metadata,omitempty"`
-	Name             string                  `json:"name"`
-	ResourceSelector *map[string]interface{} `json:"resourceSelector,omitempty"`
-	SystemId         string                  `json:"systemId"`
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
-
-// UpsertJobAgentJSONBody defines parameters for UpsertJobAgent.
-type UpsertJobAgentJSONBody struct {
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	WorkspaceId string `json:"workspaceId"`
-}
-
-// UpdateJobJSONBody defines parameters for UpdateJob.
-type UpdateJobJSONBody struct {
-	ExternalId *string    `json:"externalId"`
-	Message    *string    `json:"message"`
-	Status     *JobStatus `json:"status,omitempty"`
-}
-
-// UpsertPolicyJSONBody defines parameters for UpsertPolicy.
-type UpsertPolicyJSONBody struct {
-	Concurrency *PolicyConcurrency `json:"concurrency"`
-	DenyWindows *[]struct {
-		Dtend    *time.Time              `json:"dtend,omitempty"`
-		Rrule    *map[string]interface{} `json:"rrule,omitempty"`
-		TimeZone string                  `json:"timeZone"`
-	} `json:"denyWindows,omitempty"`
-	DeploymentVersionSelector *DeploymentVersionSelector       `json:"deploymentVersionSelector,omitempty"`
-	Description               *string                          `json:"description,omitempty"`
-	Enabled                   *bool                            `json:"enabled,omitempty"`
-	EnvironmentVersionRollout *InsertEnvironmentVersionRollout `json:"environmentVersionRollout,omitempty"`
-	MaxRetries                *MaxRetries                      `json:"maxRetries"`
-	Name                      string                           `json:"name"`
-	Priority                  *float32                         `json:"priority,omitempty"`
-	Targets                   []PolicyTarget                   `json:"targets"`
-	VersionAnyApprovals       *VersionAnyApproval              `json:"versionAnyApprovals,omitempty"`
-	VersionRoleApprovals      *[]VersionRoleApproval           `json:"versionRoleApprovals,omitempty"`
-	VersionUserApprovals      *[]VersionUserApproval           `json:"versionUserApprovals,omitempty"`
-	WorkspaceId               string                           `json:"workspaceId"`
-}
-
-// UpdatePolicyJSONBody defines parameters for UpdatePolicy.
-type UpdatePolicyJSONBody struct {
-	Concurrency *PolicyConcurrency `json:"concurrency"`
-	DenyWindows *[]struct {
-		Dtend    *time.Time              `json:"dtend,omitempty"`
-		Rrule    *map[string]interface{} `json:"rrule,omitempty"`
-		TimeZone string                  `json:"timeZone"`
-	} `json:"denyWindows,omitempty"`
-	DeploymentVersionSelector *DeploymentVersionSelector       `json:"deploymentVersionSelector,omitempty"`
-	Description               *string                          `json:"description,omitempty"`
-	Enabled                   *bool                            `json:"enabled,omitempty"`
-	EnvironmentVersionRollout *InsertEnvironmentVersionRollout `json:"environmentVersionRollout,omitempty"`
-	MaxRetries                *MaxRetries                      `json:"maxRetries"`
-	Name                      *string                          `json:"name,omitempty"`
-	Priority                  *float32                         `json:"priority,omitempty"`
-	Targets                   *[]PolicyTarget                  `json:"targets,omitempty"`
-	VersionAnyApprovals       *[]struct {
-		RequiredApprovalsCount *float32 `json:"requiredApprovalsCount,omitempty"`
-	} `json:"versionAnyApprovals,omitempty"`
-	VersionRoleApprovals *[]struct {
-		RequiredApprovalsCount *float32 `json:"requiredApprovalsCount,omitempty"`
-		RoleId                 string   `json:"roleId"`
-	} `json:"versionRoleApprovals,omitempty"`
-	VersionUserApprovals *[]VersionUserApproval `json:"versionUserApprovals,omitempty"`
-	WorkspaceId          *string                `json:"workspaceId,omitempty"`
-}
-
-// CreateJobToResourceRelationshipJSONBody defines parameters for CreateJobToResourceRelationship.
-type CreateJobToResourceRelationshipJSONBody struct {
-	// JobId Unique identifier of the job
-	JobId openapi_types.UUID `json:"jobId"`
-
-	// ResourceIdentifier Unique identifier of the resource
-	ResourceIdentifier string `json:"resourceIdentifier"`
-}
-
-// CreateResourceToResourceRelationshipJSONBody defines parameters for CreateResourceToResourceRelationship.
-type CreateResourceToResourceRelationshipJSONBody struct {
-	// FromIdentifier The identifier of the resource to connect
-	FromIdentifier string `json:"fromIdentifier"`
-
-	// ToIdentifier The identifier of the resource to connect to
-	ToIdentifier string `json:"toIdentifier"`
-
-	// Type The type of relationship
-	Type string `json:"type"`
-
-	// WorkspaceId The workspace ID
-	WorkspaceId openapi_types.UUID `json:"workspaceId"`
-}
-
-// PinReleaseTargetJSONBody defines parameters for PinReleaseTarget.
-type PinReleaseTargetJSONBody struct {
-	union json.RawMessage
-}
-
-// PinReleaseTargetJSONBody0 defines parameters for PinReleaseTarget.
-type PinReleaseTargetJSONBody0 struct {
-	// VersionId The ID of the version to pin
-	VersionId openapi_types.UUID `json:"versionId"`
-}
-
-// PinReleaseTargetJSONBody1 defines parameters for PinReleaseTarget.
-type PinReleaseTargetJSONBody1 struct {
-	// VersionTag The tag of the version to pin
-	VersionTag string `json:"versionTag"`
-}
-
-// UpsertReleaseJSONBody defines parameters for UpsertRelease.
-type UpsertReleaseJSONBody struct {
-	Config         *map[string]interface{}      `json:"config,omitempty"`
-	CreatedAt      *time.Time                   `json:"createdAt,omitempty"`
-	DeploymentId   string                       `json:"deploymentId"`
-	JobAgentConfig *map[string]interface{}      `json:"jobAgentConfig,omitempty"`
-	Message        *string                      `json:"message,omitempty"`
-	Metadata       *map[string]string           `json:"metadata,omitempty"`
-	Name           *string                      `json:"name,omitempty"`
-	Status         *UpsertReleaseJSONBodyStatus `json:"status,omitempty"`
-	Version        string                       `json:"version"`
-}
-
-// UpsertReleaseJSONBodyStatus defines parameters for UpsertRelease.
-type UpsertReleaseJSONBodyStatus string
-
-// UpdateReleaseJSONBody defines parameters for UpdateRelease.
-type UpdateReleaseJSONBody struct {
-	Config         *map[string]interface{}      `json:"config,omitempty"`
-	CreatedAt      *time.Time                   `json:"createdAt,omitempty"`
-	DeploymentId   *string                      `json:"deploymentId,omitempty"`
-	JobAgentConfig *map[string]interface{}      `json:"jobAgentConfig,omitempty"`
-	Message        *string                      `json:"message,omitempty"`
-	Metadata       *map[string]string           `json:"metadata,omitempty"`
-	Name           *string                      `json:"name,omitempty"`
-	Status         *UpdateReleaseJSONBodyStatus `json:"status,omitempty"`
-	Version        *string                      `json:"version,omitempty"`
-}
-
-// UpdateReleaseJSONBodyStatus defines parameters for UpdateRelease.
-type UpdateReleaseJSONBodyStatus string
 
 // SetResourceProvidersResourcesJSONBody defines parameters for SetResourceProvidersResources.
 type SetResourceProvidersResourcesJSONBody struct {
-	Resources []CreateResource `json:"resources"`
+	Resources []ResourceProviderResource `json:"resources"`
 }
 
-// CreateResourceSchemaJSONBody defines parameters for CreateResourceSchema.
-type CreateResourceSchemaJSONBody struct {
-	// JsonSchema The JSON schema definition
-	JsonSchema map[string]interface{} `json:"jsonSchema"`
+// GetAllResourcesParams defines parameters for GetAllResources.
+type GetAllResourcesParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Kind Kind of resource this schema is for
-	Kind string `json:"kind"`
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 
-	// Version Version of the schema
-	Version string `json:"version"`
-
-	// WorkspaceId The ID of the workspace
-	WorkspaceId openapi_types.UUID `json:"workspaceId"`
+	// Cel CEL expression to filter the results
+	Cel *string `form:"cel,omitempty" json:"cel,omitempty"`
 }
 
-// UpsertResourceJSONBody defines parameters for UpsertResource.
-type UpsertResourceJSONBody struct {
-	Config      map[string]interface{} `json:"config"`
-	Identifier  string                 `json:"identifier"`
-	Kind        string                 `json:"kind"`
-	Metadata    *map[string]string     `json:"metadata,omitempty"`
-	Name        string                 `json:"name"`
-	Variables   *[]Variable            `json:"variables,omitempty"`
-	Version     string                 `json:"version"`
-	WorkspaceId openapi_types.UUID     `json:"workspaceId"`
-}
+// CreateWorkspaceJSONRequestBody defines body for CreateWorkspace for application/json ContentType.
+type CreateWorkspaceJSONRequestBody = CreateWorkspaceRequest
 
-// UpdateResourceJSONBody defines parameters for UpdateResource.
-type UpdateResourceJSONBody struct {
-	Identifier  *string           `json:"identifier,omitempty"`
-	Kind        *string           `json:"kind,omitempty"`
-	Metadata    *MetadataMap      `json:"metadata,omitempty"`
-	Name        *string           `json:"name,omitempty"`
-	Variables   *[]DirectVariable `json:"variables,omitempty"`
-	Version     *string           `json:"version,omitempty"`
-	WorkspaceId *string           `json:"workspaceId,omitempty"`
-}
+// UpdateWorkspaceJSONRequestBody defines body for UpdateWorkspace for application/json ContentType.
+type UpdateWorkspaceJSONRequestBody = UpdateWorkspaceRequest
 
-// CreateSystemJSONBody defines parameters for CreateSystem.
-type CreateSystemJSONBody struct {
-	// Description The description of the system
-	Description *string `json:"description,omitempty"`
-
-	// Name The name of the system
-	Name string `json:"name"`
-
-	// Slug The slug of the system
-	Slug string `json:"slug"`
-
-	// WorkspaceId The workspace ID of the system
-	WorkspaceId openapi_types.UUID `json:"workspaceId"`
-}
-
-// UpdateSystemJSONBody defines parameters for UpdateSystem.
-type UpdateSystemJSONBody struct {
-	// Description Description of the system
-	Description *string `json:"description,omitempty"`
-
-	// Name Name of the system
-	Name *string `json:"name,omitempty"`
-
-	// Slug Slug of the system
-	Slug *string `json:"slug,omitempty"`
-
-	// WorkspaceId UUID of the workspace
-	WorkspaceId *openapi_types.UUID `json:"workspaceId,omitempty"`
-}
-
-// GetGroupedCountsJSONBody defines parameters for GetGroupedCounts.
-type GetGroupedCountsJSONBody struct {
-	AllowNullCombinations bool     `json:"allowNullCombinations"`
-	MetadataKeys          []string `json:"metadataKeys"`
-}
+// UpsertDeploymentJSONRequestBody defines body for UpsertDeployment for application/json ContentType.
+type UpsertDeploymentJSONRequestBody = UpsertDeploymentRequest
 
 // UpsertDeploymentVersionJSONRequestBody defines body for UpsertDeploymentVersion for application/json ContentType.
-type UpsertDeploymentVersionJSONRequestBody UpsertDeploymentVersionJSONBody
+type UpsertDeploymentVersionJSONRequestBody = UpsertDeploymentVersionRequest
 
-// UpdateDeploymentVersionJSONRequestBody defines body for UpdateDeploymentVersion for application/json ContentType.
-type UpdateDeploymentVersionJSONRequestBody UpdateDeploymentVersionJSONBody
+// UpsertUserApprovalRecordJSONRequestBody defines body for UpsertUserApprovalRecord for application/json ContentType.
+type UpsertUserApprovalRecordJSONRequestBody = UpsertUserApprovalRecordRequest
 
-// ApproveDeploymentVersionJSONRequestBody defines body for ApproveDeploymentVersion for application/json ContentType.
-type ApproveDeploymentVersionJSONRequestBody ApproveDeploymentVersionJSONBody
-
-// ApproveDeploymentVersionForEnvironmentJSONRequestBody defines body for ApproveDeploymentVersionForEnvironment for application/json ContentType.
-type ApproveDeploymentVersionForEnvironmentJSONRequestBody ApproveDeploymentVersionForEnvironmentJSONBody
-
-// RejectDeploymentVersionJSONRequestBody defines body for RejectDeploymentVersion for application/json ContentType.
-type RejectDeploymentVersionJSONRequestBody RejectDeploymentVersionJSONBody
-
-// RejectDeploymentVersionForEnvironmentJSONRequestBody defines body for RejectDeploymentVersionForEnvironment for application/json ContentType.
-type RejectDeploymentVersionForEnvironmentJSONRequestBody RejectDeploymentVersionForEnvironmentJSONBody
-
-// CreateDeploymentJSONRequestBody defines body for CreateDeployment for application/json ContentType.
-type CreateDeploymentJSONRequestBody CreateDeploymentJSONBody
-
-// UpdateDeploymentJSONRequestBody defines body for UpdateDeployment for application/json ContentType.
-type UpdateDeploymentJSONRequestBody UpdateDeploymentJSONBody
-
-// CreateDeploymentVariableJSONRequestBody defines body for CreateDeploymentVariable for application/json ContentType.
-type CreateDeploymentVariableJSONRequestBody CreateDeploymentVariableJSONBody
-
-// CreateEnvironmentJSONRequestBody defines body for CreateEnvironment for application/json ContentType.
-type CreateEnvironmentJSONRequestBody CreateEnvironmentJSONBody
-
-// UpsertJobAgentJSONRequestBody defines body for UpsertJobAgent for application/json ContentType.
-type UpsertJobAgentJSONRequestBody UpsertJobAgentJSONBody
-
-// UpdateJobJSONRequestBody defines body for UpdateJob for application/json ContentType.
-type UpdateJobJSONRequestBody UpdateJobJSONBody
+// UpsertEnvironmentJSONRequestBody defines body for UpsertEnvironment for application/json ContentType.
+type UpsertEnvironmentJSONRequestBody = UpsertEnvironmentRequest
 
 // UpsertPolicyJSONRequestBody defines body for UpsertPolicy for application/json ContentType.
-type UpsertPolicyJSONRequestBody UpsertPolicyJSONBody
+type UpsertPolicyJSONRequestBody = UpsertPolicyRequest
 
-// UpdatePolicyJSONRequestBody defines body for UpdatePolicy for application/json ContentType.
-type UpdatePolicyJSONRequestBody UpdatePolicyJSONBody
-
-// CreateJobToResourceRelationshipJSONRequestBody defines body for CreateJobToResourceRelationship for application/json ContentType.
-type CreateJobToResourceRelationshipJSONRequestBody CreateJobToResourceRelationshipJSONBody
-
-// CreateResourceToResourceRelationshipJSONRequestBody defines body for CreateResourceToResourceRelationship for application/json ContentType.
-type CreateResourceToResourceRelationshipJSONRequestBody CreateResourceToResourceRelationshipJSONBody
-
-// PinReleaseTargetJSONRequestBody defines body for PinReleaseTarget for application/json ContentType.
-type PinReleaseTargetJSONRequestBody PinReleaseTargetJSONBody
-
-// UpsertReleaseJSONRequestBody defines body for UpsertRelease for application/json ContentType.
-type UpsertReleaseJSONRequestBody UpsertReleaseJSONBody
-
-// UpdateReleaseJSONRequestBody defines body for UpdateRelease for application/json ContentType.
-type UpdateReleaseJSONRequestBody UpdateReleaseJSONBody
+// UpsertResourceProviderJSONRequestBody defines body for UpsertResourceProvider for application/json ContentType.
+type UpsertResourceProviderJSONRequestBody = UpsertResourceProviderRequest
 
 // SetResourceProvidersResourcesJSONRequestBody defines body for SetResourceProvidersResources for application/json ContentType.
 type SetResourceProvidersResourcesJSONRequestBody SetResourceProvidersResourcesJSONBody
 
-// CreateResourceRelationshipRuleJSONRequestBody defines body for CreateResourceRelationshipRule for application/json ContentType.
-type CreateResourceRelationshipRuleJSONRequestBody = CreateResourceRelationshipRule
-
-// UpdateResourceRelationshipRuleJSONRequestBody defines body for UpdateResourceRelationshipRule for application/json ContentType.
-type UpdateResourceRelationshipRuleJSONRequestBody = UpdateResourceRelationshipRule
-
-// CreateResourceSchemaJSONRequestBody defines body for CreateResourceSchema for application/json ContentType.
-type CreateResourceSchemaJSONRequestBody CreateResourceSchemaJSONBody
-
-// UpsertResourceJSONRequestBody defines body for UpsertResource for application/json ContentType.
-type UpsertResourceJSONRequestBody UpsertResourceJSONBody
-
-// UpdateResourceJSONRequestBody defines body for UpdateResource for application/json ContentType.
-type UpdateResourceJSONRequestBody UpdateResourceJSONBody
-
-// CreateSystemJSONRequestBody defines body for CreateSystem for application/json ContentType.
-type CreateSystemJSONRequestBody CreateSystemJSONBody
-
-// UpdateSystemJSONRequestBody defines body for UpdateSystem for application/json ContentType.
-type UpdateSystemJSONRequestBody UpdateSystemJSONBody
-
-// GetGroupedCountsJSONRequestBody defines body for GetGroupedCounts for application/json ContentType.
-type GetGroupedCountsJSONRequestBody GetGroupedCountsJSONBody
-
-// AsDirectDeploymentVariableValueWithId returns the union data inside the DeploymentVariable_DefaultValue as a DirectDeploymentVariableValueWithId
-func (t DeploymentVariable_DefaultValue) AsDirectDeploymentVariableValueWithId() (DirectDeploymentVariableValueWithId, error) {
-	var body DirectDeploymentVariableValueWithId
+// AsCelMatcher returns the union data inside the RelationshipRule_Matcher as a CelMatcher
+func (t RelationshipRule_Matcher) AsCelMatcher() (CelMatcher, error) {
+	var body CelMatcher
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDirectDeploymentVariableValueWithId overwrites any union data inside the DeploymentVariable_DefaultValue as the provided DirectDeploymentVariableValueWithId
-func (t *DeploymentVariable_DefaultValue) FromDirectDeploymentVariableValueWithId(v DirectDeploymentVariableValueWithId) error {
+// FromCelMatcher overwrites any union data inside the RelationshipRule_Matcher as the provided CelMatcher
+func (t *RelationshipRule_Matcher) FromCelMatcher(v CelMatcher) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDirectDeploymentVariableValueWithId performs a merge with any union data inside the DeploymentVariable_DefaultValue, using the provided DirectDeploymentVariableValueWithId
-func (t *DeploymentVariable_DefaultValue) MergeDirectDeploymentVariableValueWithId(v DirectDeploymentVariableValueWithId) error {
+// MergeCelMatcher performs a merge with any union data inside the RelationshipRule_Matcher, using the provided CelMatcher
+func (t *RelationshipRule_Matcher) MergeCelMatcher(v CelMatcher) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1297,58 +482,32 @@ func (t *DeploymentVariable_DefaultValue) MergeDirectDeploymentVariableValueWith
 	return err
 }
 
-// AsReferenceDeploymentVariableValueWithId returns the union data inside the DeploymentVariable_DefaultValue as a ReferenceDeploymentVariableValueWithId
-func (t DeploymentVariable_DefaultValue) AsReferenceDeploymentVariableValueWithId() (ReferenceDeploymentVariableValueWithId, error) {
-	var body ReferenceDeploymentVariableValueWithId
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceDeploymentVariableValueWithId overwrites any union data inside the DeploymentVariable_DefaultValue as the provided ReferenceDeploymentVariableValueWithId
-func (t *DeploymentVariable_DefaultValue) FromReferenceDeploymentVariableValueWithId(v ReferenceDeploymentVariableValueWithId) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceDeploymentVariableValueWithId performs a merge with any union data inside the DeploymentVariable_DefaultValue, using the provided ReferenceDeploymentVariableValueWithId
-func (t *DeploymentVariable_DefaultValue) MergeReferenceDeploymentVariableValueWithId(v ReferenceDeploymentVariableValueWithId) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t DeploymentVariable_DefaultValue) MarshalJSON() ([]byte, error) {
+func (t RelationshipRule_Matcher) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *DeploymentVariable_DefaultValue) UnmarshalJSON(b []byte) error {
+func (t *RelationshipRule_Matcher) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
 
-// AsDirectDeploymentVariableValueValue0 returns the union data inside the DirectDeploymentVariableValue_Value as a DirectDeploymentVariableValueValue0
-func (t DirectDeploymentVariableValue_Value) AsDirectDeploymentVariableValueValue0() (DirectDeploymentVariableValueValue0, error) {
-	var body DirectDeploymentVariableValueValue0
+// AsJsonSelector returns the union data inside the Selector as a JsonSelector
+func (t Selector) AsJsonSelector() (JsonSelector, error) {
+	var body JsonSelector
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDirectDeploymentVariableValueValue0 overwrites any union data inside the DirectDeploymentVariableValue_Value as the provided DirectDeploymentVariableValueValue0
-func (t *DirectDeploymentVariableValue_Value) FromDirectDeploymentVariableValueValue0(v DirectDeploymentVariableValueValue0) error {
+// FromJsonSelector overwrites any union data inside the Selector as the provided JsonSelector
+func (t *Selector) FromJsonSelector(v JsonSelector) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDirectDeploymentVariableValueValue0 performs a merge with any union data inside the DirectDeploymentVariableValue_Value, using the provided DirectDeploymentVariableValueValue0
-func (t *DirectDeploymentVariableValue_Value) MergeDirectDeploymentVariableValueValue0(v DirectDeploymentVariableValueValue0) error {
+// MergeJsonSelector performs a merge with any union data inside the Selector, using the provided JsonSelector
+func (t *Selector) MergeJsonSelector(v JsonSelector) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1359,22 +518,22 @@ func (t *DirectDeploymentVariableValue_Value) MergeDirectDeploymentVariableValue
 	return err
 }
 
-// AsDirectDeploymentVariableValueValue1 returns the union data inside the DirectDeploymentVariableValue_Value as a DirectDeploymentVariableValueValue1
-func (t DirectDeploymentVariableValue_Value) AsDirectDeploymentVariableValueValue1() (DirectDeploymentVariableValueValue1, error) {
-	var body DirectDeploymentVariableValueValue1
+// AsCelSelector returns the union data inside the Selector as a CelSelector
+func (t Selector) AsCelSelector() (CelSelector, error) {
+	var body CelSelector
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDirectDeploymentVariableValueValue1 overwrites any union data inside the DirectDeploymentVariableValue_Value as the provided DirectDeploymentVariableValueValue1
-func (t *DirectDeploymentVariableValue_Value) FromDirectDeploymentVariableValueValue1(v DirectDeploymentVariableValueValue1) error {
+// FromCelSelector overwrites any union data inside the Selector as the provided CelSelector
+func (t *Selector) FromCelSelector(v CelSelector) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDirectDeploymentVariableValueValue1 performs a merge with any union data inside the DirectDeploymentVariableValue_Value, using the provided DirectDeploymentVariableValueValue1
-func (t *DirectDeploymentVariableValue_Value) MergeDirectDeploymentVariableValueValue1(v DirectDeploymentVariableValueValue1) error {
+// MergeCelSelector performs a merge with any union data inside the Selector, using the provided CelSelector
+func (t *Selector) MergeCelSelector(v CelSelector) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1385,992 +544,12 @@ func (t *DirectDeploymentVariableValue_Value) MergeDirectDeploymentVariableValue
 	return err
 }
 
-// AsDirectDeploymentVariableValueValue2 returns the union data inside the DirectDeploymentVariableValue_Value as a DirectDeploymentVariableValueValue2
-func (t DirectDeploymentVariableValue_Value) AsDirectDeploymentVariableValueValue2() (DirectDeploymentVariableValueValue2, error) {
-	var body DirectDeploymentVariableValueValue2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDirectDeploymentVariableValueValue2 overwrites any union data inside the DirectDeploymentVariableValue_Value as the provided DirectDeploymentVariableValueValue2
-func (t *DirectDeploymentVariableValue_Value) FromDirectDeploymentVariableValueValue2(v DirectDeploymentVariableValueValue2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDirectDeploymentVariableValueValue2 performs a merge with any union data inside the DirectDeploymentVariableValue_Value, using the provided DirectDeploymentVariableValueValue2
-func (t *DirectDeploymentVariableValue_Value) MergeDirectDeploymentVariableValueValue2(v DirectDeploymentVariableValueValue2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsDirectDeploymentVariableValueValue3 returns the union data inside the DirectDeploymentVariableValue_Value as a DirectDeploymentVariableValueValue3
-func (t DirectDeploymentVariableValue_Value) AsDirectDeploymentVariableValueValue3() (DirectDeploymentVariableValueValue3, error) {
-	var body DirectDeploymentVariableValueValue3
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDirectDeploymentVariableValueValue3 overwrites any union data inside the DirectDeploymentVariableValue_Value as the provided DirectDeploymentVariableValueValue3
-func (t *DirectDeploymentVariableValue_Value) FromDirectDeploymentVariableValueValue3(v DirectDeploymentVariableValueValue3) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDirectDeploymentVariableValueValue3 performs a merge with any union data inside the DirectDeploymentVariableValue_Value, using the provided DirectDeploymentVariableValueValue3
-func (t *DirectDeploymentVariableValue_Value) MergeDirectDeploymentVariableValueValue3(v DirectDeploymentVariableValueValue3) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsDirectDeploymentVariableValueValue4 returns the union data inside the DirectDeploymentVariableValue_Value as a DirectDeploymentVariableValueValue4
-func (t DirectDeploymentVariableValue_Value) AsDirectDeploymentVariableValueValue4() (DirectDeploymentVariableValueValue4, error) {
-	var body DirectDeploymentVariableValueValue4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDirectDeploymentVariableValueValue4 overwrites any union data inside the DirectDeploymentVariableValue_Value as the provided DirectDeploymentVariableValueValue4
-func (t *DirectDeploymentVariableValue_Value) FromDirectDeploymentVariableValueValue4(v DirectDeploymentVariableValueValue4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDirectDeploymentVariableValueValue4 performs a merge with any union data inside the DirectDeploymentVariableValue_Value, using the provided DirectDeploymentVariableValueValue4
-func (t *DirectDeploymentVariableValue_Value) MergeDirectDeploymentVariableValueValue4(v DirectDeploymentVariableValueValue4) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t DirectDeploymentVariableValue_Value) MarshalJSON() ([]byte, error) {
+func (t Selector) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *DirectDeploymentVariableValue_Value) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsDirectDeploymentVariableValueWithIdValue0 returns the union data inside the DirectDeploymentVariableValueWithId_Value as a DirectDeploymentVariableValueWithIdValue0
-func (t DirectDeploymentVariableValueWithId_Value) AsDirectDeploymentVariableValueWithIdValue0() (DirectDeploymentVariableValueWithIdValue0, error) {
-	var body DirectDeploymentVariableValueWithIdValue0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDirectDeploymentVariableValueWithIdValue0 overwrites any union data inside the DirectDeploymentVariableValueWithId_Value as the provided DirectDeploymentVariableValueWithIdValue0
-func (t *DirectDeploymentVariableValueWithId_Value) FromDirectDeploymentVariableValueWithIdValue0(v DirectDeploymentVariableValueWithIdValue0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDirectDeploymentVariableValueWithIdValue0 performs a merge with any union data inside the DirectDeploymentVariableValueWithId_Value, using the provided DirectDeploymentVariableValueWithIdValue0
-func (t *DirectDeploymentVariableValueWithId_Value) MergeDirectDeploymentVariableValueWithIdValue0(v DirectDeploymentVariableValueWithIdValue0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsDirectDeploymentVariableValueWithIdValue1 returns the union data inside the DirectDeploymentVariableValueWithId_Value as a DirectDeploymentVariableValueWithIdValue1
-func (t DirectDeploymentVariableValueWithId_Value) AsDirectDeploymentVariableValueWithIdValue1() (DirectDeploymentVariableValueWithIdValue1, error) {
-	var body DirectDeploymentVariableValueWithIdValue1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDirectDeploymentVariableValueWithIdValue1 overwrites any union data inside the DirectDeploymentVariableValueWithId_Value as the provided DirectDeploymentVariableValueWithIdValue1
-func (t *DirectDeploymentVariableValueWithId_Value) FromDirectDeploymentVariableValueWithIdValue1(v DirectDeploymentVariableValueWithIdValue1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDirectDeploymentVariableValueWithIdValue1 performs a merge with any union data inside the DirectDeploymentVariableValueWithId_Value, using the provided DirectDeploymentVariableValueWithIdValue1
-func (t *DirectDeploymentVariableValueWithId_Value) MergeDirectDeploymentVariableValueWithIdValue1(v DirectDeploymentVariableValueWithIdValue1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsDirectDeploymentVariableValueWithIdValue2 returns the union data inside the DirectDeploymentVariableValueWithId_Value as a DirectDeploymentVariableValueWithIdValue2
-func (t DirectDeploymentVariableValueWithId_Value) AsDirectDeploymentVariableValueWithIdValue2() (DirectDeploymentVariableValueWithIdValue2, error) {
-	var body DirectDeploymentVariableValueWithIdValue2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDirectDeploymentVariableValueWithIdValue2 overwrites any union data inside the DirectDeploymentVariableValueWithId_Value as the provided DirectDeploymentVariableValueWithIdValue2
-func (t *DirectDeploymentVariableValueWithId_Value) FromDirectDeploymentVariableValueWithIdValue2(v DirectDeploymentVariableValueWithIdValue2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDirectDeploymentVariableValueWithIdValue2 performs a merge with any union data inside the DirectDeploymentVariableValueWithId_Value, using the provided DirectDeploymentVariableValueWithIdValue2
-func (t *DirectDeploymentVariableValueWithId_Value) MergeDirectDeploymentVariableValueWithIdValue2(v DirectDeploymentVariableValueWithIdValue2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsDirectDeploymentVariableValueWithIdValue3 returns the union data inside the DirectDeploymentVariableValueWithId_Value as a DirectDeploymentVariableValueWithIdValue3
-func (t DirectDeploymentVariableValueWithId_Value) AsDirectDeploymentVariableValueWithIdValue3() (DirectDeploymentVariableValueWithIdValue3, error) {
-	var body DirectDeploymentVariableValueWithIdValue3
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDirectDeploymentVariableValueWithIdValue3 overwrites any union data inside the DirectDeploymentVariableValueWithId_Value as the provided DirectDeploymentVariableValueWithIdValue3
-func (t *DirectDeploymentVariableValueWithId_Value) FromDirectDeploymentVariableValueWithIdValue3(v DirectDeploymentVariableValueWithIdValue3) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDirectDeploymentVariableValueWithIdValue3 performs a merge with any union data inside the DirectDeploymentVariableValueWithId_Value, using the provided DirectDeploymentVariableValueWithIdValue3
-func (t *DirectDeploymentVariableValueWithId_Value) MergeDirectDeploymentVariableValueWithIdValue3(v DirectDeploymentVariableValueWithIdValue3) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsDirectDeploymentVariableValueWithIdValue4 returns the union data inside the DirectDeploymentVariableValueWithId_Value as a DirectDeploymentVariableValueWithIdValue4
-func (t DirectDeploymentVariableValueWithId_Value) AsDirectDeploymentVariableValueWithIdValue4() (DirectDeploymentVariableValueWithIdValue4, error) {
-	var body DirectDeploymentVariableValueWithIdValue4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDirectDeploymentVariableValueWithIdValue4 overwrites any union data inside the DirectDeploymentVariableValueWithId_Value as the provided DirectDeploymentVariableValueWithIdValue4
-func (t *DirectDeploymentVariableValueWithId_Value) FromDirectDeploymentVariableValueWithIdValue4(v DirectDeploymentVariableValueWithIdValue4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDirectDeploymentVariableValueWithIdValue4 performs a merge with any union data inside the DirectDeploymentVariableValueWithId_Value, using the provided DirectDeploymentVariableValueWithIdValue4
-func (t *DirectDeploymentVariableValueWithId_Value) MergeDirectDeploymentVariableValueWithIdValue4(v DirectDeploymentVariableValueWithIdValue4) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t DirectDeploymentVariableValueWithId_Value) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *DirectDeploymentVariableValueWithId_Value) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsDirectVariableValue0 returns the union data inside the DirectVariable_Value as a DirectVariableValue0
-func (t DirectVariable_Value) AsDirectVariableValue0() (DirectVariableValue0, error) {
-	var body DirectVariableValue0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDirectVariableValue0 overwrites any union data inside the DirectVariable_Value as the provided DirectVariableValue0
-func (t *DirectVariable_Value) FromDirectVariableValue0(v DirectVariableValue0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDirectVariableValue0 performs a merge with any union data inside the DirectVariable_Value, using the provided DirectVariableValue0
-func (t *DirectVariable_Value) MergeDirectVariableValue0(v DirectVariableValue0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsDirectVariableValue1 returns the union data inside the DirectVariable_Value as a DirectVariableValue1
-func (t DirectVariable_Value) AsDirectVariableValue1() (DirectVariableValue1, error) {
-	var body DirectVariableValue1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDirectVariableValue1 overwrites any union data inside the DirectVariable_Value as the provided DirectVariableValue1
-func (t *DirectVariable_Value) FromDirectVariableValue1(v DirectVariableValue1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDirectVariableValue1 performs a merge with any union data inside the DirectVariable_Value, using the provided DirectVariableValue1
-func (t *DirectVariable_Value) MergeDirectVariableValue1(v DirectVariableValue1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsDirectVariableValue2 returns the union data inside the DirectVariable_Value as a DirectVariableValue2
-func (t DirectVariable_Value) AsDirectVariableValue2() (DirectVariableValue2, error) {
-	var body DirectVariableValue2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDirectVariableValue2 overwrites any union data inside the DirectVariable_Value as the provided DirectVariableValue2
-func (t *DirectVariable_Value) FromDirectVariableValue2(v DirectVariableValue2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDirectVariableValue2 performs a merge with any union data inside the DirectVariable_Value, using the provided DirectVariableValue2
-func (t *DirectVariable_Value) MergeDirectVariableValue2(v DirectVariableValue2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsDirectVariableValue3 returns the union data inside the DirectVariable_Value as a DirectVariableValue3
-func (t DirectVariable_Value) AsDirectVariableValue3() (DirectVariableValue3, error) {
-	var body DirectVariableValue3
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDirectVariableValue3 overwrites any union data inside the DirectVariable_Value as the provided DirectVariableValue3
-func (t *DirectVariable_Value) FromDirectVariableValue3(v DirectVariableValue3) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDirectVariableValue3 performs a merge with any union data inside the DirectVariable_Value, using the provided DirectVariableValue3
-func (t *DirectVariable_Value) MergeDirectVariableValue3(v DirectVariableValue3) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsDirectVariableValue4 returns the union data inside the DirectVariable_Value as a DirectVariableValue4
-func (t DirectVariable_Value) AsDirectVariableValue4() (DirectVariableValue4, error) {
-	var body DirectVariableValue4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDirectVariableValue4 overwrites any union data inside the DirectVariable_Value as the provided DirectVariableValue4
-func (t *DirectVariable_Value) FromDirectVariableValue4(v DirectVariableValue4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDirectVariableValue4 performs a merge with any union data inside the DirectVariable_Value, using the provided DirectVariableValue4
-func (t *DirectVariable_Value) MergeDirectVariableValue4(v DirectVariableValue4) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t DirectVariable_Value) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *DirectVariable_Value) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsReferenceDeploymentVariableValueDefaultValue0 returns the union data inside the ReferenceDeploymentVariableValue_DefaultValue as a ReferenceDeploymentVariableValueDefaultValue0
-func (t ReferenceDeploymentVariableValue_DefaultValue) AsReferenceDeploymentVariableValueDefaultValue0() (ReferenceDeploymentVariableValueDefaultValue0, error) {
-	var body ReferenceDeploymentVariableValueDefaultValue0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceDeploymentVariableValueDefaultValue0 overwrites any union data inside the ReferenceDeploymentVariableValue_DefaultValue as the provided ReferenceDeploymentVariableValueDefaultValue0
-func (t *ReferenceDeploymentVariableValue_DefaultValue) FromReferenceDeploymentVariableValueDefaultValue0(v ReferenceDeploymentVariableValueDefaultValue0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceDeploymentVariableValueDefaultValue0 performs a merge with any union data inside the ReferenceDeploymentVariableValue_DefaultValue, using the provided ReferenceDeploymentVariableValueDefaultValue0
-func (t *ReferenceDeploymentVariableValue_DefaultValue) MergeReferenceDeploymentVariableValueDefaultValue0(v ReferenceDeploymentVariableValueDefaultValue0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsReferenceDeploymentVariableValueDefaultValue1 returns the union data inside the ReferenceDeploymentVariableValue_DefaultValue as a ReferenceDeploymentVariableValueDefaultValue1
-func (t ReferenceDeploymentVariableValue_DefaultValue) AsReferenceDeploymentVariableValueDefaultValue1() (ReferenceDeploymentVariableValueDefaultValue1, error) {
-	var body ReferenceDeploymentVariableValueDefaultValue1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceDeploymentVariableValueDefaultValue1 overwrites any union data inside the ReferenceDeploymentVariableValue_DefaultValue as the provided ReferenceDeploymentVariableValueDefaultValue1
-func (t *ReferenceDeploymentVariableValue_DefaultValue) FromReferenceDeploymentVariableValueDefaultValue1(v ReferenceDeploymentVariableValueDefaultValue1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceDeploymentVariableValueDefaultValue1 performs a merge with any union data inside the ReferenceDeploymentVariableValue_DefaultValue, using the provided ReferenceDeploymentVariableValueDefaultValue1
-func (t *ReferenceDeploymentVariableValue_DefaultValue) MergeReferenceDeploymentVariableValueDefaultValue1(v ReferenceDeploymentVariableValueDefaultValue1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsReferenceDeploymentVariableValueDefaultValue2 returns the union data inside the ReferenceDeploymentVariableValue_DefaultValue as a ReferenceDeploymentVariableValueDefaultValue2
-func (t ReferenceDeploymentVariableValue_DefaultValue) AsReferenceDeploymentVariableValueDefaultValue2() (ReferenceDeploymentVariableValueDefaultValue2, error) {
-	var body ReferenceDeploymentVariableValueDefaultValue2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceDeploymentVariableValueDefaultValue2 overwrites any union data inside the ReferenceDeploymentVariableValue_DefaultValue as the provided ReferenceDeploymentVariableValueDefaultValue2
-func (t *ReferenceDeploymentVariableValue_DefaultValue) FromReferenceDeploymentVariableValueDefaultValue2(v ReferenceDeploymentVariableValueDefaultValue2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceDeploymentVariableValueDefaultValue2 performs a merge with any union data inside the ReferenceDeploymentVariableValue_DefaultValue, using the provided ReferenceDeploymentVariableValueDefaultValue2
-func (t *ReferenceDeploymentVariableValue_DefaultValue) MergeReferenceDeploymentVariableValueDefaultValue2(v ReferenceDeploymentVariableValueDefaultValue2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsReferenceDeploymentVariableValueDefaultValue3 returns the union data inside the ReferenceDeploymentVariableValue_DefaultValue as a ReferenceDeploymentVariableValueDefaultValue3
-func (t ReferenceDeploymentVariableValue_DefaultValue) AsReferenceDeploymentVariableValueDefaultValue3() (ReferenceDeploymentVariableValueDefaultValue3, error) {
-	var body ReferenceDeploymentVariableValueDefaultValue3
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceDeploymentVariableValueDefaultValue3 overwrites any union data inside the ReferenceDeploymentVariableValue_DefaultValue as the provided ReferenceDeploymentVariableValueDefaultValue3
-func (t *ReferenceDeploymentVariableValue_DefaultValue) FromReferenceDeploymentVariableValueDefaultValue3(v ReferenceDeploymentVariableValueDefaultValue3) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceDeploymentVariableValueDefaultValue3 performs a merge with any union data inside the ReferenceDeploymentVariableValue_DefaultValue, using the provided ReferenceDeploymentVariableValueDefaultValue3
-func (t *ReferenceDeploymentVariableValue_DefaultValue) MergeReferenceDeploymentVariableValueDefaultValue3(v ReferenceDeploymentVariableValueDefaultValue3) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsReferenceDeploymentVariableValueDefaultValue4 returns the union data inside the ReferenceDeploymentVariableValue_DefaultValue as a ReferenceDeploymentVariableValueDefaultValue4
-func (t ReferenceDeploymentVariableValue_DefaultValue) AsReferenceDeploymentVariableValueDefaultValue4() (ReferenceDeploymentVariableValueDefaultValue4, error) {
-	var body ReferenceDeploymentVariableValueDefaultValue4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceDeploymentVariableValueDefaultValue4 overwrites any union data inside the ReferenceDeploymentVariableValue_DefaultValue as the provided ReferenceDeploymentVariableValueDefaultValue4
-func (t *ReferenceDeploymentVariableValue_DefaultValue) FromReferenceDeploymentVariableValueDefaultValue4(v ReferenceDeploymentVariableValueDefaultValue4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceDeploymentVariableValueDefaultValue4 performs a merge with any union data inside the ReferenceDeploymentVariableValue_DefaultValue, using the provided ReferenceDeploymentVariableValueDefaultValue4
-func (t *ReferenceDeploymentVariableValue_DefaultValue) MergeReferenceDeploymentVariableValueDefaultValue4(v ReferenceDeploymentVariableValueDefaultValue4) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t ReferenceDeploymentVariableValue_DefaultValue) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *ReferenceDeploymentVariableValue_DefaultValue) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsReferenceDeploymentVariableValueWithIdDefaultValue0 returns the union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as a ReferenceDeploymentVariableValueWithIdDefaultValue0
-func (t ReferenceDeploymentVariableValueWithId_DefaultValue) AsReferenceDeploymentVariableValueWithIdDefaultValue0() (ReferenceDeploymentVariableValueWithIdDefaultValue0, error) {
-	var body ReferenceDeploymentVariableValueWithIdDefaultValue0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceDeploymentVariableValueWithIdDefaultValue0 overwrites any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as the provided ReferenceDeploymentVariableValueWithIdDefaultValue0
-func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) FromReferenceDeploymentVariableValueWithIdDefaultValue0(v ReferenceDeploymentVariableValueWithIdDefaultValue0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceDeploymentVariableValueWithIdDefaultValue0 performs a merge with any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue, using the provided ReferenceDeploymentVariableValueWithIdDefaultValue0
-func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) MergeReferenceDeploymentVariableValueWithIdDefaultValue0(v ReferenceDeploymentVariableValueWithIdDefaultValue0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsReferenceDeploymentVariableValueWithIdDefaultValue1 returns the union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as a ReferenceDeploymentVariableValueWithIdDefaultValue1
-func (t ReferenceDeploymentVariableValueWithId_DefaultValue) AsReferenceDeploymentVariableValueWithIdDefaultValue1() (ReferenceDeploymentVariableValueWithIdDefaultValue1, error) {
-	var body ReferenceDeploymentVariableValueWithIdDefaultValue1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceDeploymentVariableValueWithIdDefaultValue1 overwrites any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as the provided ReferenceDeploymentVariableValueWithIdDefaultValue1
-func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) FromReferenceDeploymentVariableValueWithIdDefaultValue1(v ReferenceDeploymentVariableValueWithIdDefaultValue1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceDeploymentVariableValueWithIdDefaultValue1 performs a merge with any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue, using the provided ReferenceDeploymentVariableValueWithIdDefaultValue1
-func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) MergeReferenceDeploymentVariableValueWithIdDefaultValue1(v ReferenceDeploymentVariableValueWithIdDefaultValue1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsReferenceDeploymentVariableValueWithIdDefaultValue2 returns the union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as a ReferenceDeploymentVariableValueWithIdDefaultValue2
-func (t ReferenceDeploymentVariableValueWithId_DefaultValue) AsReferenceDeploymentVariableValueWithIdDefaultValue2() (ReferenceDeploymentVariableValueWithIdDefaultValue2, error) {
-	var body ReferenceDeploymentVariableValueWithIdDefaultValue2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceDeploymentVariableValueWithIdDefaultValue2 overwrites any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as the provided ReferenceDeploymentVariableValueWithIdDefaultValue2
-func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) FromReferenceDeploymentVariableValueWithIdDefaultValue2(v ReferenceDeploymentVariableValueWithIdDefaultValue2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceDeploymentVariableValueWithIdDefaultValue2 performs a merge with any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue, using the provided ReferenceDeploymentVariableValueWithIdDefaultValue2
-func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) MergeReferenceDeploymentVariableValueWithIdDefaultValue2(v ReferenceDeploymentVariableValueWithIdDefaultValue2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsReferenceDeploymentVariableValueWithIdDefaultValue3 returns the union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as a ReferenceDeploymentVariableValueWithIdDefaultValue3
-func (t ReferenceDeploymentVariableValueWithId_DefaultValue) AsReferenceDeploymentVariableValueWithIdDefaultValue3() (ReferenceDeploymentVariableValueWithIdDefaultValue3, error) {
-	var body ReferenceDeploymentVariableValueWithIdDefaultValue3
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceDeploymentVariableValueWithIdDefaultValue3 overwrites any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as the provided ReferenceDeploymentVariableValueWithIdDefaultValue3
-func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) FromReferenceDeploymentVariableValueWithIdDefaultValue3(v ReferenceDeploymentVariableValueWithIdDefaultValue3) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceDeploymentVariableValueWithIdDefaultValue3 performs a merge with any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue, using the provided ReferenceDeploymentVariableValueWithIdDefaultValue3
-func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) MergeReferenceDeploymentVariableValueWithIdDefaultValue3(v ReferenceDeploymentVariableValueWithIdDefaultValue3) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsReferenceDeploymentVariableValueWithIdDefaultValue4 returns the union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as a ReferenceDeploymentVariableValueWithIdDefaultValue4
-func (t ReferenceDeploymentVariableValueWithId_DefaultValue) AsReferenceDeploymentVariableValueWithIdDefaultValue4() (ReferenceDeploymentVariableValueWithIdDefaultValue4, error) {
-	var body ReferenceDeploymentVariableValueWithIdDefaultValue4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceDeploymentVariableValueWithIdDefaultValue4 overwrites any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue as the provided ReferenceDeploymentVariableValueWithIdDefaultValue4
-func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) FromReferenceDeploymentVariableValueWithIdDefaultValue4(v ReferenceDeploymentVariableValueWithIdDefaultValue4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceDeploymentVariableValueWithIdDefaultValue4 performs a merge with any union data inside the ReferenceDeploymentVariableValueWithId_DefaultValue, using the provided ReferenceDeploymentVariableValueWithIdDefaultValue4
-func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) MergeReferenceDeploymentVariableValueWithIdDefaultValue4(v ReferenceDeploymentVariableValueWithIdDefaultValue4) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t ReferenceDeploymentVariableValueWithId_DefaultValue) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *ReferenceDeploymentVariableValueWithId_DefaultValue) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsReferenceVariableDefaultValue0 returns the union data inside the ReferenceVariable_DefaultValue as a ReferenceVariableDefaultValue0
-func (t ReferenceVariable_DefaultValue) AsReferenceVariableDefaultValue0() (ReferenceVariableDefaultValue0, error) {
-	var body ReferenceVariableDefaultValue0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceVariableDefaultValue0 overwrites any union data inside the ReferenceVariable_DefaultValue as the provided ReferenceVariableDefaultValue0
-func (t *ReferenceVariable_DefaultValue) FromReferenceVariableDefaultValue0(v ReferenceVariableDefaultValue0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceVariableDefaultValue0 performs a merge with any union data inside the ReferenceVariable_DefaultValue, using the provided ReferenceVariableDefaultValue0
-func (t *ReferenceVariable_DefaultValue) MergeReferenceVariableDefaultValue0(v ReferenceVariableDefaultValue0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsReferenceVariableDefaultValue1 returns the union data inside the ReferenceVariable_DefaultValue as a ReferenceVariableDefaultValue1
-func (t ReferenceVariable_DefaultValue) AsReferenceVariableDefaultValue1() (ReferenceVariableDefaultValue1, error) {
-	var body ReferenceVariableDefaultValue1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceVariableDefaultValue1 overwrites any union data inside the ReferenceVariable_DefaultValue as the provided ReferenceVariableDefaultValue1
-func (t *ReferenceVariable_DefaultValue) FromReferenceVariableDefaultValue1(v ReferenceVariableDefaultValue1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceVariableDefaultValue1 performs a merge with any union data inside the ReferenceVariable_DefaultValue, using the provided ReferenceVariableDefaultValue1
-func (t *ReferenceVariable_DefaultValue) MergeReferenceVariableDefaultValue1(v ReferenceVariableDefaultValue1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsReferenceVariableDefaultValue2 returns the union data inside the ReferenceVariable_DefaultValue as a ReferenceVariableDefaultValue2
-func (t ReferenceVariable_DefaultValue) AsReferenceVariableDefaultValue2() (ReferenceVariableDefaultValue2, error) {
-	var body ReferenceVariableDefaultValue2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceVariableDefaultValue2 overwrites any union data inside the ReferenceVariable_DefaultValue as the provided ReferenceVariableDefaultValue2
-func (t *ReferenceVariable_DefaultValue) FromReferenceVariableDefaultValue2(v ReferenceVariableDefaultValue2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceVariableDefaultValue2 performs a merge with any union data inside the ReferenceVariable_DefaultValue, using the provided ReferenceVariableDefaultValue2
-func (t *ReferenceVariable_DefaultValue) MergeReferenceVariableDefaultValue2(v ReferenceVariableDefaultValue2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsReferenceVariableDefaultValue3 returns the union data inside the ReferenceVariable_DefaultValue as a ReferenceVariableDefaultValue3
-func (t ReferenceVariable_DefaultValue) AsReferenceVariableDefaultValue3() (ReferenceVariableDefaultValue3, error) {
-	var body ReferenceVariableDefaultValue3
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceVariableDefaultValue3 overwrites any union data inside the ReferenceVariable_DefaultValue as the provided ReferenceVariableDefaultValue3
-func (t *ReferenceVariable_DefaultValue) FromReferenceVariableDefaultValue3(v ReferenceVariableDefaultValue3) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceVariableDefaultValue3 performs a merge with any union data inside the ReferenceVariable_DefaultValue, using the provided ReferenceVariableDefaultValue3
-func (t *ReferenceVariable_DefaultValue) MergeReferenceVariableDefaultValue3(v ReferenceVariableDefaultValue3) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsReferenceVariableDefaultValue4 returns the union data inside the ReferenceVariable_DefaultValue as a ReferenceVariableDefaultValue4
-func (t ReferenceVariable_DefaultValue) AsReferenceVariableDefaultValue4() (ReferenceVariableDefaultValue4, error) {
-	var body ReferenceVariableDefaultValue4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceVariableDefaultValue4 overwrites any union data inside the ReferenceVariable_DefaultValue as the provided ReferenceVariableDefaultValue4
-func (t *ReferenceVariable_DefaultValue) FromReferenceVariableDefaultValue4(v ReferenceVariableDefaultValue4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceVariableDefaultValue4 performs a merge with any union data inside the ReferenceVariable_DefaultValue, using the provided ReferenceVariableDefaultValue4
-func (t *ReferenceVariable_DefaultValue) MergeReferenceVariableDefaultValue4(v ReferenceVariableDefaultValue4) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t ReferenceVariable_DefaultValue) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *ReferenceVariable_DefaultValue) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsDirectVariable returns the union data inside the Variable as a DirectVariable
-func (t Variable) AsDirectVariable() (DirectVariable, error) {
-	var body DirectVariable
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromDirectVariable overwrites any union data inside the Variable as the provided DirectVariable
-func (t *Variable) FromDirectVariable(v DirectVariable) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeDirectVariable performs a merge with any union data inside the Variable, using the provided DirectVariable
-func (t *Variable) MergeDirectVariable(v DirectVariable) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsReferenceVariable returns the union data inside the Variable as a ReferenceVariable
-func (t Variable) AsReferenceVariable() (ReferenceVariable, error) {
-	var body ReferenceVariable
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromReferenceVariable overwrites any union data inside the Variable as the provided ReferenceVariable
-func (t *Variable) FromReferenceVariable(v ReferenceVariable) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeReferenceVariable performs a merge with any union data inside the Variable, using the provided ReferenceVariable
-func (t *Variable) MergeReferenceVariable(v ReferenceVariable) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t Variable) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *Variable) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsVariableMap0 returns the union data inside the VariableMap_AdditionalProperties as a VariableMap0
-func (t VariableMap_AdditionalProperties) AsVariableMap0() (VariableMap0, error) {
-	var body VariableMap0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromVariableMap0 overwrites any union data inside the VariableMap_AdditionalProperties as the provided VariableMap0
-func (t *VariableMap_AdditionalProperties) FromVariableMap0(v VariableMap0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeVariableMap0 performs a merge with any union data inside the VariableMap_AdditionalProperties, using the provided VariableMap0
-func (t *VariableMap_AdditionalProperties) MergeVariableMap0(v VariableMap0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsVariableMap1 returns the union data inside the VariableMap_AdditionalProperties as a VariableMap1
-func (t VariableMap_AdditionalProperties) AsVariableMap1() (VariableMap1, error) {
-	var body VariableMap1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromVariableMap1 overwrites any union data inside the VariableMap_AdditionalProperties as the provided VariableMap1
-func (t *VariableMap_AdditionalProperties) FromVariableMap1(v VariableMap1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeVariableMap1 performs a merge with any union data inside the VariableMap_AdditionalProperties, using the provided VariableMap1
-func (t *VariableMap_AdditionalProperties) MergeVariableMap1(v VariableMap1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsVariableMap2 returns the union data inside the VariableMap_AdditionalProperties as a VariableMap2
-func (t VariableMap_AdditionalProperties) AsVariableMap2() (VariableMap2, error) {
-	var body VariableMap2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromVariableMap2 overwrites any union data inside the VariableMap_AdditionalProperties as the provided VariableMap2
-func (t *VariableMap_AdditionalProperties) FromVariableMap2(v VariableMap2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeVariableMap2 performs a merge with any union data inside the VariableMap_AdditionalProperties, using the provided VariableMap2
-func (t *VariableMap_AdditionalProperties) MergeVariableMap2(v VariableMap2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsVariableMap3 returns the union data inside the VariableMap_AdditionalProperties as a VariableMap3
-func (t VariableMap_AdditionalProperties) AsVariableMap3() (VariableMap3, error) {
-	var body VariableMap3
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromVariableMap3 overwrites any union data inside the VariableMap_AdditionalProperties as the provided VariableMap3
-func (t *VariableMap_AdditionalProperties) FromVariableMap3(v VariableMap3) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeVariableMap3 performs a merge with any union data inside the VariableMap_AdditionalProperties, using the provided VariableMap3
-func (t *VariableMap_AdditionalProperties) MergeVariableMap3(v VariableMap3) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsVariableMap4 returns the union data inside the VariableMap_AdditionalProperties as a VariableMap4
-func (t VariableMap_AdditionalProperties) AsVariableMap4() (VariableMap4, error) {
-	var body VariableMap4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromVariableMap4 overwrites any union data inside the VariableMap_AdditionalProperties as the provided VariableMap4
-func (t *VariableMap_AdditionalProperties) FromVariableMap4(v VariableMap4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeVariableMap4 performs a merge with any union data inside the VariableMap_AdditionalProperties, using the provided VariableMap4
-func (t *VariableMap_AdditionalProperties) MergeVariableMap4(v VariableMap4) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t VariableMap_AdditionalProperties) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *VariableMap_AdditionalProperties) UnmarshalJSON(b []byte) error {
+func (t *Selector) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -2448,1259 +627,96 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
-	// GetCloudProviderRegions request
-	GetCloudProviderRegions(ctx context.Context, provider GetCloudProviderRegionsParamsProvider, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListWorkspaces request
+	ListWorkspaces(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpsertDeploymentVersionWithBody request with any body
-	UpsertDeploymentVersionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateWorkspaceWithBody request with any body
+	CreateWorkspaceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpsertDeploymentVersion(ctx context.Context, body UpsertDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateDeploymentVersionWithBody request with any body
-	UpdateDeploymentVersionWithBody(ctx context.Context, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateDeploymentVersion(ctx context.Context, deploymentVersionId string, body UpdateDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ApproveDeploymentVersionWithBody request with any body
-	ApproveDeploymentVersionWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	ApproveDeploymentVersion(ctx context.Context, deploymentVersionId openapi_types.UUID, body ApproveDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ApproveDeploymentVersionForEnvironmentWithBody request with any body
-	ApproveDeploymentVersionForEnvironmentWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	ApproveDeploymentVersionForEnvironment(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body ApproveDeploymentVersionForEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetRolloutInfo request
-	GetRolloutInfo(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RejectDeploymentVersionWithBody request with any body
-	RejectDeploymentVersionWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	RejectDeploymentVersion(ctx context.Context, deploymentVersionId openapi_types.UUID, body RejectDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RejectDeploymentVersionForEnvironmentWithBody request with any body
-	RejectDeploymentVersionForEnvironmentWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	RejectDeploymentVersionForEnvironment(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body RejectDeploymentVersionForEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateDeploymentWithBody request with any body
-	CreateDeploymentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateDeployment(ctx context.Context, body CreateDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteDeployment request
-	DeleteDeployment(ctx context.Context, deploymentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetDeployment request
-	GetDeployment(ctx context.Context, deploymentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateDeploymentWithBody request with any body
-	UpdateDeploymentWithBody(ctx context.Context, deploymentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateDeployment(ctx context.Context, deploymentId openapi_types.UUID, body UpdateDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetResourcesForDeployment request
-	GetResourcesForDeployment(ctx context.Context, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetDeploymentVariables request
-	GetDeploymentVariables(ctx context.Context, deploymentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateDeploymentVariableWithBody request with any body
-	CreateDeploymentVariableWithBody(ctx context.Context, deploymentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateDeploymentVariable(ctx context.Context, deploymentId openapi_types.UUID, body CreateDeploymentVariableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListDeploymentVersions request
-	ListDeploymentVersions(ctx context.Context, deploymentId openapi_types.UUID, params *ListDeploymentVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateEnvironmentWithBody request with any body
-	CreateEnvironmentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateEnvironment(ctx context.Context, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteEnvironment request
-	DeleteEnvironment(ctx context.Context, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetEnvironment request
-	GetEnvironment(ctx context.Context, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetResourcesForEnvironment request
-	GetResourcesForEnvironment(ctx context.Context, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpsertJobAgentWithBody request with any body
-	UpsertJobAgentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpsertJobAgent(ctx context.Context, body UpsertJobAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetAgentRunningJobs request
-	GetAgentRunningJobs(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// AcknowledgeAgentJob request
-	AcknowledgeAgentJob(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetNextJobs request
-	GetNextJobs(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetJob request
-	GetJob(ctx context.Context, jobId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateJobWithBody request with any body
-	UpdateJobWithBody(ctx context.Context, jobId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateJob(ctx context.Context, jobId string, body UpdateJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// AcknowledgeJob request
-	AcknowledgeJob(ctx context.Context, jobId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpsertPolicyWithBody request with any body
-	UpsertPolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpsertPolicy(ctx context.Context, body UpsertPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeletePolicy request
-	DeletePolicy(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetPolicy request
-	GetPolicy(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdatePolicyWithBody request with any body
-	UpdatePolicyWithBody(ctx context.Context, policyId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdatePolicy(ctx context.Context, policyId openapi_types.UUID, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetReleaseTargetsForPolicy request
-	GetReleaseTargetsForPolicy(ctx context.Context, policyId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateJobToResourceRelationshipWithBody request with any body
-	CreateJobToResourceRelationshipWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateJobToResourceRelationship(ctx context.Context, body CreateJobToResourceRelationshipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateResourceToResourceRelationshipWithBody request with any body
-	CreateResourceToResourceRelationshipWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateResourceToResourceRelationship(ctx context.Context, body CreateResourceToResourceRelationshipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetReleaseTarget request
-	GetReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetLatestJobs request
-	GetLatestJobs(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// LockReleaseTarget request
-	LockReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PinReleaseTargetWithBody request with any body
-	PinReleaseTargetWithBody(ctx context.Context, releaseTargetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	PinReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, body PinReleaseTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetReleaseTargetReleases request
-	GetReleaseTargetReleases(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UnlockReleaseTarget request
-	UnlockReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UnpinReleaseTarget request
-	UnpinReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpsertReleaseWithBody request with any body
-	UpsertReleaseWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpsertRelease(ctx context.Context, body UpsertReleaseJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateReleaseWithBody request with any body
-	UpdateReleaseWithBody(ctx context.Context, releaseId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateRelease(ctx context.Context, releaseId string, body UpdateReleaseJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// SetResourceProvidersResourcesWithBody request with any body
-	SetResourceProvidersResourcesWithBody(ctx context.Context, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	SetResourceProvidersResources(ctx context.Context, providerId string, body SetResourceProvidersResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateResourceRelationshipRuleWithBody request with any body
-	CreateResourceRelationshipRuleWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateResourceRelationshipRule(ctx context.Context, body CreateResourceRelationshipRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateResourceRelationshipRuleWithBody request with any body
-	UpdateResourceRelationshipRuleWithBody(ctx context.Context, ruleId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateResourceRelationshipRule(ctx context.Context, ruleId openapi_types.UUID, body UpdateResourceRelationshipRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateResourceSchemaWithBody request with any body
-	CreateResourceSchemaWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateResourceSchema(ctx context.Context, body CreateResourceSchemaJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteResourceSchema request
-	DeleteResourceSchema(ctx context.Context, schemaId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpsertResourceWithBody request with any body
-	UpsertResourceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpsertResource(ctx context.Context, body UpsertResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteResource request
-	DeleteResource(ctx context.Context, resourceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetResource request
-	GetResource(ctx context.Context, resourceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateResourceWithBody request with any body
-	UpdateResourceWithBody(ctx context.Context, resourceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateResource(ctx context.Context, resourceId string, body UpdateResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetReleaseTargets request
-	GetReleaseTargets(ctx context.Context, resourceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateSystemWithBody request with any body
-	CreateSystemWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateSystem(ctx context.Context, body CreateSystemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteSystem request
-	DeleteSystem(ctx context.Context, systemId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetSystem request
-	GetSystem(ctx context.Context, systemId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateSystemWithBody request with any body
-	UpdateSystemWithBody(ctx context.Context, systemId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateSystem(ctx context.Context, systemId openapi_types.UUID, body UpdateSystemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteEnvironmentByName request
-	DeleteEnvironmentByName(ctx context.Context, systemId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateWorkspace(ctx context.Context, body CreateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetWorkspaceBySlug request
 	GetWorkspaceBySlug(ctx context.Context, workspaceSlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteWorkspace request
+	DeleteWorkspace(ctx context.Context, workspaceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetWorkspace request
 	GetWorkspace(ctx context.Context, workspaceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// UpdateWorkspaceWithBody request with any body
+	UpdateWorkspaceWithBody(ctx context.Context, workspaceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateWorkspace(ctx context.Context, workspaceId openapi_types.UUID, body UpdateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListDeployments request
-	ListDeployments(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListDeployments(ctx context.Context, workspaceId string, params *ListDeploymentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpsertDeploymentWithBody request with any body
+	UpsertDeploymentWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpsertDeployment(ctx context.Context, workspaceId string, body UpsertDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetDeployment request
+	GetDeployment(ctx context.Context, workspaceId string, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListDeploymentVersions request
+	ListDeploymentVersions(ctx context.Context, workspaceId string, deploymentId string, params *ListDeploymentVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpsertDeploymentVersionWithBody request with any body
+	UpsertDeploymentVersionWithBody(ctx context.Context, workspaceId string, deploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpsertDeploymentVersion(ctx context.Context, workspaceId string, deploymentId string, body UpsertDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpsertUserApprovalRecordWithBody request with any body
+	UpsertUserApprovalRecordWithBody(ctx context.Context, workspaceId string, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpsertUserApprovalRecord(ctx context.Context, workspaceId string, deploymentVersionId string, body UpsertUserApprovalRecordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListEnvironments request
-	ListEnvironments(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListEnvironments(ctx context.Context, workspaceId string, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetEventsByAction request
-	GetEventsByAction(ctx context.Context, workspaceId openapi_types.UUID, action string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpsertEnvironmentWithBody request with any body
+	UpsertEnvironmentWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeletePolicyByName request
-	DeletePolicyByName(ctx context.Context, workspaceId openapi_types.UUID, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpsertEnvironment(ctx context.Context, workspaceId string, body UpsertEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpsertResourceProvider request
-	UpsertResourceProvider(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetEnvironment request
+	GetEnvironment(ctx context.Context, workspaceId string, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListResources request
-	ListResources(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListPolicies request
+	ListPolicies(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteResourceByIdentifier request
-	DeleteResourceByIdentifier(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpsertPolicyWithBody request with any body
+	UpsertPolicyWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpsertPolicy(ctx context.Context, workspaceId string, body UpsertPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAllRelationships request
+	GetAllRelationships(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpsertResourceProviderWithBody request with any body
+	UpsertResourceProviderWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpsertResourceProvider(ctx context.Context, workspaceId string, body UpsertResourceProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetResourceProviderByName request
+	GetResourceProviderByName(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetResourceProvidersResourcesWithBody request with any body
+	SetResourceProvidersResourcesWithBody(ctx context.Context, workspaceId string, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SetResourceProvidersResources(ctx context.Context, workspaceId string, providerId string, body SetResourceProvidersResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAllResources request
+	GetAllResources(ctx context.Context, workspaceId string, params *GetAllResourcesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetResourceByIdentifier request
 	GetResourceByIdentifier(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetGroupedCountsWithBody request with any body
-	GetGroupedCountsWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	GetGroupedCounts(ctx context.Context, workspaceId string, body GetGroupedCountsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListSystems request
-	ListSystems(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-}
-
-func (c *Client) GetCloudProviderRegions(ctx context.Context, provider GetCloudProviderRegionsParamsProvider, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetCloudProviderRegionsRequest(c.Server, provider)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpsertDeploymentVersionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertDeploymentVersionRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpsertDeploymentVersion(ctx context.Context, body UpsertDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertDeploymentVersionRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateDeploymentVersionWithBody(ctx context.Context, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDeploymentVersionRequestWithBody(c.Server, deploymentVersionId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateDeploymentVersion(ctx context.Context, deploymentVersionId string, body UpdateDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDeploymentVersionRequest(c.Server, deploymentVersionId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ApproveDeploymentVersionWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewApproveDeploymentVersionRequestWithBody(c.Server, deploymentVersionId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ApproveDeploymentVersion(ctx context.Context, deploymentVersionId openapi_types.UUID, body ApproveDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewApproveDeploymentVersionRequest(c.Server, deploymentVersionId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ApproveDeploymentVersionForEnvironmentWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewApproveDeploymentVersionForEnvironmentRequestWithBody(c.Server, deploymentVersionId, environmentId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ApproveDeploymentVersionForEnvironment(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body ApproveDeploymentVersionForEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewApproveDeploymentVersionForEnvironmentRequest(c.Server, deploymentVersionId, environmentId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetRolloutInfo(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetRolloutInfoRequest(c.Server, deploymentVersionId, environmentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) RejectDeploymentVersionWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRejectDeploymentVersionRequestWithBody(c.Server, deploymentVersionId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) RejectDeploymentVersion(ctx context.Context, deploymentVersionId openapi_types.UUID, body RejectDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRejectDeploymentVersionRequest(c.Server, deploymentVersionId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) RejectDeploymentVersionForEnvironmentWithBody(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRejectDeploymentVersionForEnvironmentRequestWithBody(c.Server, deploymentVersionId, environmentId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) RejectDeploymentVersionForEnvironment(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body RejectDeploymentVersionForEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRejectDeploymentVersionForEnvironmentRequest(c.Server, deploymentVersionId, environmentId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateDeploymentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDeploymentRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateDeployment(ctx context.Context, body CreateDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDeploymentRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteDeployment(ctx context.Context, deploymentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteDeploymentRequest(c.Server, deploymentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetDeployment(ctx context.Context, deploymentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetDeploymentRequest(c.Server, deploymentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateDeploymentWithBody(ctx context.Context, deploymentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDeploymentRequestWithBody(c.Server, deploymentId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateDeployment(ctx context.Context, deploymentId openapi_types.UUID, body UpdateDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDeploymentRequest(c.Server, deploymentId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetResourcesForDeployment(ctx context.Context, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetResourcesForDeploymentRequest(c.Server, deploymentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetDeploymentVariables(ctx context.Context, deploymentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetDeploymentVariablesRequest(c.Server, deploymentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateDeploymentVariableWithBody(ctx context.Context, deploymentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDeploymentVariableRequestWithBody(c.Server, deploymentId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateDeploymentVariable(ctx context.Context, deploymentId openapi_types.UUID, body CreateDeploymentVariableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDeploymentVariableRequest(c.Server, deploymentId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListDeploymentVersions(ctx context.Context, deploymentId openapi_types.UUID, params *ListDeploymentVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListDeploymentVersionsRequest(c.Server, deploymentId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateEnvironmentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateEnvironmentRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateEnvironment(ctx context.Context, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateEnvironmentRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteEnvironment(ctx context.Context, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteEnvironmentRequest(c.Server, environmentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetEnvironment(ctx context.Context, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetEnvironmentRequest(c.Server, environmentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetResourcesForEnvironment(ctx context.Context, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetResourcesForEnvironmentRequest(c.Server, environmentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpsertJobAgentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertJobAgentRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpsertJobAgent(ctx context.Context, body UpsertJobAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertJobAgentRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetAgentRunningJobs(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAgentRunningJobsRequest(c.Server, agentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) AcknowledgeAgentJob(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAcknowledgeAgentJobRequest(c.Server, agentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetNextJobs(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetNextJobsRequest(c.Server, agentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetJob(ctx context.Context, jobId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetJobRequest(c.Server, jobId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateJobWithBody(ctx context.Context, jobId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateJobRequestWithBody(c.Server, jobId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateJob(ctx context.Context, jobId string, body UpdateJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateJobRequest(c.Server, jobId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) AcknowledgeJob(ctx context.Context, jobId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAcknowledgeJobRequest(c.Server, jobId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpsertPolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertPolicyRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpsertPolicy(ctx context.Context, body UpsertPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertPolicyRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeletePolicy(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeletePolicyRequest(c.Server, policyId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetPolicy(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetPolicyRequest(c.Server, policyId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdatePolicyWithBody(ctx context.Context, policyId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdatePolicyRequestWithBody(c.Server, policyId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdatePolicy(ctx context.Context, policyId openapi_types.UUID, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdatePolicyRequest(c.Server, policyId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetReleaseTargetsForPolicy(ctx context.Context, policyId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetReleaseTargetsForPolicyRequest(c.Server, policyId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateJobToResourceRelationshipWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateJobToResourceRelationshipRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateJobToResourceRelationship(ctx context.Context, body CreateJobToResourceRelationshipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateJobToResourceRelationshipRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateResourceToResourceRelationshipWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateResourceToResourceRelationshipRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateResourceToResourceRelationship(ctx context.Context, body CreateResourceToResourceRelationshipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateResourceToResourceRelationshipRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetReleaseTargetRequest(c.Server, releaseTargetId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetLatestJobs(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetLatestJobsRequest(c.Server, releaseTargetId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) LockReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewLockReleaseTargetRequest(c.Server, releaseTargetId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PinReleaseTargetWithBody(ctx context.Context, releaseTargetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPinReleaseTargetRequestWithBody(c.Server, releaseTargetId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PinReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, body PinReleaseTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPinReleaseTargetRequest(c.Server, releaseTargetId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetReleaseTargetReleases(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetReleaseTargetReleasesRequest(c.Server, releaseTargetId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UnlockReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUnlockReleaseTargetRequest(c.Server, releaseTargetId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UnpinReleaseTarget(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUnpinReleaseTargetRequest(c.Server, releaseTargetId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpsertReleaseWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertReleaseRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpsertRelease(ctx context.Context, body UpsertReleaseJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertReleaseRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateReleaseWithBody(ctx context.Context, releaseId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateReleaseRequestWithBody(c.Server, releaseId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateRelease(ctx context.Context, releaseId string, body UpdateReleaseJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateReleaseRequest(c.Server, releaseId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) SetResourceProvidersResourcesWithBody(ctx context.Context, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetResourceProvidersResourcesRequestWithBody(c.Server, providerId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) SetResourceProvidersResources(ctx context.Context, providerId string, body SetResourceProvidersResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetResourceProvidersResourcesRequest(c.Server, providerId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateResourceRelationshipRuleWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateResourceRelationshipRuleRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateResourceRelationshipRule(ctx context.Context, body CreateResourceRelationshipRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateResourceRelationshipRuleRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateResourceRelationshipRuleWithBody(ctx context.Context, ruleId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateResourceRelationshipRuleRequestWithBody(c.Server, ruleId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateResourceRelationshipRule(ctx context.Context, ruleId openapi_types.UUID, body UpdateResourceRelationshipRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateResourceRelationshipRuleRequest(c.Server, ruleId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateResourceSchemaWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateResourceSchemaRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateResourceSchema(ctx context.Context, body CreateResourceSchemaJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateResourceSchemaRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteResourceSchema(ctx context.Context, schemaId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteResourceSchemaRequest(c.Server, schemaId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpsertResourceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertResourceRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpsertResource(ctx context.Context, body UpsertResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertResourceRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteResource(ctx context.Context, resourceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteResourceRequest(c.Server, resourceId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetResource(ctx context.Context, resourceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetResourceRequest(c.Server, resourceId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateResourceWithBody(ctx context.Context, resourceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateResourceRequestWithBody(c.Server, resourceId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateResource(ctx context.Context, resourceId string, body UpdateResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateResourceRequest(c.Server, resourceId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetReleaseTargets(ctx context.Context, resourceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetReleaseTargetsRequest(c.Server, resourceId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateSystemWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSystemRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateSystem(ctx context.Context, body CreateSystemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSystemRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteSystem(ctx context.Context, systemId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteSystemRequest(c.Server, systemId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetSystem(ctx context.Context, systemId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetSystemRequest(c.Server, systemId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateSystemWithBody(ctx context.Context, systemId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateSystemRequestWithBody(c.Server, systemId, contentType, body)
+func (c *Client) ListWorkspaces(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListWorkspacesRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -3711,8 +727,8 @@ func (c *Client) UpdateSystemWithBody(ctx context.Context, systemId openapi_type
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateSystem(ctx context.Context, systemId openapi_types.UUID, body UpdateSystemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateSystemRequest(c.Server, systemId, body)
+func (c *Client) CreateWorkspaceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateWorkspaceRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3723,8 +739,8 @@ func (c *Client) UpdateSystem(ctx context.Context, systemId openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteEnvironmentByName(ctx context.Context, systemId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteEnvironmentByNameRequest(c.Server, systemId, name)
+func (c *Client) CreateWorkspace(ctx context.Context, body CreateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateWorkspaceRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3747,6 +763,18 @@ func (c *Client) GetWorkspaceBySlug(ctx context.Context, workspaceSlug string, r
 	return c.Client.Do(req)
 }
 
+func (c *Client) DeleteWorkspace(ctx context.Context, workspaceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteWorkspaceRequest(c.Server, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetWorkspace(ctx context.Context, workspaceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetWorkspaceRequest(c.Server, workspaceId)
 	if err != nil {
@@ -3759,8 +787,8 @@ func (c *Client) GetWorkspace(ctx context.Context, workspaceId openapi_types.UUI
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListDeployments(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListDeploymentsRequest(c.Server, workspaceId)
+func (c *Client) UpdateWorkspaceWithBody(ctx context.Context, workspaceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateWorkspaceRequestWithBody(c.Server, workspaceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3771,8 +799,8 @@ func (c *Client) ListDeployments(ctx context.Context, workspaceId string, reqEdi
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListEnvironments(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListEnvironmentsRequest(c.Server, workspaceId)
+func (c *Client) UpdateWorkspace(ctx context.Context, workspaceId openapi_types.UUID, body UpdateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateWorkspaceRequest(c.Server, workspaceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3783,8 +811,8 @@ func (c *Client) ListEnvironments(ctx context.Context, workspaceId string, reqEd
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetEventsByAction(ctx context.Context, workspaceId openapi_types.UUID, action string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetEventsByActionRequest(c.Server, workspaceId, action)
+func (c *Client) ListDeployments(ctx context.Context, workspaceId string, params *ListDeploymentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListDeploymentsRequest(c.Server, workspaceId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -3795,8 +823,8 @@ func (c *Client) GetEventsByAction(ctx context.Context, workspaceId openapi_type
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeletePolicyByName(ctx context.Context, workspaceId openapi_types.UUID, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeletePolicyByNameRequest(c.Server, workspaceId, name)
+func (c *Client) UpsertDeploymentWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertDeploymentRequestWithBody(c.Server, workspaceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3807,8 +835,8 @@ func (c *Client) DeletePolicyByName(ctx context.Context, workspaceId openapi_typ
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpsertResourceProvider(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertResourceProviderRequest(c.Server, workspaceId, name)
+func (c *Client) UpsertDeployment(ctx context.Context, workspaceId string, body UpsertDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertDeploymentRequest(c.Server, workspaceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3819,8 +847,8 @@ func (c *Client) UpsertResourceProvider(ctx context.Context, workspaceId string,
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListResources(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListResourcesRequest(c.Server, workspaceId)
+func (c *Client) GetDeployment(ctx context.Context, workspaceId string, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDeploymentRequest(c.Server, workspaceId, deploymentId)
 	if err != nil {
 		return nil, err
 	}
@@ -3831,8 +859,224 @@ func (c *Client) ListResources(ctx context.Context, workspaceId string, reqEdito
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteResourceByIdentifier(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteResourceByIdentifierRequest(c.Server, workspaceId, identifier)
+func (c *Client) ListDeploymentVersions(ctx context.Context, workspaceId string, deploymentId string, params *ListDeploymentVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListDeploymentVersionsRequest(c.Server, workspaceId, deploymentId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertDeploymentVersionWithBody(ctx context.Context, workspaceId string, deploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertDeploymentVersionRequestWithBody(c.Server, workspaceId, deploymentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertDeploymentVersion(ctx context.Context, workspaceId string, deploymentId string, body UpsertDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertDeploymentVersionRequest(c.Server, workspaceId, deploymentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertUserApprovalRecordWithBody(ctx context.Context, workspaceId string, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertUserApprovalRecordRequestWithBody(c.Server, workspaceId, deploymentVersionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertUserApprovalRecord(ctx context.Context, workspaceId string, deploymentVersionId string, body UpsertUserApprovalRecordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertUserApprovalRecordRequest(c.Server, workspaceId, deploymentVersionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListEnvironments(ctx context.Context, workspaceId string, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListEnvironmentsRequest(c.Server, workspaceId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertEnvironmentWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertEnvironmentRequestWithBody(c.Server, workspaceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertEnvironment(ctx context.Context, workspaceId string, body UpsertEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertEnvironmentRequest(c.Server, workspaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetEnvironment(ctx context.Context, workspaceId string, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEnvironmentRequest(c.Server, workspaceId, environmentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListPolicies(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPoliciesRequest(c.Server, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertPolicyWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertPolicyRequestWithBody(c.Server, workspaceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertPolicy(ctx context.Context, workspaceId string, body UpsertPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertPolicyRequest(c.Server, workspaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetAllRelationships(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAllRelationshipsRequest(c.Server, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertResourceProviderWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertResourceProviderRequestWithBody(c.Server, workspaceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertResourceProvider(ctx context.Context, workspaceId string, body UpsertResourceProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertResourceProviderRequest(c.Server, workspaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetResourceProviderByName(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetResourceProviderByNameRequest(c.Server, workspaceId, name)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetResourceProvidersResourcesWithBody(ctx context.Context, workspaceId string, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetResourceProvidersResourcesRequestWithBody(c.Server, workspaceId, providerId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetResourceProvidersResources(ctx context.Context, workspaceId string, providerId string, body SetResourceProvidersResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetResourceProvidersResourcesRequest(c.Server, workspaceId, providerId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetAllResources(ctx context.Context, workspaceId string, params *GetAllResourcesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAllResourcesRequest(c.Server, workspaceId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -3855,59 +1099,16 @@ func (c *Client) GetResourceByIdentifier(ctx context.Context, workspaceId string
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetGroupedCountsWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetGroupedCountsRequestWithBody(c.Server, workspaceId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetGroupedCounts(ctx context.Context, workspaceId string, body GetGroupedCountsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetGroupedCountsRequest(c.Server, workspaceId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListSystems(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListSystemsRequest(c.Server, workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// NewGetCloudProviderRegionsRequest generates requests for GetCloudProviderRegions
-func NewGetCloudProviderRegionsRequest(server string, provider GetCloudProviderRegionsParamsProvider) (*http.Request, error) {
+// NewListWorkspacesRequest generates requests for ListWorkspaces
+func NewListWorkspacesRequest(server string) (*http.Request, error) {
 	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "provider", runtime.ParamLocationPath, provider)
-	if err != nil {
-		return nil, err
-	}
 
 	serverURL, err := url.Parse(server)
 	if err != nil {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v1/cloud-locations/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v1/workspaces")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -3925,19 +1126,19 @@ func NewGetCloudProviderRegionsRequest(server string, provider GetCloudProviderR
 	return req, nil
 }
 
-// NewUpsertDeploymentVersionRequest calls the generic UpsertDeploymentVersion builder with application/json body
-func NewUpsertDeploymentVersionRequest(server string, body UpsertDeploymentVersionJSONRequestBody) (*http.Request, error) {
+// NewCreateWorkspaceRequest calls the generic CreateWorkspace builder with application/json body
+func NewCreateWorkspaceRequest(server string, body CreateWorkspaceJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpsertDeploymentVersionRequestWithBody(server, "application/json", bodyReader)
+	return NewCreateWorkspaceRequestWithBody(server, "application/json", bodyReader)
 }
 
-// NewUpsertDeploymentVersionRequestWithBody generates requests for UpsertDeploymentVersion with any type of body
-func NewUpsertDeploymentVersionRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateWorkspaceRequestWithBody generates requests for CreateWorkspace with any type of body
+func NewCreateWorkspaceRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -3945,7 +1146,7 @@ func NewUpsertDeploymentVersionRequestWithBody(server string, contentType string
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/deployment-versions")
+	operationPath := fmt.Sprintf("/v1/workspaces")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -3961,2221 +1162,6 @@ func NewUpsertDeploymentVersionRequestWithBody(server string, contentType string
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewUpdateDeploymentVersionRequest calls the generic UpdateDeploymentVersion builder with application/json body
-func NewUpdateDeploymentVersionRequest(server string, deploymentVersionId string, body UpdateDeploymentVersionJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateDeploymentVersionRequestWithBody(server, deploymentVersionId, "application/json", bodyReader)
-}
-
-// NewUpdateDeploymentVersionRequestWithBody generates requests for UpdateDeploymentVersion with any type of body
-func NewUpdateDeploymentVersionRequestWithBody(server string, deploymentVersionId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployment-versions/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PATCH", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewApproveDeploymentVersionRequest calls the generic ApproveDeploymentVersion builder with application/json body
-func NewApproveDeploymentVersionRequest(server string, deploymentVersionId openapi_types.UUID, body ApproveDeploymentVersionJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewApproveDeploymentVersionRequestWithBody(server, deploymentVersionId, "application/json", bodyReader)
-}
-
-// NewApproveDeploymentVersionRequestWithBody generates requests for ApproveDeploymentVersion with any type of body
-func NewApproveDeploymentVersionRequestWithBody(server string, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployment-versions/%s/approve", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewApproveDeploymentVersionForEnvironmentRequest calls the generic ApproveDeploymentVersionForEnvironment builder with application/json body
-func NewApproveDeploymentVersionForEnvironmentRequest(server string, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body ApproveDeploymentVersionForEnvironmentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewApproveDeploymentVersionForEnvironmentRequestWithBody(server, deploymentVersionId, environmentId, "application/json", bodyReader)
-}
-
-// NewApproveDeploymentVersionForEnvironmentRequestWithBody generates requests for ApproveDeploymentVersionForEnvironment with any type of body
-func NewApproveDeploymentVersionForEnvironmentRequestWithBody(server string, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "environmentId", runtime.ParamLocationPath, environmentId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployment-versions/%s/approve/environment/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetRolloutInfoRequest generates requests for GetRolloutInfo
-func NewGetRolloutInfoRequest(server string, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "environmentId", runtime.ParamLocationPath, environmentId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployment-versions/%s/environments/%s/rollout", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewRejectDeploymentVersionRequest calls the generic RejectDeploymentVersion builder with application/json body
-func NewRejectDeploymentVersionRequest(server string, deploymentVersionId openapi_types.UUID, body RejectDeploymentVersionJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewRejectDeploymentVersionRequestWithBody(server, deploymentVersionId, "application/json", bodyReader)
-}
-
-// NewRejectDeploymentVersionRequestWithBody generates requests for RejectDeploymentVersion with any type of body
-func NewRejectDeploymentVersionRequestWithBody(server string, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployment-versions/%s/reject", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewRejectDeploymentVersionForEnvironmentRequest calls the generic RejectDeploymentVersionForEnvironment builder with application/json body
-func NewRejectDeploymentVersionForEnvironmentRequest(server string, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body RejectDeploymentVersionForEnvironmentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewRejectDeploymentVersionForEnvironmentRequestWithBody(server, deploymentVersionId, environmentId, "application/json", bodyReader)
-}
-
-// NewRejectDeploymentVersionForEnvironmentRequestWithBody generates requests for RejectDeploymentVersionForEnvironment with any type of body
-func NewRejectDeploymentVersionForEnvironmentRequestWithBody(server string, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "environmentId", runtime.ParamLocationPath, environmentId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployment-versions/%s/reject/environment/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewCreateDeploymentRequest calls the generic CreateDeployment builder with application/json body
-func NewCreateDeploymentRequest(server string, body CreateDeploymentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateDeploymentRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateDeploymentRequestWithBody generates requests for CreateDeployment with any type of body
-func NewCreateDeploymentRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployments")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteDeploymentRequest generates requests for DeleteDeployment
-func NewDeleteDeploymentRequest(server string, deploymentId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployments/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetDeploymentRequest generates requests for GetDeployment
-func NewGetDeploymentRequest(server string, deploymentId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployments/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateDeploymentRequest calls the generic UpdateDeployment builder with application/json body
-func NewUpdateDeploymentRequest(server string, deploymentId openapi_types.UUID, body UpdateDeploymentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateDeploymentRequestWithBody(server, deploymentId, "application/json", bodyReader)
-}
-
-// NewUpdateDeploymentRequestWithBody generates requests for UpdateDeployment with any type of body
-func NewUpdateDeploymentRequestWithBody(server string, deploymentId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployments/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PATCH", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetResourcesForDeploymentRequest generates requests for GetResourcesForDeployment
-func NewGetResourcesForDeploymentRequest(server string, deploymentId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployments/%s/resources", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetDeploymentVariablesRequest generates requests for GetDeploymentVariables
-func NewGetDeploymentVariablesRequest(server string, deploymentId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployments/%s/variables", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateDeploymentVariableRequest calls the generic CreateDeploymentVariable builder with application/json body
-func NewCreateDeploymentVariableRequest(server string, deploymentId openapi_types.UUID, body CreateDeploymentVariableJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateDeploymentVariableRequestWithBody(server, deploymentId, "application/json", bodyReader)
-}
-
-// NewCreateDeploymentVariableRequestWithBody generates requests for CreateDeploymentVariable with any type of body
-func NewCreateDeploymentVariableRequestWithBody(server string, deploymentId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployments/%s/variables", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListDeploymentVersionsRequest generates requests for ListDeploymentVersions
-func NewListDeploymentVersionsRequest(server string, deploymentId openapi_types.UUID, params *ListDeploymentVersionsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/deployments/%s/versions", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.Status != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "status", runtime.ParamLocationQuery, *params.Status); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateEnvironmentRequest calls the generic CreateEnvironment builder with application/json body
-func NewCreateEnvironmentRequest(server string, body CreateEnvironmentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateEnvironmentRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateEnvironmentRequestWithBody generates requests for CreateEnvironment with any type of body
-func NewCreateEnvironmentRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/environments")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteEnvironmentRequest generates requests for DeleteEnvironment
-func NewDeleteEnvironmentRequest(server string, environmentId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "environmentId", runtime.ParamLocationPath, environmentId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/environments/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetEnvironmentRequest generates requests for GetEnvironment
-func NewGetEnvironmentRequest(server string, environmentId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "environmentId", runtime.ParamLocationPath, environmentId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/environments/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetResourcesForEnvironmentRequest generates requests for GetResourcesForEnvironment
-func NewGetResourcesForEnvironmentRequest(server string, environmentId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "environmentId", runtime.ParamLocationPath, environmentId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/environments/%s/resources", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpsertJobAgentRequest calls the generic UpsertJobAgent builder with application/json body
-func NewUpsertJobAgentRequest(server string, body UpsertJobAgentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpsertJobAgentRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewUpsertJobAgentRequestWithBody generates requests for UpsertJobAgent with any type of body
-func NewUpsertJobAgentRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/job-agents/name")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PATCH", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetAgentRunningJobsRequest generates requests for GetAgentRunningJobs
-func NewGetAgentRunningJobsRequest(server string, agentId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "agentId", runtime.ParamLocationPath, agentId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/job-agents/%s/jobs/running", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewAcknowledgeAgentJobRequest generates requests for AcknowledgeAgentJob
-func NewAcknowledgeAgentJobRequest(server string, agentId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "agentId", runtime.ParamLocationPath, agentId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/job-agents/%s/queue/acknowledge", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetNextJobsRequest generates requests for GetNextJobs
-func NewGetNextJobsRequest(server string, agentId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "agentId", runtime.ParamLocationPath, agentId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/job-agents/%s/queue/next", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetJobRequest generates requests for GetJob
-func NewGetJobRequest(server string, jobId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "jobId", runtime.ParamLocationPath, jobId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/jobs/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateJobRequest calls the generic UpdateJob builder with application/json body
-func NewUpdateJobRequest(server string, jobId string, body UpdateJobJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateJobRequestWithBody(server, jobId, "application/json", bodyReader)
-}
-
-// NewUpdateJobRequestWithBody generates requests for UpdateJob with any type of body
-func NewUpdateJobRequestWithBody(server string, jobId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "jobId", runtime.ParamLocationPath, jobId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/jobs/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PATCH", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewAcknowledgeJobRequest generates requests for AcknowledgeJob
-func NewAcknowledgeJobRequest(server string, jobId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "jobId", runtime.ParamLocationPath, jobId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/jobs/%s/acknowledge", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpsertPolicyRequest calls the generic UpsertPolicy builder with application/json body
-func NewUpsertPolicyRequest(server string, body UpsertPolicyJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpsertPolicyRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewUpsertPolicyRequestWithBody generates requests for UpsertPolicy with any type of body
-func NewUpsertPolicyRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/policies")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeletePolicyRequest generates requests for DeletePolicy
-func NewDeletePolicyRequest(server string, policyId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "policyId", runtime.ParamLocationPath, policyId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/policies/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetPolicyRequest generates requests for GetPolicy
-func NewGetPolicyRequest(server string, policyId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "policyId", runtime.ParamLocationPath, policyId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/policies/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdatePolicyRequest calls the generic UpdatePolicy builder with application/json body
-func NewUpdatePolicyRequest(server string, policyId openapi_types.UUID, body UpdatePolicyJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdatePolicyRequestWithBody(server, policyId, "application/json", bodyReader)
-}
-
-// NewUpdatePolicyRequestWithBody generates requests for UpdatePolicy with any type of body
-func NewUpdatePolicyRequestWithBody(server string, policyId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "policyId", runtime.ParamLocationPath, policyId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/policies/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PATCH", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetReleaseTargetsForPolicyRequest generates requests for GetReleaseTargetsForPolicy
-func NewGetReleaseTargetsForPolicyRequest(server string, policyId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "policyId", runtime.ParamLocationPath, policyId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/policies/%s/release-targets", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateJobToResourceRelationshipRequest calls the generic CreateJobToResourceRelationship builder with application/json body
-func NewCreateJobToResourceRelationshipRequest(server string, body CreateJobToResourceRelationshipJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateJobToResourceRelationshipRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateJobToResourceRelationshipRequestWithBody generates requests for CreateJobToResourceRelationship with any type of body
-func NewCreateJobToResourceRelationshipRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/relationship/job-to-resource")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewCreateResourceToResourceRelationshipRequest calls the generic CreateResourceToResourceRelationship builder with application/json body
-func NewCreateResourceToResourceRelationshipRequest(server string, body CreateResourceToResourceRelationshipJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateResourceToResourceRelationshipRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateResourceToResourceRelationshipRequestWithBody generates requests for CreateResourceToResourceRelationship with any type of body
-func NewCreateResourceToResourceRelationshipRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/relationship/resource-to-resource")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetReleaseTargetRequest generates requests for GetReleaseTarget
-func NewGetReleaseTargetRequest(server string, releaseTargetId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "releaseTargetId", runtime.ParamLocationPath, releaseTargetId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/release-targets/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetLatestJobsRequest generates requests for GetLatestJobs
-func NewGetLatestJobsRequest(server string, releaseTargetId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "releaseTargetId", runtime.ParamLocationPath, releaseTargetId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/release-targets/%s/latest-jobs", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewLockReleaseTargetRequest generates requests for LockReleaseTarget
-func NewLockReleaseTargetRequest(server string, releaseTargetId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "releaseTargetId", runtime.ParamLocationPath, releaseTargetId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/release-targets/%s/lock", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewPinReleaseTargetRequest calls the generic PinReleaseTarget builder with application/json body
-func NewPinReleaseTargetRequest(server string, releaseTargetId openapi_types.UUID, body PinReleaseTargetJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewPinReleaseTargetRequestWithBody(server, releaseTargetId, "application/json", bodyReader)
-}
-
-// NewPinReleaseTargetRequestWithBody generates requests for PinReleaseTarget with any type of body
-func NewPinReleaseTargetRequestWithBody(server string, releaseTargetId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "releaseTargetId", runtime.ParamLocationPath, releaseTargetId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/release-targets/%s/pin", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetReleaseTargetReleasesRequest generates requests for GetReleaseTargetReleases
-func NewGetReleaseTargetReleasesRequest(server string, releaseTargetId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "releaseTargetId", runtime.ParamLocationPath, releaseTargetId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/release-targets/%s/releases", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUnlockReleaseTargetRequest generates requests for UnlockReleaseTarget
-func NewUnlockReleaseTargetRequest(server string, releaseTargetId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "releaseTargetId", runtime.ParamLocationPath, releaseTargetId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/release-targets/%s/unlock", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUnpinReleaseTargetRequest generates requests for UnpinReleaseTarget
-func NewUnpinReleaseTargetRequest(server string, releaseTargetId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "releaseTargetId", runtime.ParamLocationPath, releaseTargetId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/release-targets/%s/unpin", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpsertReleaseRequest calls the generic UpsertRelease builder with application/json body
-func NewUpsertReleaseRequest(server string, body UpsertReleaseJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpsertReleaseRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewUpsertReleaseRequestWithBody generates requests for UpsertRelease with any type of body
-func NewUpsertReleaseRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/releases")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewUpdateReleaseRequest calls the generic UpdateRelease builder with application/json body
-func NewUpdateReleaseRequest(server string, releaseId string, body UpdateReleaseJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateReleaseRequestWithBody(server, releaseId, "application/json", bodyReader)
-}
-
-// NewUpdateReleaseRequestWithBody generates requests for UpdateRelease with any type of body
-func NewUpdateReleaseRequestWithBody(server string, releaseId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "releaseId", runtime.ParamLocationPath, releaseId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/releases/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PATCH", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewSetResourceProvidersResourcesRequest calls the generic SetResourceProvidersResources builder with application/json body
-func NewSetResourceProvidersResourcesRequest(server string, providerId string, body SetResourceProvidersResourcesJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewSetResourceProvidersResourcesRequestWithBody(server, providerId, "application/json", bodyReader)
-}
-
-// NewSetResourceProvidersResourcesRequestWithBody generates requests for SetResourceProvidersResources with any type of body
-func NewSetResourceProvidersResourcesRequestWithBody(server string, providerId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "providerId", runtime.ParamLocationPath, providerId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/resource-providers/%s/set", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PATCH", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewCreateResourceRelationshipRuleRequest calls the generic CreateResourceRelationshipRule builder with application/json body
-func NewCreateResourceRelationshipRuleRequest(server string, body CreateResourceRelationshipRuleJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateResourceRelationshipRuleRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateResourceRelationshipRuleRequestWithBody generates requests for CreateResourceRelationshipRule with any type of body
-func NewCreateResourceRelationshipRuleRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/resource-relationship-rules")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewUpdateResourceRelationshipRuleRequest calls the generic UpdateResourceRelationshipRule builder with application/json body
-func NewUpdateResourceRelationshipRuleRequest(server string, ruleId openapi_types.UUID, body UpdateResourceRelationshipRuleJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateResourceRelationshipRuleRequestWithBody(server, ruleId, "application/json", bodyReader)
-}
-
-// NewUpdateResourceRelationshipRuleRequestWithBody generates requests for UpdateResourceRelationshipRule with any type of body
-func NewUpdateResourceRelationshipRuleRequestWithBody(server string, ruleId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "ruleId", runtime.ParamLocationPath, ruleId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/resource-relationship-rules/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PATCH", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewCreateResourceSchemaRequest calls the generic CreateResourceSchema builder with application/json body
-func NewCreateResourceSchemaRequest(server string, body CreateResourceSchemaJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateResourceSchemaRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateResourceSchemaRequestWithBody generates requests for CreateResourceSchema with any type of body
-func NewCreateResourceSchemaRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/resource-schemas")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteResourceSchemaRequest generates requests for DeleteResourceSchema
-func NewDeleteResourceSchemaRequest(server string, schemaId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "schemaId", runtime.ParamLocationPath, schemaId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/resource-schemas/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpsertResourceRequest calls the generic UpsertResource builder with application/json body
-func NewUpsertResourceRequest(server string, body UpsertResourceJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpsertResourceRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewUpsertResourceRequestWithBody generates requests for UpsertResource with any type of body
-func NewUpsertResourceRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/resources")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteResourceRequest generates requests for DeleteResource
-func NewDeleteResourceRequest(server string, resourceId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "resourceId", runtime.ParamLocationPath, resourceId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/resources/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetResourceRequest generates requests for GetResource
-func NewGetResourceRequest(server string, resourceId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "resourceId", runtime.ParamLocationPath, resourceId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/resources/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateResourceRequest calls the generic UpdateResource builder with application/json body
-func NewUpdateResourceRequest(server string, resourceId string, body UpdateResourceJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateResourceRequestWithBody(server, resourceId, "application/json", bodyReader)
-}
-
-// NewUpdateResourceRequestWithBody generates requests for UpdateResource with any type of body
-func NewUpdateResourceRequestWithBody(server string, resourceId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "resourceId", runtime.ParamLocationPath, resourceId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/resources/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PATCH", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetReleaseTargetsRequest generates requests for GetReleaseTargets
-func NewGetReleaseTargetsRequest(server string, resourceId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "resourceId", runtime.ParamLocationPath, resourceId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/resources/%s/release-targets", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateSystemRequest calls the generic CreateSystem builder with application/json body
-func NewCreateSystemRequest(server string, body CreateSystemJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateSystemRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateSystemRequestWithBody generates requests for CreateSystem with any type of body
-func NewCreateSystemRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/systems")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteSystemRequest generates requests for DeleteSystem
-func NewDeleteSystemRequest(server string, systemId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "systemId", runtime.ParamLocationPath, systemId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/systems/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetSystemRequest generates requests for GetSystem
-func NewGetSystemRequest(server string, systemId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "systemId", runtime.ParamLocationPath, systemId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/systems/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateSystemRequest calls the generic UpdateSystem builder with application/json body
-func NewUpdateSystemRequest(server string, systemId openapi_types.UUID, body UpdateSystemJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateSystemRequestWithBody(server, systemId, "application/json", bodyReader)
-}
-
-// NewUpdateSystemRequestWithBody generates requests for UpdateSystem with any type of body
-func NewUpdateSystemRequestWithBody(server string, systemId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "systemId", runtime.ParamLocationPath, systemId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/systems/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PATCH", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteEnvironmentByNameRequest generates requests for DeleteEnvironmentByName
-func NewDeleteEnvironmentByNameRequest(server string, systemId string, name string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "systemId", runtime.ParamLocationPath, systemId)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/systems/%s/environments/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
 
 	return req, nil
 }
@@ -6207,6 +1193,40 @@ func NewGetWorkspaceBySlugRequest(server string, workspaceSlug string) (*http.Re
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDeleteWorkspaceRequest generates requests for DeleteWorkspace
+func NewDeleteWorkspaceRequest(server string, workspaceId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -6248,8 +1268,55 @@ func NewGetWorkspaceRequest(server string, workspaceId openapi_types.UUID) (*htt
 	return req, nil
 }
 
+// NewUpdateWorkspaceRequest calls the generic UpdateWorkspace builder with application/json body
+func NewUpdateWorkspaceRequest(server string, workspaceId openapi_types.UUID, body UpdateWorkspaceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateWorkspaceRequestWithBody(server, workspaceId, "application/json", bodyReader)
+}
+
+// NewUpdateWorkspaceRequestWithBody generates requests for UpdateWorkspace with any type of body
+func NewUpdateWorkspaceRequestWithBody(server string, workspaceId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListDeploymentsRequest generates requests for ListDeployments
-func NewListDeploymentsRequest(server string, workspaceId string) (*http.Request, error) {
+func NewListDeploymentsRequest(server string, workspaceId string, params *ListDeploymentsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -6274,6 +1341,44 @@ func NewListDeploymentsRequest(server string, workspaceId string) (*http.Request
 		return nil, err
 	}
 
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
@@ -6282,8 +1387,283 @@ func NewListDeploymentsRequest(server string, workspaceId string) (*http.Request
 	return req, nil
 }
 
+// NewUpsertDeploymentRequest calls the generic UpsertDeployment builder with application/json body
+func NewUpsertDeploymentRequest(server string, workspaceId string, body UpsertDeploymentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpsertDeploymentRequestWithBody(server, workspaceId, "application/json", bodyReader)
+}
+
+// NewUpsertDeploymentRequestWithBody generates requests for UpsertDeployment with any type of body
+func NewUpsertDeploymentRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/deployments", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetDeploymentRequest generates requests for GetDeployment
+func NewGetDeploymentRequest(server string, workspaceId string, deploymentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/deployments/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListDeploymentVersionsRequest generates requests for ListDeploymentVersions
+func NewListDeploymentVersionsRequest(server string, workspaceId string, deploymentId string, params *ListDeploymentVersionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/deployments/%s/versions", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpsertDeploymentVersionRequest calls the generic UpsertDeploymentVersion builder with application/json body
+func NewUpsertDeploymentVersionRequest(server string, workspaceId string, deploymentId string, body UpsertDeploymentVersionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpsertDeploymentVersionRequestWithBody(server, workspaceId, deploymentId, "application/json", bodyReader)
+}
+
+// NewUpsertDeploymentVersionRequestWithBody generates requests for UpsertDeploymentVersion with any type of body
+func NewUpsertDeploymentVersionRequestWithBody(server string, workspaceId string, deploymentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/deployments/%s/versions", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewUpsertUserApprovalRecordRequest calls the generic UpsertUserApprovalRecord builder with application/json body
+func NewUpsertUserApprovalRecordRequest(server string, workspaceId string, deploymentVersionId string, body UpsertUserApprovalRecordJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpsertUserApprovalRecordRequestWithBody(server, workspaceId, deploymentVersionId, "application/json", bodyReader)
+}
+
+// NewUpsertUserApprovalRecordRequestWithBody generates requests for UpsertUserApprovalRecord with any type of body
+func NewUpsertUserApprovalRecordRequestWithBody(server string, workspaceId string, deploymentVersionId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/deploymentversions/%s/user-approval-records", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListEnvironmentsRequest generates requests for ListEnvironments
-func NewListEnvironmentsRequest(server string, workspaceId string) (*http.Request, error) {
+func NewListEnvironmentsRequest(server string, workspaceId string, params *ListEnvironmentsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -6308,6 +1688,44 @@ func NewListEnvironmentsRequest(server string, workspaceId string) (*http.Reques
 		return nil, err
 	}
 
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
@@ -6316,8 +1734,55 @@ func NewListEnvironmentsRequest(server string, workspaceId string) (*http.Reques
 	return req, nil
 }
 
-// NewGetEventsByActionRequest generates requests for GetEventsByAction
-func NewGetEventsByActionRequest(server string, workspaceId openapi_types.UUID, action string) (*http.Request, error) {
+// NewUpsertEnvironmentRequest calls the generic UpsertEnvironment builder with application/json body
+func NewUpsertEnvironmentRequest(server string, workspaceId string, body UpsertEnvironmentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpsertEnvironmentRequestWithBody(server, workspaceId, "application/json", bodyReader)
+}
+
+// NewUpsertEnvironmentRequestWithBody generates requests for UpsertEnvironment with any type of body
+func NewUpsertEnvironmentRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/environments", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetEnvironmentRequest generates requests for GetEnvironment
+func NewGetEnvironmentRequest(server string, workspaceId string, environmentId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -6329,7 +1794,7 @@ func NewGetEventsByActionRequest(server string, workspaceId openapi_types.UUID, 
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "action", runtime.ParamLocationPath, action)
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "environmentId", runtime.ParamLocationPath, environmentId)
 	if err != nil {
 		return nil, err
 	}
@@ -6339,7 +1804,7 @@ func NewGetEventsByActionRequest(server string, workspaceId openapi_types.UUID, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/events/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/environments/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -6357,8 +1822,8 @@ func NewGetEventsByActionRequest(server string, workspaceId openapi_types.UUID, 
 	return req, nil
 }
 
-// NewDeletePolicyByNameRequest generates requests for DeletePolicyByName
-func NewDeletePolicyByNameRequest(server string, workspaceId openapi_types.UUID, name string) (*http.Request, error) {
+// NewListPoliciesRequest generates requests for ListPolicies
+func NewListPoliciesRequest(server string, workspaceId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -6368,19 +1833,12 @@ func NewDeletePolicyByNameRequest(server string, workspaceId openapi_types.UUID,
 		return nil, err
 	}
 
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
-	if err != nil {
-		return nil, err
-	}
-
 	serverURL, err := url.Parse(server)
 	if err != nil {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/policies/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/policies", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -6390,7 +1848,7 @@ func NewDeletePolicyByNameRequest(server string, workspaceId openapi_types.UUID,
 		return nil, err
 	}
 
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -6398,8 +1856,136 @@ func NewDeletePolicyByNameRequest(server string, workspaceId openapi_types.UUID,
 	return req, nil
 }
 
-// NewUpsertResourceProviderRequest generates requests for UpsertResourceProvider
-func NewUpsertResourceProviderRequest(server string, workspaceId string, name string) (*http.Request, error) {
+// NewUpsertPolicyRequest calls the generic UpsertPolicy builder with application/json body
+func NewUpsertPolicyRequest(server string, workspaceId string, body UpsertPolicyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpsertPolicyRequestWithBody(server, workspaceId, "application/json", bodyReader)
+}
+
+// NewUpsertPolicyRequestWithBody generates requests for UpsertPolicy with any type of body
+func NewUpsertPolicyRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/policies", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetAllRelationshipsRequest generates requests for GetAllRelationships
+func NewGetAllRelationshipsRequest(server string, workspaceId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/relationships", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpsertResourceProviderRequest calls the generic UpsertResourceProvider builder with application/json body
+func NewUpsertResourceProviderRequest(server string, workspaceId string, body UpsertResourceProviderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpsertResourceProviderRequestWithBody(server, workspaceId, "application/json", bodyReader)
+}
+
+// NewUpsertResourceProviderRequestWithBody generates requests for UpsertResourceProvider with any type of body
+func NewUpsertResourceProviderRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/resource-providers", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetResourceProviderByNameRequest generates requests for GetResourceProviderByName
+func NewGetResourceProviderByNameRequest(server string, workspaceId string, name string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -6439,8 +2025,62 @@ func NewUpsertResourceProviderRequest(server string, workspaceId string, name st
 	return req, nil
 }
 
-// NewListResourcesRequest generates requests for ListResources
-func NewListResourcesRequest(server string, workspaceId string) (*http.Request, error) {
+// NewSetResourceProvidersResourcesRequest calls the generic SetResourceProvidersResources builder with application/json body
+func NewSetResourceProvidersResourcesRequest(server string, workspaceId string, providerId string, body SetResourceProvidersResourcesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetResourceProvidersResourcesRequestWithBody(server, workspaceId, providerId, "application/json", bodyReader)
+}
+
+// NewSetResourceProvidersResourcesRequestWithBody generates requests for SetResourceProvidersResources with any type of body
+func NewSetResourceProvidersResourcesRequestWithBody(server string, workspaceId string, providerId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "providerId", runtime.ParamLocationPath, providerId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/resource-providers/%s/set", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetAllResourcesRequest generates requests for GetAllResources
+func NewGetAllResourcesRequest(server string, workspaceId string, params *GetAllResourcesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -6465,48 +2105,61 @@ func NewListResourcesRequest(server string, workspaceId string) (*http.Request, 
 		return nil, err
 	}
 
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Cel != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "cel", runtime.ParamLocationQuery, *params.Cel); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewDeleteResourceByIdentifierRequest generates requests for DeleteResourceByIdentifier
-func NewDeleteResourceByIdentifierRequest(server string, workspaceId string, identifier string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "identifier", runtime.ParamLocationPath, identifier)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/resources/identifier/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -6538,87 +2191,6 @@ func NewGetResourceByIdentifierRequest(server string, workspaceId string, identi
 	}
 
 	operationPath := fmt.Sprintf("/v1/workspaces/%s/resources/identifier/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetGroupedCountsRequest calls the generic GetGroupedCounts builder with application/json body
-func NewGetGroupedCountsRequest(server string, workspaceId string, body GetGroupedCountsJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewGetGroupedCountsRequestWithBody(server, workspaceId, "application/json", bodyReader)
-}
-
-// NewGetGroupedCountsRequestWithBody generates requests for GetGroupedCounts with any type of body
-func NewGetGroupedCountsRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/resources/metadata-grouped-counts", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListSystemsRequest generates requests for ListSystems
-func NewListSystemsRequest(server string, workspaceId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/systems", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -6679,284 +2251,104 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
-	// GetCloudProviderRegionsWithResponse request
-	GetCloudProviderRegionsWithResponse(ctx context.Context, provider GetCloudProviderRegionsParamsProvider, reqEditors ...RequestEditorFn) (*GetCloudProviderRegionsResponse, error)
+	// ListWorkspacesWithResponse request
+	ListWorkspacesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListWorkspacesResponse, error)
 
-	// UpsertDeploymentVersionWithBodyWithResponse request with any body
-	UpsertDeploymentVersionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDeploymentVersionResponse, error)
+	// CreateWorkspaceWithBodyWithResponse request with any body
+	CreateWorkspaceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWorkspaceResponse, error)
 
-	UpsertDeploymentVersionWithResponse(ctx context.Context, body UpsertDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDeploymentVersionResponse, error)
-
-	// UpdateDeploymentVersionWithBodyWithResponse request with any body
-	UpdateDeploymentVersionWithBodyWithResponse(ctx context.Context, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDeploymentVersionResponse, error)
-
-	UpdateDeploymentVersionWithResponse(ctx context.Context, deploymentVersionId string, body UpdateDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDeploymentVersionResponse, error)
-
-	// ApproveDeploymentVersionWithBodyWithResponse request with any body
-	ApproveDeploymentVersionWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionResponse, error)
-
-	ApproveDeploymentVersionWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, body ApproveDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionResponse, error)
-
-	// ApproveDeploymentVersionForEnvironmentWithBodyWithResponse request with any body
-	ApproveDeploymentVersionForEnvironmentWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionForEnvironmentResponse, error)
-
-	ApproveDeploymentVersionForEnvironmentWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body ApproveDeploymentVersionForEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionForEnvironmentResponse, error)
-
-	// GetRolloutInfoWithResponse request
-	GetRolloutInfoWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetRolloutInfoResponse, error)
-
-	// RejectDeploymentVersionWithBodyWithResponse request with any body
-	RejectDeploymentVersionWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionResponse, error)
-
-	RejectDeploymentVersionWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, body RejectDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionResponse, error)
-
-	// RejectDeploymentVersionForEnvironmentWithBodyWithResponse request with any body
-	RejectDeploymentVersionForEnvironmentWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionForEnvironmentResponse, error)
-
-	RejectDeploymentVersionForEnvironmentWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body RejectDeploymentVersionForEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionForEnvironmentResponse, error)
-
-	// CreateDeploymentWithBodyWithResponse request with any body
-	CreateDeploymentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeploymentResponse, error)
-
-	CreateDeploymentWithResponse(ctx context.Context, body CreateDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDeploymentResponse, error)
-
-	// DeleteDeploymentWithResponse request
-	DeleteDeploymentWithResponse(ctx context.Context, deploymentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteDeploymentResponse, error)
-
-	// GetDeploymentWithResponse request
-	GetDeploymentWithResponse(ctx context.Context, deploymentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetDeploymentResponse, error)
-
-	// UpdateDeploymentWithBodyWithResponse request with any body
-	UpdateDeploymentWithBodyWithResponse(ctx context.Context, deploymentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDeploymentResponse, error)
-
-	UpdateDeploymentWithResponse(ctx context.Context, deploymentId openapi_types.UUID, body UpdateDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDeploymentResponse, error)
-
-	// GetResourcesForDeploymentWithResponse request
-	GetResourcesForDeploymentWithResponse(ctx context.Context, deploymentId string, reqEditors ...RequestEditorFn) (*GetResourcesForDeploymentResponse, error)
-
-	// GetDeploymentVariablesWithResponse request
-	GetDeploymentVariablesWithResponse(ctx context.Context, deploymentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetDeploymentVariablesResponse, error)
-
-	// CreateDeploymentVariableWithBodyWithResponse request with any body
-	CreateDeploymentVariableWithBodyWithResponse(ctx context.Context, deploymentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeploymentVariableResponse, error)
-
-	CreateDeploymentVariableWithResponse(ctx context.Context, deploymentId openapi_types.UUID, body CreateDeploymentVariableJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDeploymentVariableResponse, error)
-
-	// ListDeploymentVersionsWithResponse request
-	ListDeploymentVersionsWithResponse(ctx context.Context, deploymentId openapi_types.UUID, params *ListDeploymentVersionsParams, reqEditors ...RequestEditorFn) (*ListDeploymentVersionsResponse, error)
-
-	// CreateEnvironmentWithBodyWithResponse request with any body
-	CreateEnvironmentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error)
-
-	CreateEnvironmentWithResponse(ctx context.Context, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error)
-
-	// DeleteEnvironmentWithResponse request
-	DeleteEnvironmentWithResponse(ctx context.Context, environmentId string, reqEditors ...RequestEditorFn) (*DeleteEnvironmentResponse, error)
-
-	// GetEnvironmentWithResponse request
-	GetEnvironmentWithResponse(ctx context.Context, environmentId string, reqEditors ...RequestEditorFn) (*GetEnvironmentResponse, error)
-
-	// GetResourcesForEnvironmentWithResponse request
-	GetResourcesForEnvironmentWithResponse(ctx context.Context, environmentId string, reqEditors ...RequestEditorFn) (*GetResourcesForEnvironmentResponse, error)
-
-	// UpsertJobAgentWithBodyWithResponse request with any body
-	UpsertJobAgentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertJobAgentResponse, error)
-
-	UpsertJobAgentWithResponse(ctx context.Context, body UpsertJobAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertJobAgentResponse, error)
-
-	// GetAgentRunningJobsWithResponse request
-	GetAgentRunningJobsWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*GetAgentRunningJobsResponse, error)
-
-	// AcknowledgeAgentJobWithResponse request
-	AcknowledgeAgentJobWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*AcknowledgeAgentJobResponse, error)
-
-	// GetNextJobsWithResponse request
-	GetNextJobsWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*GetNextJobsResponse, error)
-
-	// GetJobWithResponse request
-	GetJobWithResponse(ctx context.Context, jobId string, reqEditors ...RequestEditorFn) (*GetJobResponse, error)
-
-	// UpdateJobWithBodyWithResponse request with any body
-	UpdateJobWithBodyWithResponse(ctx context.Context, jobId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateJobResponse, error)
-
-	UpdateJobWithResponse(ctx context.Context, jobId string, body UpdateJobJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateJobResponse, error)
-
-	// AcknowledgeJobWithResponse request
-	AcknowledgeJobWithResponse(ctx context.Context, jobId string, reqEditors ...RequestEditorFn) (*AcknowledgeJobResponse, error)
-
-	// UpsertPolicyWithBodyWithResponse request with any body
-	UpsertPolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertPolicyResponse, error)
-
-	UpsertPolicyWithResponse(ctx context.Context, body UpsertPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertPolicyResponse, error)
-
-	// DeletePolicyWithResponse request
-	DeletePolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePolicyResponse, error)
-
-	// GetPolicyWithResponse request
-	GetPolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetPolicyResponse, error)
-
-	// UpdatePolicyWithBodyWithResponse request with any body
-	UpdatePolicyWithBodyWithResponse(ctx context.Context, policyId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error)
-
-	UpdatePolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error)
-
-	// GetReleaseTargetsForPolicyWithResponse request
-	GetReleaseTargetsForPolicyWithResponse(ctx context.Context, policyId string, reqEditors ...RequestEditorFn) (*GetReleaseTargetsForPolicyResponse, error)
-
-	// CreateJobToResourceRelationshipWithBodyWithResponse request with any body
-	CreateJobToResourceRelationshipWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateJobToResourceRelationshipResponse, error)
-
-	CreateJobToResourceRelationshipWithResponse(ctx context.Context, body CreateJobToResourceRelationshipJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateJobToResourceRelationshipResponse, error)
-
-	// CreateResourceToResourceRelationshipWithBodyWithResponse request with any body
-	CreateResourceToResourceRelationshipWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateResourceToResourceRelationshipResponse, error)
-
-	CreateResourceToResourceRelationshipWithResponse(ctx context.Context, body CreateResourceToResourceRelationshipJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateResourceToResourceRelationshipResponse, error)
-
-	// GetReleaseTargetWithResponse request
-	GetReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReleaseTargetResponse, error)
-
-	// GetLatestJobsWithResponse request
-	GetLatestJobsWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLatestJobsResponse, error)
-
-	// LockReleaseTargetWithResponse request
-	LockReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*LockReleaseTargetResponse, error)
-
-	// PinReleaseTargetWithBodyWithResponse request with any body
-	PinReleaseTargetWithBodyWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PinReleaseTargetResponse, error)
-
-	PinReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, body PinReleaseTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*PinReleaseTargetResponse, error)
-
-	// GetReleaseTargetReleasesWithResponse request
-	GetReleaseTargetReleasesWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReleaseTargetReleasesResponse, error)
-
-	// UnlockReleaseTargetWithResponse request
-	UnlockReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*UnlockReleaseTargetResponse, error)
-
-	// UnpinReleaseTargetWithResponse request
-	UnpinReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*UnpinReleaseTargetResponse, error)
-
-	// UpsertReleaseWithBodyWithResponse request with any body
-	UpsertReleaseWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertReleaseResponse, error)
-
-	UpsertReleaseWithResponse(ctx context.Context, body UpsertReleaseJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertReleaseResponse, error)
-
-	// UpdateReleaseWithBodyWithResponse request with any body
-	UpdateReleaseWithBodyWithResponse(ctx context.Context, releaseId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateReleaseResponse, error)
-
-	UpdateReleaseWithResponse(ctx context.Context, releaseId string, body UpdateReleaseJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateReleaseResponse, error)
-
-	// SetResourceProvidersResourcesWithBodyWithResponse request with any body
-	SetResourceProvidersResourcesWithBodyWithResponse(ctx context.Context, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetResourceProvidersResourcesResponse, error)
-
-	SetResourceProvidersResourcesWithResponse(ctx context.Context, providerId string, body SetResourceProvidersResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetResourceProvidersResourcesResponse, error)
-
-	// CreateResourceRelationshipRuleWithBodyWithResponse request with any body
-	CreateResourceRelationshipRuleWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateResourceRelationshipRuleResponse, error)
-
-	CreateResourceRelationshipRuleWithResponse(ctx context.Context, body CreateResourceRelationshipRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateResourceRelationshipRuleResponse, error)
-
-	// UpdateResourceRelationshipRuleWithBodyWithResponse request with any body
-	UpdateResourceRelationshipRuleWithBodyWithResponse(ctx context.Context, ruleId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateResourceRelationshipRuleResponse, error)
-
-	UpdateResourceRelationshipRuleWithResponse(ctx context.Context, ruleId openapi_types.UUID, body UpdateResourceRelationshipRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateResourceRelationshipRuleResponse, error)
-
-	// CreateResourceSchemaWithBodyWithResponse request with any body
-	CreateResourceSchemaWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateResourceSchemaResponse, error)
-
-	CreateResourceSchemaWithResponse(ctx context.Context, body CreateResourceSchemaJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateResourceSchemaResponse, error)
-
-	// DeleteResourceSchemaWithResponse request
-	DeleteResourceSchemaWithResponse(ctx context.Context, schemaId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteResourceSchemaResponse, error)
-
-	// UpsertResourceWithBodyWithResponse request with any body
-	UpsertResourceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertResourceResponse, error)
-
-	UpsertResourceWithResponse(ctx context.Context, body UpsertResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertResourceResponse, error)
-
-	// DeleteResourceWithResponse request
-	DeleteResourceWithResponse(ctx context.Context, resourceId string, reqEditors ...RequestEditorFn) (*DeleteResourceResponse, error)
-
-	// GetResourceWithResponse request
-	GetResourceWithResponse(ctx context.Context, resourceId string, reqEditors ...RequestEditorFn) (*GetResourceResponse, error)
-
-	// UpdateResourceWithBodyWithResponse request with any body
-	UpdateResourceWithBodyWithResponse(ctx context.Context, resourceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateResourceResponse, error)
-
-	UpdateResourceWithResponse(ctx context.Context, resourceId string, body UpdateResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateResourceResponse, error)
-
-	// GetReleaseTargetsWithResponse request
-	GetReleaseTargetsWithResponse(ctx context.Context, resourceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReleaseTargetsResponse, error)
-
-	// CreateSystemWithBodyWithResponse request with any body
-	CreateSystemWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSystemResponse, error)
-
-	CreateSystemWithResponse(ctx context.Context, body CreateSystemJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSystemResponse, error)
-
-	// DeleteSystemWithResponse request
-	DeleteSystemWithResponse(ctx context.Context, systemId string, reqEditors ...RequestEditorFn) (*DeleteSystemResponse, error)
-
-	// GetSystemWithResponse request
-	GetSystemWithResponse(ctx context.Context, systemId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetSystemResponse, error)
-
-	// UpdateSystemWithBodyWithResponse request with any body
-	UpdateSystemWithBodyWithResponse(ctx context.Context, systemId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSystemResponse, error)
-
-	UpdateSystemWithResponse(ctx context.Context, systemId openapi_types.UUID, body UpdateSystemJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSystemResponse, error)
-
-	// DeleteEnvironmentByNameWithResponse request
-	DeleteEnvironmentByNameWithResponse(ctx context.Context, systemId string, name string, reqEditors ...RequestEditorFn) (*DeleteEnvironmentByNameResponse, error)
+	CreateWorkspaceWithResponse(ctx context.Context, body CreateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWorkspaceResponse, error)
 
 	// GetWorkspaceBySlugWithResponse request
 	GetWorkspaceBySlugWithResponse(ctx context.Context, workspaceSlug string, reqEditors ...RequestEditorFn) (*GetWorkspaceBySlugResponse, error)
 
+	// DeleteWorkspaceWithResponse request
+	DeleteWorkspaceWithResponse(ctx context.Context, workspaceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteWorkspaceResponse, error)
+
 	// GetWorkspaceWithResponse request
 	GetWorkspaceWithResponse(ctx context.Context, workspaceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetWorkspaceResponse, error)
 
+	// UpdateWorkspaceWithBodyWithResponse request with any body
+	UpdateWorkspaceWithBodyWithResponse(ctx context.Context, workspaceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateWorkspaceResponse, error)
+
+	UpdateWorkspaceWithResponse(ctx context.Context, workspaceId openapi_types.UUID, body UpdateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWorkspaceResponse, error)
+
 	// ListDeploymentsWithResponse request
-	ListDeploymentsWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*ListDeploymentsResponse, error)
+	ListDeploymentsWithResponse(ctx context.Context, workspaceId string, params *ListDeploymentsParams, reqEditors ...RequestEditorFn) (*ListDeploymentsResponse, error)
+
+	// UpsertDeploymentWithBodyWithResponse request with any body
+	UpsertDeploymentWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDeploymentResponse, error)
+
+	UpsertDeploymentWithResponse(ctx context.Context, workspaceId string, body UpsertDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDeploymentResponse, error)
+
+	// GetDeploymentWithResponse request
+	GetDeploymentWithResponse(ctx context.Context, workspaceId string, deploymentId string, reqEditors ...RequestEditorFn) (*GetDeploymentResponse, error)
+
+	// ListDeploymentVersionsWithResponse request
+	ListDeploymentVersionsWithResponse(ctx context.Context, workspaceId string, deploymentId string, params *ListDeploymentVersionsParams, reqEditors ...RequestEditorFn) (*ListDeploymentVersionsResponse, error)
+
+	// UpsertDeploymentVersionWithBodyWithResponse request with any body
+	UpsertDeploymentVersionWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDeploymentVersionResponse, error)
+
+	UpsertDeploymentVersionWithResponse(ctx context.Context, workspaceId string, deploymentId string, body UpsertDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDeploymentVersionResponse, error)
+
+	// UpsertUserApprovalRecordWithBodyWithResponse request with any body
+	UpsertUserApprovalRecordWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertUserApprovalRecordResponse, error)
+
+	UpsertUserApprovalRecordWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, body UpsertUserApprovalRecordJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertUserApprovalRecordResponse, error)
 
 	// ListEnvironmentsWithResponse request
-	ListEnvironmentsWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*ListEnvironmentsResponse, error)
+	ListEnvironmentsWithResponse(ctx context.Context, workspaceId string, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*ListEnvironmentsResponse, error)
 
-	// GetEventsByActionWithResponse request
-	GetEventsByActionWithResponse(ctx context.Context, workspaceId openapi_types.UUID, action string, reqEditors ...RequestEditorFn) (*GetEventsByActionResponse, error)
+	// UpsertEnvironmentWithBodyWithResponse request with any body
+	UpsertEnvironmentWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertEnvironmentResponse, error)
 
-	// DeletePolicyByNameWithResponse request
-	DeletePolicyByNameWithResponse(ctx context.Context, workspaceId openapi_types.UUID, name string, reqEditors ...RequestEditorFn) (*DeletePolicyByNameResponse, error)
+	UpsertEnvironmentWithResponse(ctx context.Context, workspaceId string, body UpsertEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertEnvironmentResponse, error)
 
-	// UpsertResourceProviderWithResponse request
-	UpsertResourceProviderWithResponse(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*UpsertResourceProviderResponse, error)
+	// GetEnvironmentWithResponse request
+	GetEnvironmentWithResponse(ctx context.Context, workspaceId string, environmentId string, reqEditors ...RequestEditorFn) (*GetEnvironmentResponse, error)
 
-	// ListResourcesWithResponse request
-	ListResourcesWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*ListResourcesResponse, error)
+	// ListPoliciesWithResponse request
+	ListPoliciesWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*ListPoliciesResponse, error)
 
-	// DeleteResourceByIdentifierWithResponse request
-	DeleteResourceByIdentifierWithResponse(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*DeleteResourceByIdentifierResponse, error)
+	// UpsertPolicyWithBodyWithResponse request with any body
+	UpsertPolicyWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertPolicyResponse, error)
+
+	UpsertPolicyWithResponse(ctx context.Context, workspaceId string, body UpsertPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertPolicyResponse, error)
+
+	// GetAllRelationshipsWithResponse request
+	GetAllRelationshipsWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*GetAllRelationshipsResponse, error)
+
+	// UpsertResourceProviderWithBodyWithResponse request with any body
+	UpsertResourceProviderWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertResourceProviderResponse, error)
+
+	UpsertResourceProviderWithResponse(ctx context.Context, workspaceId string, body UpsertResourceProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertResourceProviderResponse, error)
+
+	// GetResourceProviderByNameWithResponse request
+	GetResourceProviderByNameWithResponse(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*GetResourceProviderByNameResponse, error)
+
+	// SetResourceProvidersResourcesWithBodyWithResponse request with any body
+	SetResourceProvidersResourcesWithBodyWithResponse(ctx context.Context, workspaceId string, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetResourceProvidersResourcesResponse, error)
+
+	SetResourceProvidersResourcesWithResponse(ctx context.Context, workspaceId string, providerId string, body SetResourceProvidersResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetResourceProvidersResourcesResponse, error)
+
+	// GetAllResourcesWithResponse request
+	GetAllResourcesWithResponse(ctx context.Context, workspaceId string, params *GetAllResourcesParams, reqEditors ...RequestEditorFn) (*GetAllResourcesResponse, error)
 
 	// GetResourceByIdentifierWithResponse request
 	GetResourceByIdentifierWithResponse(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*GetResourceByIdentifierResponse, error)
-
-	// GetGroupedCountsWithBodyWithResponse request with any body
-	GetGroupedCountsWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetGroupedCountsResponse, error)
-
-	GetGroupedCountsWithResponse(ctx context.Context, workspaceId string, body GetGroupedCountsJSONRequestBody, reqEditors ...RequestEditorFn) (*GetGroupedCountsResponse, error)
-
-	// ListSystemsWithResponse request
-	ListSystemsWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*ListSystemsResponse, error)
 }
 
-type GetCloudProviderRegionsResponse struct {
+type ListWorkspacesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *map[string]CloudRegionGeoData
-	JSON404      *struct {
-		Error *string `json:"error,omitempty"`
-	}
+	JSON200      *WorkspaceList
+	JSON401      *Error
+	JSON500      *Error
 }
 
 // Status returns HTTPResponse.Status
-func (r GetCloudProviderRegionsResponse) Status() string {
+func (r ListWorkspacesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -6964,24 +2356,25 @@ func (r GetCloudProviderRegionsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetCloudProviderRegionsResponse) StatusCode() int {
+func (r ListWorkspacesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type UpsertDeploymentVersionResponse struct {
+type CreateWorkspaceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON201      *DeploymentVersion
-	JSON500      *struct {
-		Error *string `json:"error,omitempty"`
-	}
+	JSON201      *Workspace
+	JSON400      *Error
+	JSON401      *Error
+	JSON409      *Error
+	JSON500      *Error
 }
 
 // Status returns HTTPResponse.Status
-func (r UpsertDeploymentVersionResponse) Status() string {
+func (r CreateWorkspaceResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -6989,1626 +2382,7 @@ func (r UpsertDeploymentVersionResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpsertDeploymentVersionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateDeploymentVersionResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *DeploymentVersion
-	JSON404      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateDeploymentVersionResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateDeploymentVersionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ApproveDeploymentVersionResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ApprovalRecord
-	JSON403      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON404 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r ApproveDeploymentVersionResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ApproveDeploymentVersionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ApproveDeploymentVersionForEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ApprovalRecord
-	JSON403      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON404 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r ApproveDeploymentVersionForEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ApproveDeploymentVersionForEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetRolloutInfoResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]struct {
-		Deployment      Deployment         `json:"deployment"`
-		Environment     Environment        `json:"environment"`
-		Id              openapi_types.UUID `json:"id"`
-		Resource        Resource           `json:"resource"`
-		RolloutPosition float32            `json:"rolloutPosition"`
-		RolloutTime     *time.Time         `json:"rolloutTime"`
-	}
-	JSON404 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetRolloutInfoResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetRolloutInfoResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type RejectDeploymentVersionResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ApprovalRecord
-	JSON403      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON404 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r RejectDeploymentVersionResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RejectDeploymentVersionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type RejectDeploymentVersionForEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ApprovalRecord
-	JSON403      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON404 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r RejectDeploymentVersionForEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RejectDeploymentVersionForEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateDeploymentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Deployment
-	JSON201      *Deployment
-	JSON409      *struct {
-		Error string             `json:"error"`
-		Id    openapi_types.UUID `json:"id"`
-	}
-	JSON500 *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateDeploymentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateDeploymentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DeleteDeploymentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Deployment
-	JSON404      *struct {
-		Error string `json:"error"`
-	}
-	JSON500 *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteDeploymentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteDeploymentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetDeploymentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Deployment
-	JSON404      *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetDeploymentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetDeploymentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateDeploymentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Deployment
-	JSON404      *struct {
-		Error string `json:"error"`
-	}
-	JSON500 *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateDeploymentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateDeploymentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetResourcesForDeploymentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Count     *float32    `json:"count,omitempty"`
-		Resources *[]Resource `json:"resources,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetResourcesForDeploymentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetResourcesForDeploymentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetDeploymentVariablesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]DeploymentVariable
-	JSON404      *struct {
-		Error string `json:"error"`
-	}
-	JSON500 *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetDeploymentVariablesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetDeploymentVariablesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateDeploymentVariableResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *DeploymentVariable
-	JSON400      *struct {
-		Error string `json:"error"`
-	}
-	JSON404 *struct {
-		Error string `json:"error"`
-	}
-	JSON500 *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateDeploymentVariableResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateDeploymentVariableResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ListDeploymentVersionsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]DeploymentVersion
-	JSON404      *struct {
-		Error string `json:"error"`
-	}
-	JSON500 *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r ListDeploymentVersionsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListDeploymentVersionsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Environment
-	JSON409      *struct {
-		Error *string `json:"error,omitempty"`
-		Id    *string `json:"id,omitempty"`
-	}
-	JSON500 *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DeleteEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Environment
-	JSON404      *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetResourcesForEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Count     *float32    `json:"count,omitempty"`
-		Resources *[]Resource `json:"resources,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetResourcesForEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetResourcesForEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpsertJobAgentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Id          string `json:"id"`
-		Name        string `json:"name"`
-		WorkspaceId string `json:"workspaceId"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r UpsertJobAgentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpsertJobAgentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetAgentRunningJobsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Jobs []Job `json:"jobs"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetAgentRunningJobsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetAgentRunningJobsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type AcknowledgeAgentJobResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Job *Job `json:"job,omitempty"`
-	}
-	JSON401 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON404 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r AcknowledgeAgentJobResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r AcknowledgeAgentJobResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetNextJobsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Jobs *[]Job `json:"jobs,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetNextJobsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetNextJobsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetJobResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *JobWithTrigger
-	JSON404      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetJobResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetJobResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateJobResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Message string `json:"message"`
-		Success bool   `json:"success"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateJobResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateJobResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type AcknowledgeJobResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Sucess bool `json:"sucess"`
-	}
-	JSON401 *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r AcknowledgeJobResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r AcknowledgeJobResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpsertPolicyResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Policy
-	JSON500      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r UpsertPolicyResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpsertPolicyResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DeletePolicyResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Count *float32 `json:"count,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r DeletePolicyResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeletePolicyResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetPolicyResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Policy
-	JSON404      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetPolicyResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetPolicyResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdatePolicyResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Policy
-	JSON404      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdatePolicyResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdatePolicyResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetReleaseTargetsForPolicyResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Count          *float32         `json:"count,omitempty"`
-		ReleaseTargets *[]ReleaseTarget `json:"releaseTargets,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetReleaseTargetsForPolicyResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetReleaseTargetsForPolicyResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateJobToResourceRelationshipResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Message *string `json:"message,omitempty"`
-	}
-	JSON400 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON404 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON409 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateJobToResourceRelationshipResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateJobToResourceRelationshipResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateResourceToResourceRelationshipResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Message *string `json:"message,omitempty"`
-	}
-	JSON400 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON404 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON409 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateResourceToResourceRelationshipResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateResourceToResourceRelationshipResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetReleaseTargetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ReleaseTarget
-	JSON404      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetReleaseTargetResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetReleaseTargetResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetLatestJobsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]JobWithTrigger
-	JSON404      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetLatestJobsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetLatestJobsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type LockReleaseTargetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ReleaseTargetLockRecord
-	JSON409      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r LockReleaseTargetResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r LockReleaseTargetResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type PinReleaseTargetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Success *bool `json:"success,omitempty"`
-	}
-	JSON400 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON404 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r PinReleaseTargetResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PinReleaseTargetResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetReleaseTargetReleasesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]struct {
-		Deployment Deployment `json:"deployment"`
-		Variables  []struct {
-			Key   string `json:"key"`
-			Value string `json:"value"`
-		} `json:"variables"`
-		Version DeploymentVersion `json:"version"`
-	}
-	JSON404 *struct {
-		Error string `json:"error"`
-	}
-	JSON500 *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetReleaseTargetReleasesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetReleaseTargetReleasesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UnlockReleaseTargetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ReleaseTargetLockRecord
-	JSON400      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON403 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r UnlockReleaseTargetResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UnlockReleaseTargetResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UnpinReleaseTargetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Success *bool `json:"success,omitempty"`
-	}
-	JSON400 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON404 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r UnpinReleaseTargetResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UnpinReleaseTargetResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpsertReleaseResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Release
-	JSON409      *struct {
-		Error *string `json:"error,omitempty"`
-		Id    *string `json:"id,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r UpsertReleaseResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpsertReleaseResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateReleaseResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Release
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateReleaseResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateReleaseResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type SetResourceProvidersResourcesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Resources *struct {
-			Deleted *[]struct {
-				Config  *map[string]interface{} `json:"config,omitempty"`
-				Id      *string                 `json:"id,omitempty"`
-				Kind    *string                 `json:"kind,omitempty"`
-				Name    *string                 `json:"name,omitempty"`
-				Version *string                 `json:"version,omitempty"`
-			} `json:"deleted,omitempty"`
-			Ignored *[]struct {
-				Identifier  *string `json:"identifier,omitempty"`
-				Kind        *string `json:"kind,omitempty"`
-				Name        *string `json:"name,omitempty"`
-				Version     *string `json:"version,omitempty"`
-				WorkspaceId *string `json:"workspaceId,omitempty"`
-			} `json:"ignored,omitempty"`
-			Inserted *[]struct {
-				Config  *map[string]interface{} `json:"config,omitempty"`
-				Id      *string                 `json:"id,omitempty"`
-				Kind    *string                 `json:"kind,omitempty"`
-				Name    *string                 `json:"name,omitempty"`
-				Version *string                 `json:"version,omitempty"`
-			} `json:"inserted,omitempty"`
-			Updated *[]struct {
-				Config  *map[string]interface{} `json:"config,omitempty"`
-				Id      *string                 `json:"id,omitempty"`
-				Kind    *string                 `json:"kind,omitempty"`
-				Name    *string                 `json:"name,omitempty"`
-				Version *string                 `json:"version,omitempty"`
-			} `json:"updated,omitempty"`
-		} `json:"resources,omitempty"`
-	}
-	JSON404 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r SetResourceProvidersResourcesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r SetResourceProvidersResourcesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateResourceRelationshipRuleResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ResourceRelationshipRule
-	JSON409      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateResourceRelationshipRuleResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateResourceRelationshipRuleResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateResourceRelationshipRuleResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ResourceRelationshipRule
-	JSON404      *struct {
-		Error string `json:"error"`
-	}
-	JSON500 *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateResourceRelationshipRuleResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateResourceRelationshipRuleResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateResourceSchemaResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *struct {
-		Id          *openapi_types.UUID     `json:"id,omitempty"`
-		JsonSchema  *map[string]interface{} `json:"jsonSchema,omitempty"`
-		Kind        *string                 `json:"kind,omitempty"`
-		Version     *string                 `json:"version,omitempty"`
-		WorkspaceId *openapi_types.UUID     `json:"workspaceId,omitempty"`
-	}
-	JSON400 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON409 *struct {
-		Error *string             `json:"error,omitempty"`
-		Id    *openapi_types.UUID `json:"id,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateResourceSchemaResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateResourceSchemaResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DeleteResourceSchemaResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Id *openapi_types.UUID `json:"id,omitempty"`
-	}
-	JSON404 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteResourceSchemaResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteResourceSchemaResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpsertResourceResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Resource
-}
-
-// Status returns HTTPResponse.Status
-func (r UpsertResourceResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpsertResourceResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DeleteResourceResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Success bool `json:"success"`
-	}
-	JSON404 *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteResourceResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteResourceResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetResourceResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ResourceWithVariablesAndMetadata
-	JSON404      *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetResourceResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetResourceResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateResourceResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ResourceWithVariablesAndMetadata
-	JSON404      *struct {
-		Error string `json:"error"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateResourceResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateResourceResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetReleaseTargetsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]ReleaseTarget
-}
-
-// Status returns HTTPResponse.Status
-func (r GetReleaseTargetsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetReleaseTargetsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateSystemResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *System
-	JSON201      *System
-	JSON400      *struct {
-		Error *[]struct {
-			Code    CreateSystem400ErrorCode           `json:"code"`
-			Message string                             `json:"message"`
-			Path    []CreateSystem_400_Error_Path_Item `json:"path"`
-		} `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-type CreateSystem400ErrorCode string
-type CreateSystem400ErrorPath0 = string
-type CreateSystem400ErrorPath1 = float32
-type CreateSystem_400_Error_Path_Item struct {
-	union json.RawMessage
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateSystemResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateSystemResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DeleteSystemResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Message *string `json:"message,omitempty"`
-	}
-	JSON404 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteSystemResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteSystemResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetSystemResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Deployments *[]Deployment `json:"deployments,omitempty"`
-
-		// Description The description of the system
-		Description  *string        `json:"description,omitempty"`
-		Environments *[]Environment `json:"environments,omitempty"`
-
-		// Id The system ID
-		Id openapi_types.UUID `json:"id"`
-
-		// Name The name of the system
-		Name string `json:"name"`
-
-		// Slug The slug of the system
-		Slug string `json:"slug"`
-
-		// WorkspaceId The workspace ID of the system
-		WorkspaceId openapi_types.UUID `json:"workspaceId"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetSystemResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetSystemResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateSystemResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *System
-	JSON404      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateSystemResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateSystemResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DeleteEnvironmentByNameResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteEnvironmentByNameResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteEnvironmentByNameResponse) StatusCode() int {
+func (r CreateWorkspaceResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -8619,12 +2393,9 @@ type GetWorkspaceBySlugResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Workspace
-	JSON404      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
+	JSON401      *Error
+	JSON404      *Error
+	JSON500      *Error
 }
 
 // Status returns HTTPResponse.Status
@@ -8643,16 +2414,37 @@ func (r GetWorkspaceBySlugResponse) StatusCode() int {
 	return 0
 }
 
+type DeleteWorkspaceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Error
+	JSON404      *Error
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteWorkspaceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteWorkspaceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetWorkspaceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Workspace
-	JSON404      *struct {
-		Error *string `json:"error,omitempty"`
-	}
-	JSON500 *struct {
-		Error *string `json:"error,omitempty"`
-	}
+	JSON401      *Error
+	JSON404      *Error
+	JSON500      *Error
 }
 
 // Status returns HTTPResponse.Status
@@ -8671,11 +2463,47 @@ func (r GetWorkspaceResponse) StatusCode() int {
 	return 0
 }
 
+type UpdateWorkspaceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Workspace
+	JSON400      *Error
+	JSON401      *Error
+	JSON404      *Error
+	JSON409      *Error
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateWorkspaceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateWorkspaceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListDeploymentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Data *[]Deployment `json:"data,omitempty"`
+		Items []DeploymentAndSystem `json:"items"`
+
+		// Limit Maximum number of items returned
+		Limit int `json:"limit"`
+
+		// Offset Number of items skipped
+		Offset int `json:"offset"`
+
+		// Total Total number of items available
+		Total int `json:"total"`
 	}
 }
 
@@ -8695,11 +2523,151 @@ func (r ListDeploymentsResponse) StatusCode() int {
 	return 0
 }
 
+type UpsertDeploymentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *Deployment
+}
+
+// Status returns HTTPResponse.Status
+func (r UpsertDeploymentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpsertDeploymentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetDeploymentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Deployment
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDeploymentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDeploymentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListDeploymentVersionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Items []DeploymentVersion `json:"items"`
+
+		// Limit Maximum number of items returned
+		Limit int `json:"limit"`
+
+		// Offset Number of items skipped
+		Offset int `json:"offset"`
+
+		// Total Total number of items available
+		Total int `json:"total"`
+	}
+	JSON400 *ErrorResponse
+	JSON404 *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListDeploymentVersionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListDeploymentVersionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpsertDeploymentVersionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *DeploymentVersion
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpsertDeploymentVersionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpsertDeploymentVersionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpsertUserApprovalRecordResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Success *bool `json:"success,omitempty"`
+	}
+	JSON400 *ErrorResponse
+	JSON404 *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpsertUserApprovalRecordResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpsertUserApprovalRecordResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListEnvironmentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Data *[]Environment `json:"data,omitempty"`
+		Items []EnvironmentAndSystem `json:"items"`
+
+		// Limit Maximum number of items returned
+		Limit int `json:"limit"`
+
+		// Offset Number of items skipped
+		Offset int `json:"offset"`
+
+		// Total Total number of items available
+		Total int `json:"total"`
 	}
 }
 
@@ -8719,20 +2687,14 @@ func (r ListEnvironmentsResponse) StatusCode() int {
 	return 0
 }
 
-type GetEventsByActionResponse struct {
+type UpsertEnvironmentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]Event
-	JSON404      *struct {
-		Error string `json:"error"`
-	}
-	JSON500 *struct {
-		Error string `json:"error"`
-	}
+	JSON202      *Environment
 }
 
 // Status returns HTTPResponse.Status
-func (r GetEventsByActionResponse) Status() string {
+func (r UpsertEnvironmentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -8740,26 +2702,23 @@ func (r GetEventsByActionResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetEventsByActionResponse) StatusCode() int {
+func (r UpsertEnvironmentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type DeletePolicyByNameResponse struct {
+type GetEnvironmentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *struct {
-		Success *bool `json:"success,omitempty"`
-	}
-	JSON404 *struct {
-		Error *string `json:"error,omitempty"`
-	}
+	JSON200      *Environment
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r DeletePolicyByNameResponse) Status() string {
+func (r GetEnvironmentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -8767,7 +2726,89 @@ func (r DeletePolicyByNameResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeletePolicyByNameResponse) StatusCode() int {
+func (r GetEnvironmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListPoliciesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Policies *[]Policy `json:"policies,omitempty"`
+	}
+	JSON404 *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListPoliciesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListPoliciesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpsertPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Policy
+	JSON202      *Policy
+	JSON400      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpsertPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpsertPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetAllRelationshipsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Items []RelationshipRule `json:"items"`
+
+		// Limit Maximum number of items returned
+		Limit int `json:"limit"`
+
+		// Offset Number of items skipped
+		Offset int `json:"offset"`
+
+		// Total Total number of items available
+		Total int `json:"total"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAllRelationshipsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAllRelationshipsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -8777,11 +2818,7 @@ func (r DeletePolicyByNameResponse) StatusCode() int {
 type UpsertResourceProviderResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *struct {
-		Id          string `json:"id"`
-		Name        string `json:"name"`
-		WorkspaceId string `json:"workspaceId"`
-	}
+	JSON200      *ResourceProvider
 }
 
 // Status returns HTTPResponse.Status
@@ -8800,16 +2837,14 @@ func (r UpsertResourceProviderResponse) StatusCode() int {
 	return 0
 }
 
-type ListResourcesResponse struct {
+type GetResourceProviderByNameResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *struct {
-		Resources *[]Resource `json:"resources,omitempty"`
-	}
+	JSON200      *ResourceProvider
 }
 
 // Status returns HTTPResponse.Status
-func (r ListResourcesResponse) Status() string {
+func (r GetResourceProviderByNameResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -8817,26 +2852,21 @@ func (r ListResourcesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListResourcesResponse) StatusCode() int {
+func (r GetResourceProviderByNameResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type DeleteResourceByIdentifierResponse struct {
+type SetResourceProvidersResourcesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *struct {
-		Success *bool `json:"success,omitempty"`
-	}
-	JSON404 *struct {
-		Error *string `json:"error,omitempty"`
-	}
+	JSON202      *map[string]interface{}
 }
 
 // Status returns HTTPResponse.Status
-func (r DeleteResourceByIdentifierResponse) Status() string {
+func (r SetResourceProvidersResourcesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -8844,7 +2874,40 @@ func (r DeleteResourceByIdentifierResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeleteResourceByIdentifierResponse) StatusCode() int {
+func (r SetResourceProvidersResourcesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetAllResourcesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Items []Resource `json:"items"`
+
+		// Limit Maximum number of items returned
+		Limit int `json:"limit"`
+
+		// Offset Number of items skipped
+		Offset int `json:"offset"`
+
+		// Total Total number of items available
+		Total int `json:"total"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAllResourcesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAllResourcesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -8854,30 +2917,7 @@ func (r DeleteResourceByIdentifierResponse) StatusCode() int {
 type GetResourceByIdentifierResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *struct {
-		Config        map[string]interface{} `json:"config"`
-		CreatedAt     time.Time              `json:"createdAt"`
-		DeletedAt     *time.Time             `json:"deletedAt"`
-		Id            openapi_types.UUID     `json:"id"`
-		Identifier    string                 `json:"identifier"`
-		Kind          string                 `json:"kind"`
-		Metadata      MetadataMap            `json:"metadata"`
-		Name          string                 `json:"name"`
-		ProviderId    *openapi_types.UUID    `json:"providerId,omitempty"`
-		Relationships *map[string]struct {
-			Reference string   `json:"reference"`
-			RuleId    string   `json:"ruleId"`
-			Target    Resource `json:"target"`
-			Type      string   `json:"type"`
-		} `json:"relationships,omitempty"`
-		UpdatedAt   time.Time          `json:"updatedAt"`
-		Variables   *VariableMap       `json:"variables,omitempty"`
-		Version     string             `json:"version"`
-		WorkspaceId openapi_types.UUID `json:"workspaceId"`
-	}
-	JSON404 *struct {
-		Error *string `json:"error,omitempty"`
-	}
+	JSON200      *Resource
 }
 
 // Status returns HTTPResponse.Status
@@ -8896,794 +2936,30 @@ func (r GetResourceByIdentifierResponse) StatusCode() int {
 	return 0
 }
 
-type GetGroupedCountsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Combinations []struct {
-			Metadata  map[string]string `json:"metadata"`
-			Resources float32           `json:"resources"`
-		} `json:"combinations"`
-		Keys []string `json:"keys"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r GetGroupedCountsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetGroupedCountsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ListSystemsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Data *[]System `json:"data,omitempty"`
-	}
-}
-
-// Status returns HTTPResponse.Status
-func (r ListSystemsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListSystemsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// GetCloudProviderRegionsWithResponse request returning *GetCloudProviderRegionsResponse
-func (c *ClientWithResponses) GetCloudProviderRegionsWithResponse(ctx context.Context, provider GetCloudProviderRegionsParamsProvider, reqEditors ...RequestEditorFn) (*GetCloudProviderRegionsResponse, error) {
-	rsp, err := c.GetCloudProviderRegions(ctx, provider, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetCloudProviderRegionsResponse(rsp)
-}
-
-// UpsertDeploymentVersionWithBodyWithResponse request with arbitrary body returning *UpsertDeploymentVersionResponse
-func (c *ClientWithResponses) UpsertDeploymentVersionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDeploymentVersionResponse, error) {
-	rsp, err := c.UpsertDeploymentVersionWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpsertDeploymentVersionResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpsertDeploymentVersionWithResponse(ctx context.Context, body UpsertDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDeploymentVersionResponse, error) {
-	rsp, err := c.UpsertDeploymentVersion(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpsertDeploymentVersionResponse(rsp)
-}
-
-// UpdateDeploymentVersionWithBodyWithResponse request with arbitrary body returning *UpdateDeploymentVersionResponse
-func (c *ClientWithResponses) UpdateDeploymentVersionWithBodyWithResponse(ctx context.Context, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDeploymentVersionResponse, error) {
-	rsp, err := c.UpdateDeploymentVersionWithBody(ctx, deploymentVersionId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateDeploymentVersionResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateDeploymentVersionWithResponse(ctx context.Context, deploymentVersionId string, body UpdateDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDeploymentVersionResponse, error) {
-	rsp, err := c.UpdateDeploymentVersion(ctx, deploymentVersionId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateDeploymentVersionResponse(rsp)
-}
-
-// ApproveDeploymentVersionWithBodyWithResponse request with arbitrary body returning *ApproveDeploymentVersionResponse
-func (c *ClientWithResponses) ApproveDeploymentVersionWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionResponse, error) {
-	rsp, err := c.ApproveDeploymentVersionWithBody(ctx, deploymentVersionId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseApproveDeploymentVersionResponse(rsp)
-}
-
-func (c *ClientWithResponses) ApproveDeploymentVersionWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, body ApproveDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionResponse, error) {
-	rsp, err := c.ApproveDeploymentVersion(ctx, deploymentVersionId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseApproveDeploymentVersionResponse(rsp)
-}
-
-// ApproveDeploymentVersionForEnvironmentWithBodyWithResponse request with arbitrary body returning *ApproveDeploymentVersionForEnvironmentResponse
-func (c *ClientWithResponses) ApproveDeploymentVersionForEnvironmentWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionForEnvironmentResponse, error) {
-	rsp, err := c.ApproveDeploymentVersionForEnvironmentWithBody(ctx, deploymentVersionId, environmentId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseApproveDeploymentVersionForEnvironmentResponse(rsp)
-}
-
-func (c *ClientWithResponses) ApproveDeploymentVersionForEnvironmentWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body ApproveDeploymentVersionForEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveDeploymentVersionForEnvironmentResponse, error) {
-	rsp, err := c.ApproveDeploymentVersionForEnvironment(ctx, deploymentVersionId, environmentId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseApproveDeploymentVersionForEnvironmentResponse(rsp)
-}
-
-// GetRolloutInfoWithResponse request returning *GetRolloutInfoResponse
-func (c *ClientWithResponses) GetRolloutInfoWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetRolloutInfoResponse, error) {
-	rsp, err := c.GetRolloutInfo(ctx, deploymentVersionId, environmentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetRolloutInfoResponse(rsp)
-}
-
-// RejectDeploymentVersionWithBodyWithResponse request with arbitrary body returning *RejectDeploymentVersionResponse
-func (c *ClientWithResponses) RejectDeploymentVersionWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionResponse, error) {
-	rsp, err := c.RejectDeploymentVersionWithBody(ctx, deploymentVersionId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRejectDeploymentVersionResponse(rsp)
-}
-
-func (c *ClientWithResponses) RejectDeploymentVersionWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, body RejectDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionResponse, error) {
-	rsp, err := c.RejectDeploymentVersion(ctx, deploymentVersionId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRejectDeploymentVersionResponse(rsp)
-}
-
-// RejectDeploymentVersionForEnvironmentWithBodyWithResponse request with arbitrary body returning *RejectDeploymentVersionForEnvironmentResponse
-func (c *ClientWithResponses) RejectDeploymentVersionForEnvironmentWithBodyWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionForEnvironmentResponse, error) {
-	rsp, err := c.RejectDeploymentVersionForEnvironmentWithBody(ctx, deploymentVersionId, environmentId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRejectDeploymentVersionForEnvironmentResponse(rsp)
-}
-
-func (c *ClientWithResponses) RejectDeploymentVersionForEnvironmentWithResponse(ctx context.Context, deploymentVersionId openapi_types.UUID, environmentId openapi_types.UUID, body RejectDeploymentVersionForEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*RejectDeploymentVersionForEnvironmentResponse, error) {
-	rsp, err := c.RejectDeploymentVersionForEnvironment(ctx, deploymentVersionId, environmentId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRejectDeploymentVersionForEnvironmentResponse(rsp)
-}
-
-// CreateDeploymentWithBodyWithResponse request with arbitrary body returning *CreateDeploymentResponse
-func (c *ClientWithResponses) CreateDeploymentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeploymentResponse, error) {
-	rsp, err := c.CreateDeploymentWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateDeploymentResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateDeploymentWithResponse(ctx context.Context, body CreateDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDeploymentResponse, error) {
-	rsp, err := c.CreateDeployment(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateDeploymentResponse(rsp)
-}
-
-// DeleteDeploymentWithResponse request returning *DeleteDeploymentResponse
-func (c *ClientWithResponses) DeleteDeploymentWithResponse(ctx context.Context, deploymentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteDeploymentResponse, error) {
-	rsp, err := c.DeleteDeployment(ctx, deploymentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteDeploymentResponse(rsp)
-}
-
-// GetDeploymentWithResponse request returning *GetDeploymentResponse
-func (c *ClientWithResponses) GetDeploymentWithResponse(ctx context.Context, deploymentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetDeploymentResponse, error) {
-	rsp, err := c.GetDeployment(ctx, deploymentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetDeploymentResponse(rsp)
-}
-
-// UpdateDeploymentWithBodyWithResponse request with arbitrary body returning *UpdateDeploymentResponse
-func (c *ClientWithResponses) UpdateDeploymentWithBodyWithResponse(ctx context.Context, deploymentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDeploymentResponse, error) {
-	rsp, err := c.UpdateDeploymentWithBody(ctx, deploymentId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateDeploymentResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateDeploymentWithResponse(ctx context.Context, deploymentId openapi_types.UUID, body UpdateDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDeploymentResponse, error) {
-	rsp, err := c.UpdateDeployment(ctx, deploymentId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateDeploymentResponse(rsp)
-}
-
-// GetResourcesForDeploymentWithResponse request returning *GetResourcesForDeploymentResponse
-func (c *ClientWithResponses) GetResourcesForDeploymentWithResponse(ctx context.Context, deploymentId string, reqEditors ...RequestEditorFn) (*GetResourcesForDeploymentResponse, error) {
-	rsp, err := c.GetResourcesForDeployment(ctx, deploymentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetResourcesForDeploymentResponse(rsp)
-}
-
-// GetDeploymentVariablesWithResponse request returning *GetDeploymentVariablesResponse
-func (c *ClientWithResponses) GetDeploymentVariablesWithResponse(ctx context.Context, deploymentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetDeploymentVariablesResponse, error) {
-	rsp, err := c.GetDeploymentVariables(ctx, deploymentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetDeploymentVariablesResponse(rsp)
-}
-
-// CreateDeploymentVariableWithBodyWithResponse request with arbitrary body returning *CreateDeploymentVariableResponse
-func (c *ClientWithResponses) CreateDeploymentVariableWithBodyWithResponse(ctx context.Context, deploymentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeploymentVariableResponse, error) {
-	rsp, err := c.CreateDeploymentVariableWithBody(ctx, deploymentId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateDeploymentVariableResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateDeploymentVariableWithResponse(ctx context.Context, deploymentId openapi_types.UUID, body CreateDeploymentVariableJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDeploymentVariableResponse, error) {
-	rsp, err := c.CreateDeploymentVariable(ctx, deploymentId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateDeploymentVariableResponse(rsp)
-}
-
-// ListDeploymentVersionsWithResponse request returning *ListDeploymentVersionsResponse
-func (c *ClientWithResponses) ListDeploymentVersionsWithResponse(ctx context.Context, deploymentId openapi_types.UUID, params *ListDeploymentVersionsParams, reqEditors ...RequestEditorFn) (*ListDeploymentVersionsResponse, error) {
-	rsp, err := c.ListDeploymentVersions(ctx, deploymentId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListDeploymentVersionsResponse(rsp)
-}
-
-// CreateEnvironmentWithBodyWithResponse request with arbitrary body returning *CreateEnvironmentResponse
-func (c *ClientWithResponses) CreateEnvironmentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error) {
-	rsp, err := c.CreateEnvironmentWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateEnvironmentResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateEnvironmentWithResponse(ctx context.Context, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error) {
-	rsp, err := c.CreateEnvironment(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateEnvironmentResponse(rsp)
-}
-
-// DeleteEnvironmentWithResponse request returning *DeleteEnvironmentResponse
-func (c *ClientWithResponses) DeleteEnvironmentWithResponse(ctx context.Context, environmentId string, reqEditors ...RequestEditorFn) (*DeleteEnvironmentResponse, error) {
-	rsp, err := c.DeleteEnvironment(ctx, environmentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteEnvironmentResponse(rsp)
-}
-
-// GetEnvironmentWithResponse request returning *GetEnvironmentResponse
-func (c *ClientWithResponses) GetEnvironmentWithResponse(ctx context.Context, environmentId string, reqEditors ...RequestEditorFn) (*GetEnvironmentResponse, error) {
-	rsp, err := c.GetEnvironment(ctx, environmentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetEnvironmentResponse(rsp)
-}
-
-// GetResourcesForEnvironmentWithResponse request returning *GetResourcesForEnvironmentResponse
-func (c *ClientWithResponses) GetResourcesForEnvironmentWithResponse(ctx context.Context, environmentId string, reqEditors ...RequestEditorFn) (*GetResourcesForEnvironmentResponse, error) {
-	rsp, err := c.GetResourcesForEnvironment(ctx, environmentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetResourcesForEnvironmentResponse(rsp)
-}
-
-// UpsertJobAgentWithBodyWithResponse request with arbitrary body returning *UpsertJobAgentResponse
-func (c *ClientWithResponses) UpsertJobAgentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertJobAgentResponse, error) {
-	rsp, err := c.UpsertJobAgentWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpsertJobAgentResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpsertJobAgentWithResponse(ctx context.Context, body UpsertJobAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertJobAgentResponse, error) {
-	rsp, err := c.UpsertJobAgent(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpsertJobAgentResponse(rsp)
-}
-
-// GetAgentRunningJobsWithResponse request returning *GetAgentRunningJobsResponse
-func (c *ClientWithResponses) GetAgentRunningJobsWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*GetAgentRunningJobsResponse, error) {
-	rsp, err := c.GetAgentRunningJobs(ctx, agentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetAgentRunningJobsResponse(rsp)
-}
-
-// AcknowledgeAgentJobWithResponse request returning *AcknowledgeAgentJobResponse
-func (c *ClientWithResponses) AcknowledgeAgentJobWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*AcknowledgeAgentJobResponse, error) {
-	rsp, err := c.AcknowledgeAgentJob(ctx, agentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAcknowledgeAgentJobResponse(rsp)
-}
-
-// GetNextJobsWithResponse request returning *GetNextJobsResponse
-func (c *ClientWithResponses) GetNextJobsWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*GetNextJobsResponse, error) {
-	rsp, err := c.GetNextJobs(ctx, agentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetNextJobsResponse(rsp)
-}
-
-// GetJobWithResponse request returning *GetJobResponse
-func (c *ClientWithResponses) GetJobWithResponse(ctx context.Context, jobId string, reqEditors ...RequestEditorFn) (*GetJobResponse, error) {
-	rsp, err := c.GetJob(ctx, jobId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetJobResponse(rsp)
-}
-
-// UpdateJobWithBodyWithResponse request with arbitrary body returning *UpdateJobResponse
-func (c *ClientWithResponses) UpdateJobWithBodyWithResponse(ctx context.Context, jobId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateJobResponse, error) {
-	rsp, err := c.UpdateJobWithBody(ctx, jobId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateJobResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateJobWithResponse(ctx context.Context, jobId string, body UpdateJobJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateJobResponse, error) {
-	rsp, err := c.UpdateJob(ctx, jobId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateJobResponse(rsp)
-}
-
-// AcknowledgeJobWithResponse request returning *AcknowledgeJobResponse
-func (c *ClientWithResponses) AcknowledgeJobWithResponse(ctx context.Context, jobId string, reqEditors ...RequestEditorFn) (*AcknowledgeJobResponse, error) {
-	rsp, err := c.AcknowledgeJob(ctx, jobId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAcknowledgeJobResponse(rsp)
-}
-
-// UpsertPolicyWithBodyWithResponse request with arbitrary body returning *UpsertPolicyResponse
-func (c *ClientWithResponses) UpsertPolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertPolicyResponse, error) {
-	rsp, err := c.UpsertPolicyWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpsertPolicyResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpsertPolicyWithResponse(ctx context.Context, body UpsertPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertPolicyResponse, error) {
-	rsp, err := c.UpsertPolicy(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpsertPolicyResponse(rsp)
-}
-
-// DeletePolicyWithResponse request returning *DeletePolicyResponse
-func (c *ClientWithResponses) DeletePolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePolicyResponse, error) {
-	rsp, err := c.DeletePolicy(ctx, policyId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeletePolicyResponse(rsp)
-}
-
-// GetPolicyWithResponse request returning *GetPolicyResponse
-func (c *ClientWithResponses) GetPolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetPolicyResponse, error) {
-	rsp, err := c.GetPolicy(ctx, policyId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetPolicyResponse(rsp)
-}
-
-// UpdatePolicyWithBodyWithResponse request with arbitrary body returning *UpdatePolicyResponse
-func (c *ClientWithResponses) UpdatePolicyWithBodyWithResponse(ctx context.Context, policyId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error) {
-	rsp, err := c.UpdatePolicyWithBody(ctx, policyId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdatePolicyResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdatePolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error) {
-	rsp, err := c.UpdatePolicy(ctx, policyId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdatePolicyResponse(rsp)
-}
-
-// GetReleaseTargetsForPolicyWithResponse request returning *GetReleaseTargetsForPolicyResponse
-func (c *ClientWithResponses) GetReleaseTargetsForPolicyWithResponse(ctx context.Context, policyId string, reqEditors ...RequestEditorFn) (*GetReleaseTargetsForPolicyResponse, error) {
-	rsp, err := c.GetReleaseTargetsForPolicy(ctx, policyId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetReleaseTargetsForPolicyResponse(rsp)
-}
-
-// CreateJobToResourceRelationshipWithBodyWithResponse request with arbitrary body returning *CreateJobToResourceRelationshipResponse
-func (c *ClientWithResponses) CreateJobToResourceRelationshipWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateJobToResourceRelationshipResponse, error) {
-	rsp, err := c.CreateJobToResourceRelationshipWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateJobToResourceRelationshipResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateJobToResourceRelationshipWithResponse(ctx context.Context, body CreateJobToResourceRelationshipJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateJobToResourceRelationshipResponse, error) {
-	rsp, err := c.CreateJobToResourceRelationship(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateJobToResourceRelationshipResponse(rsp)
-}
-
-// CreateResourceToResourceRelationshipWithBodyWithResponse request with arbitrary body returning *CreateResourceToResourceRelationshipResponse
-func (c *ClientWithResponses) CreateResourceToResourceRelationshipWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateResourceToResourceRelationshipResponse, error) {
-	rsp, err := c.CreateResourceToResourceRelationshipWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateResourceToResourceRelationshipResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateResourceToResourceRelationshipWithResponse(ctx context.Context, body CreateResourceToResourceRelationshipJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateResourceToResourceRelationshipResponse, error) {
-	rsp, err := c.CreateResourceToResourceRelationship(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateResourceToResourceRelationshipResponse(rsp)
-}
-
-// GetReleaseTargetWithResponse request returning *GetReleaseTargetResponse
-func (c *ClientWithResponses) GetReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReleaseTargetResponse, error) {
-	rsp, err := c.GetReleaseTarget(ctx, releaseTargetId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetReleaseTargetResponse(rsp)
-}
-
-// GetLatestJobsWithResponse request returning *GetLatestJobsResponse
-func (c *ClientWithResponses) GetLatestJobsWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLatestJobsResponse, error) {
-	rsp, err := c.GetLatestJobs(ctx, releaseTargetId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetLatestJobsResponse(rsp)
-}
-
-// LockReleaseTargetWithResponse request returning *LockReleaseTargetResponse
-func (c *ClientWithResponses) LockReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*LockReleaseTargetResponse, error) {
-	rsp, err := c.LockReleaseTarget(ctx, releaseTargetId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseLockReleaseTargetResponse(rsp)
-}
-
-// PinReleaseTargetWithBodyWithResponse request with arbitrary body returning *PinReleaseTargetResponse
-func (c *ClientWithResponses) PinReleaseTargetWithBodyWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PinReleaseTargetResponse, error) {
-	rsp, err := c.PinReleaseTargetWithBody(ctx, releaseTargetId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePinReleaseTargetResponse(rsp)
-}
-
-func (c *ClientWithResponses) PinReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, body PinReleaseTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*PinReleaseTargetResponse, error) {
-	rsp, err := c.PinReleaseTarget(ctx, releaseTargetId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePinReleaseTargetResponse(rsp)
-}
-
-// GetReleaseTargetReleasesWithResponse request returning *GetReleaseTargetReleasesResponse
-func (c *ClientWithResponses) GetReleaseTargetReleasesWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReleaseTargetReleasesResponse, error) {
-	rsp, err := c.GetReleaseTargetReleases(ctx, releaseTargetId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetReleaseTargetReleasesResponse(rsp)
-}
-
-// UnlockReleaseTargetWithResponse request returning *UnlockReleaseTargetResponse
-func (c *ClientWithResponses) UnlockReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*UnlockReleaseTargetResponse, error) {
-	rsp, err := c.UnlockReleaseTarget(ctx, releaseTargetId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUnlockReleaseTargetResponse(rsp)
-}
-
-// UnpinReleaseTargetWithResponse request returning *UnpinReleaseTargetResponse
-func (c *ClientWithResponses) UnpinReleaseTargetWithResponse(ctx context.Context, releaseTargetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*UnpinReleaseTargetResponse, error) {
-	rsp, err := c.UnpinReleaseTarget(ctx, releaseTargetId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUnpinReleaseTargetResponse(rsp)
-}
-
-// UpsertReleaseWithBodyWithResponse request with arbitrary body returning *UpsertReleaseResponse
-func (c *ClientWithResponses) UpsertReleaseWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertReleaseResponse, error) {
-	rsp, err := c.UpsertReleaseWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpsertReleaseResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpsertReleaseWithResponse(ctx context.Context, body UpsertReleaseJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertReleaseResponse, error) {
-	rsp, err := c.UpsertRelease(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpsertReleaseResponse(rsp)
-}
-
-// UpdateReleaseWithBodyWithResponse request with arbitrary body returning *UpdateReleaseResponse
-func (c *ClientWithResponses) UpdateReleaseWithBodyWithResponse(ctx context.Context, releaseId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateReleaseResponse, error) {
-	rsp, err := c.UpdateReleaseWithBody(ctx, releaseId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateReleaseResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateReleaseWithResponse(ctx context.Context, releaseId string, body UpdateReleaseJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateReleaseResponse, error) {
-	rsp, err := c.UpdateRelease(ctx, releaseId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateReleaseResponse(rsp)
-}
-
-// SetResourceProvidersResourcesWithBodyWithResponse request with arbitrary body returning *SetResourceProvidersResourcesResponse
-func (c *ClientWithResponses) SetResourceProvidersResourcesWithBodyWithResponse(ctx context.Context, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetResourceProvidersResourcesResponse, error) {
-	rsp, err := c.SetResourceProvidersResourcesWithBody(ctx, providerId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseSetResourceProvidersResourcesResponse(rsp)
-}
-
-func (c *ClientWithResponses) SetResourceProvidersResourcesWithResponse(ctx context.Context, providerId string, body SetResourceProvidersResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetResourceProvidersResourcesResponse, error) {
-	rsp, err := c.SetResourceProvidersResources(ctx, providerId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseSetResourceProvidersResourcesResponse(rsp)
-}
-
-// CreateResourceRelationshipRuleWithBodyWithResponse request with arbitrary body returning *CreateResourceRelationshipRuleResponse
-func (c *ClientWithResponses) CreateResourceRelationshipRuleWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateResourceRelationshipRuleResponse, error) {
-	rsp, err := c.CreateResourceRelationshipRuleWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateResourceRelationshipRuleResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateResourceRelationshipRuleWithResponse(ctx context.Context, body CreateResourceRelationshipRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateResourceRelationshipRuleResponse, error) {
-	rsp, err := c.CreateResourceRelationshipRule(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateResourceRelationshipRuleResponse(rsp)
-}
-
-// UpdateResourceRelationshipRuleWithBodyWithResponse request with arbitrary body returning *UpdateResourceRelationshipRuleResponse
-func (c *ClientWithResponses) UpdateResourceRelationshipRuleWithBodyWithResponse(ctx context.Context, ruleId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateResourceRelationshipRuleResponse, error) {
-	rsp, err := c.UpdateResourceRelationshipRuleWithBody(ctx, ruleId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateResourceRelationshipRuleResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateResourceRelationshipRuleWithResponse(ctx context.Context, ruleId openapi_types.UUID, body UpdateResourceRelationshipRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateResourceRelationshipRuleResponse, error) {
-	rsp, err := c.UpdateResourceRelationshipRule(ctx, ruleId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateResourceRelationshipRuleResponse(rsp)
-}
-
-// CreateResourceSchemaWithBodyWithResponse request with arbitrary body returning *CreateResourceSchemaResponse
-func (c *ClientWithResponses) CreateResourceSchemaWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateResourceSchemaResponse, error) {
-	rsp, err := c.CreateResourceSchemaWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateResourceSchemaResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateResourceSchemaWithResponse(ctx context.Context, body CreateResourceSchemaJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateResourceSchemaResponse, error) {
-	rsp, err := c.CreateResourceSchema(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateResourceSchemaResponse(rsp)
-}
-
-// DeleteResourceSchemaWithResponse request returning *DeleteResourceSchemaResponse
-func (c *ClientWithResponses) DeleteResourceSchemaWithResponse(ctx context.Context, schemaId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteResourceSchemaResponse, error) {
-	rsp, err := c.DeleteResourceSchema(ctx, schemaId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteResourceSchemaResponse(rsp)
-}
-
-// UpsertResourceWithBodyWithResponse request with arbitrary body returning *UpsertResourceResponse
-func (c *ClientWithResponses) UpsertResourceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertResourceResponse, error) {
-	rsp, err := c.UpsertResourceWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpsertResourceResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpsertResourceWithResponse(ctx context.Context, body UpsertResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertResourceResponse, error) {
-	rsp, err := c.UpsertResource(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpsertResourceResponse(rsp)
-}
-
-// DeleteResourceWithResponse request returning *DeleteResourceResponse
-func (c *ClientWithResponses) DeleteResourceWithResponse(ctx context.Context, resourceId string, reqEditors ...RequestEditorFn) (*DeleteResourceResponse, error) {
-	rsp, err := c.DeleteResource(ctx, resourceId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteResourceResponse(rsp)
-}
-
-// GetResourceWithResponse request returning *GetResourceResponse
-func (c *ClientWithResponses) GetResourceWithResponse(ctx context.Context, resourceId string, reqEditors ...RequestEditorFn) (*GetResourceResponse, error) {
-	rsp, err := c.GetResource(ctx, resourceId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetResourceResponse(rsp)
-}
-
-// UpdateResourceWithBodyWithResponse request with arbitrary body returning *UpdateResourceResponse
-func (c *ClientWithResponses) UpdateResourceWithBodyWithResponse(ctx context.Context, resourceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateResourceResponse, error) {
-	rsp, err := c.UpdateResourceWithBody(ctx, resourceId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateResourceResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateResourceWithResponse(ctx context.Context, resourceId string, body UpdateResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateResourceResponse, error) {
-	rsp, err := c.UpdateResource(ctx, resourceId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateResourceResponse(rsp)
-}
-
-// GetReleaseTargetsWithResponse request returning *GetReleaseTargetsResponse
-func (c *ClientWithResponses) GetReleaseTargetsWithResponse(ctx context.Context, resourceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReleaseTargetsResponse, error) {
-	rsp, err := c.GetReleaseTargets(ctx, resourceId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetReleaseTargetsResponse(rsp)
-}
-
-// CreateSystemWithBodyWithResponse request with arbitrary body returning *CreateSystemResponse
-func (c *ClientWithResponses) CreateSystemWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSystemResponse, error) {
-	rsp, err := c.CreateSystemWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateSystemResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateSystemWithResponse(ctx context.Context, body CreateSystemJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSystemResponse, error) {
-	rsp, err := c.CreateSystem(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateSystemResponse(rsp)
-}
-
-// DeleteSystemWithResponse request returning *DeleteSystemResponse
-func (c *ClientWithResponses) DeleteSystemWithResponse(ctx context.Context, systemId string, reqEditors ...RequestEditorFn) (*DeleteSystemResponse, error) {
-	rsp, err := c.DeleteSystem(ctx, systemId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteSystemResponse(rsp)
-}
-
-// GetSystemWithResponse request returning *GetSystemResponse
-func (c *ClientWithResponses) GetSystemWithResponse(ctx context.Context, systemId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetSystemResponse, error) {
-	rsp, err := c.GetSystem(ctx, systemId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetSystemResponse(rsp)
-}
-
-// UpdateSystemWithBodyWithResponse request with arbitrary body returning *UpdateSystemResponse
-func (c *ClientWithResponses) UpdateSystemWithBodyWithResponse(ctx context.Context, systemId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSystemResponse, error) {
-	rsp, err := c.UpdateSystemWithBody(ctx, systemId, contentType, body, reqEditors...)
+// ListWorkspacesWithResponse request returning *ListWorkspacesResponse
+func (c *ClientWithResponses) ListWorkspacesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListWorkspacesResponse, error) {
+	rsp, err := c.ListWorkspaces(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateSystemResponse(rsp)
+	return ParseListWorkspacesResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdateSystemWithResponse(ctx context.Context, systemId openapi_types.UUID, body UpdateSystemJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSystemResponse, error) {
-	rsp, err := c.UpdateSystem(ctx, systemId, body, reqEditors...)
+// CreateWorkspaceWithBodyWithResponse request with arbitrary body returning *CreateWorkspaceResponse
+func (c *ClientWithResponses) CreateWorkspaceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWorkspaceResponse, error) {
+	rsp, err := c.CreateWorkspaceWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateSystemResponse(rsp)
+	return ParseCreateWorkspaceResponse(rsp)
 }
 
-// DeleteEnvironmentByNameWithResponse request returning *DeleteEnvironmentByNameResponse
-func (c *ClientWithResponses) DeleteEnvironmentByNameWithResponse(ctx context.Context, systemId string, name string, reqEditors ...RequestEditorFn) (*DeleteEnvironmentByNameResponse, error) {
-	rsp, err := c.DeleteEnvironmentByName(ctx, systemId, name, reqEditors...)
+func (c *ClientWithResponses) CreateWorkspaceWithResponse(ctx context.Context, body CreateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWorkspaceResponse, error) {
+	rsp, err := c.CreateWorkspace(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteEnvironmentByNameResponse(rsp)
+	return ParseCreateWorkspaceResponse(rsp)
 }
 
 // GetWorkspaceBySlugWithResponse request returning *GetWorkspaceBySlugResponse
@@ -9695,6 +2971,15 @@ func (c *ClientWithResponses) GetWorkspaceBySlugWithResponse(ctx context.Context
 	return ParseGetWorkspaceBySlugResponse(rsp)
 }
 
+// DeleteWorkspaceWithResponse request returning *DeleteWorkspaceResponse
+func (c *ClientWithResponses) DeleteWorkspaceWithResponse(ctx context.Context, workspaceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteWorkspaceResponse, error) {
+	rsp, err := c.DeleteWorkspace(ctx, workspaceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteWorkspaceResponse(rsp)
+}
+
 // GetWorkspaceWithResponse request returning *GetWorkspaceResponse
 func (c *ClientWithResponses) GetWorkspaceWithResponse(ctx context.Context, workspaceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetWorkspaceResponse, error) {
 	rsp, err := c.GetWorkspace(ctx, workspaceId, reqEditors...)
@@ -9704,67 +2989,221 @@ func (c *ClientWithResponses) GetWorkspaceWithResponse(ctx context.Context, work
 	return ParseGetWorkspaceResponse(rsp)
 }
 
+// UpdateWorkspaceWithBodyWithResponse request with arbitrary body returning *UpdateWorkspaceResponse
+func (c *ClientWithResponses) UpdateWorkspaceWithBodyWithResponse(ctx context.Context, workspaceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateWorkspaceResponse, error) {
+	rsp, err := c.UpdateWorkspaceWithBody(ctx, workspaceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateWorkspaceResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateWorkspaceWithResponse(ctx context.Context, workspaceId openapi_types.UUID, body UpdateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWorkspaceResponse, error) {
+	rsp, err := c.UpdateWorkspace(ctx, workspaceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateWorkspaceResponse(rsp)
+}
+
 // ListDeploymentsWithResponse request returning *ListDeploymentsResponse
-func (c *ClientWithResponses) ListDeploymentsWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*ListDeploymentsResponse, error) {
-	rsp, err := c.ListDeployments(ctx, workspaceId, reqEditors...)
+func (c *ClientWithResponses) ListDeploymentsWithResponse(ctx context.Context, workspaceId string, params *ListDeploymentsParams, reqEditors ...RequestEditorFn) (*ListDeploymentsResponse, error) {
+	rsp, err := c.ListDeployments(ctx, workspaceId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListDeploymentsResponse(rsp)
 }
 
+// UpsertDeploymentWithBodyWithResponse request with arbitrary body returning *UpsertDeploymentResponse
+func (c *ClientWithResponses) UpsertDeploymentWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDeploymentResponse, error) {
+	rsp, err := c.UpsertDeploymentWithBody(ctx, workspaceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertDeploymentResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpsertDeploymentWithResponse(ctx context.Context, workspaceId string, body UpsertDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDeploymentResponse, error) {
+	rsp, err := c.UpsertDeployment(ctx, workspaceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertDeploymentResponse(rsp)
+}
+
+// GetDeploymentWithResponse request returning *GetDeploymentResponse
+func (c *ClientWithResponses) GetDeploymentWithResponse(ctx context.Context, workspaceId string, deploymentId string, reqEditors ...RequestEditorFn) (*GetDeploymentResponse, error) {
+	rsp, err := c.GetDeployment(ctx, workspaceId, deploymentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDeploymentResponse(rsp)
+}
+
+// ListDeploymentVersionsWithResponse request returning *ListDeploymentVersionsResponse
+func (c *ClientWithResponses) ListDeploymentVersionsWithResponse(ctx context.Context, workspaceId string, deploymentId string, params *ListDeploymentVersionsParams, reqEditors ...RequestEditorFn) (*ListDeploymentVersionsResponse, error) {
+	rsp, err := c.ListDeploymentVersions(ctx, workspaceId, deploymentId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListDeploymentVersionsResponse(rsp)
+}
+
+// UpsertDeploymentVersionWithBodyWithResponse request with arbitrary body returning *UpsertDeploymentVersionResponse
+func (c *ClientWithResponses) UpsertDeploymentVersionWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDeploymentVersionResponse, error) {
+	rsp, err := c.UpsertDeploymentVersionWithBody(ctx, workspaceId, deploymentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertDeploymentVersionResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpsertDeploymentVersionWithResponse(ctx context.Context, workspaceId string, deploymentId string, body UpsertDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDeploymentVersionResponse, error) {
+	rsp, err := c.UpsertDeploymentVersion(ctx, workspaceId, deploymentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertDeploymentVersionResponse(rsp)
+}
+
+// UpsertUserApprovalRecordWithBodyWithResponse request with arbitrary body returning *UpsertUserApprovalRecordResponse
+func (c *ClientWithResponses) UpsertUserApprovalRecordWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertUserApprovalRecordResponse, error) {
+	rsp, err := c.UpsertUserApprovalRecordWithBody(ctx, workspaceId, deploymentVersionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertUserApprovalRecordResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpsertUserApprovalRecordWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, body UpsertUserApprovalRecordJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertUserApprovalRecordResponse, error) {
+	rsp, err := c.UpsertUserApprovalRecord(ctx, workspaceId, deploymentVersionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertUserApprovalRecordResponse(rsp)
+}
+
 // ListEnvironmentsWithResponse request returning *ListEnvironmentsResponse
-func (c *ClientWithResponses) ListEnvironmentsWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*ListEnvironmentsResponse, error) {
-	rsp, err := c.ListEnvironments(ctx, workspaceId, reqEditors...)
+func (c *ClientWithResponses) ListEnvironmentsWithResponse(ctx context.Context, workspaceId string, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*ListEnvironmentsResponse, error) {
+	rsp, err := c.ListEnvironments(ctx, workspaceId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListEnvironmentsResponse(rsp)
 }
 
-// GetEventsByActionWithResponse request returning *GetEventsByActionResponse
-func (c *ClientWithResponses) GetEventsByActionWithResponse(ctx context.Context, workspaceId openapi_types.UUID, action string, reqEditors ...RequestEditorFn) (*GetEventsByActionResponse, error) {
-	rsp, err := c.GetEventsByAction(ctx, workspaceId, action, reqEditors...)
+// UpsertEnvironmentWithBodyWithResponse request with arbitrary body returning *UpsertEnvironmentResponse
+func (c *ClientWithResponses) UpsertEnvironmentWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertEnvironmentResponse, error) {
+	rsp, err := c.UpsertEnvironmentWithBody(ctx, workspaceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetEventsByActionResponse(rsp)
+	return ParseUpsertEnvironmentResponse(rsp)
 }
 
-// DeletePolicyByNameWithResponse request returning *DeletePolicyByNameResponse
-func (c *ClientWithResponses) DeletePolicyByNameWithResponse(ctx context.Context, workspaceId openapi_types.UUID, name string, reqEditors ...RequestEditorFn) (*DeletePolicyByNameResponse, error) {
-	rsp, err := c.DeletePolicyByName(ctx, workspaceId, name, reqEditors...)
+func (c *ClientWithResponses) UpsertEnvironmentWithResponse(ctx context.Context, workspaceId string, body UpsertEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertEnvironmentResponse, error) {
+	rsp, err := c.UpsertEnvironment(ctx, workspaceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeletePolicyByNameResponse(rsp)
+	return ParseUpsertEnvironmentResponse(rsp)
 }
 
-// UpsertResourceProviderWithResponse request returning *UpsertResourceProviderResponse
-func (c *ClientWithResponses) UpsertResourceProviderWithResponse(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*UpsertResourceProviderResponse, error) {
-	rsp, err := c.UpsertResourceProvider(ctx, workspaceId, name, reqEditors...)
+// GetEnvironmentWithResponse request returning *GetEnvironmentResponse
+func (c *ClientWithResponses) GetEnvironmentWithResponse(ctx context.Context, workspaceId string, environmentId string, reqEditors ...RequestEditorFn) (*GetEnvironmentResponse, error) {
+	rsp, err := c.GetEnvironment(ctx, workspaceId, environmentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetEnvironmentResponse(rsp)
+}
+
+// ListPoliciesWithResponse request returning *ListPoliciesResponse
+func (c *ClientWithResponses) ListPoliciesWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*ListPoliciesResponse, error) {
+	rsp, err := c.ListPolicies(ctx, workspaceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListPoliciesResponse(rsp)
+}
+
+// UpsertPolicyWithBodyWithResponse request with arbitrary body returning *UpsertPolicyResponse
+func (c *ClientWithResponses) UpsertPolicyWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertPolicyResponse, error) {
+	rsp, err := c.UpsertPolicyWithBody(ctx, workspaceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertPolicyResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpsertPolicyWithResponse(ctx context.Context, workspaceId string, body UpsertPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertPolicyResponse, error) {
+	rsp, err := c.UpsertPolicy(ctx, workspaceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertPolicyResponse(rsp)
+}
+
+// GetAllRelationshipsWithResponse request returning *GetAllRelationshipsResponse
+func (c *ClientWithResponses) GetAllRelationshipsWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*GetAllRelationshipsResponse, error) {
+	rsp, err := c.GetAllRelationships(ctx, workspaceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAllRelationshipsResponse(rsp)
+}
+
+// UpsertResourceProviderWithBodyWithResponse request with arbitrary body returning *UpsertResourceProviderResponse
+func (c *ClientWithResponses) UpsertResourceProviderWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertResourceProviderResponse, error) {
+	rsp, err := c.UpsertResourceProviderWithBody(ctx, workspaceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpsertResourceProviderResponse(rsp)
 }
 
-// ListResourcesWithResponse request returning *ListResourcesResponse
-func (c *ClientWithResponses) ListResourcesWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*ListResourcesResponse, error) {
-	rsp, err := c.ListResources(ctx, workspaceId, reqEditors...)
+func (c *ClientWithResponses) UpsertResourceProviderWithResponse(ctx context.Context, workspaceId string, body UpsertResourceProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertResourceProviderResponse, error) {
+	rsp, err := c.UpsertResourceProvider(ctx, workspaceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListResourcesResponse(rsp)
+	return ParseUpsertResourceProviderResponse(rsp)
 }
 
-// DeleteResourceByIdentifierWithResponse request returning *DeleteResourceByIdentifierResponse
-func (c *ClientWithResponses) DeleteResourceByIdentifierWithResponse(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*DeleteResourceByIdentifierResponse, error) {
-	rsp, err := c.DeleteResourceByIdentifier(ctx, workspaceId, identifier, reqEditors...)
+// GetResourceProviderByNameWithResponse request returning *GetResourceProviderByNameResponse
+func (c *ClientWithResponses) GetResourceProviderByNameWithResponse(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*GetResourceProviderByNameResponse, error) {
+	rsp, err := c.GetResourceProviderByName(ctx, workspaceId, name, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteResourceByIdentifierResponse(rsp)
+	return ParseGetResourceProviderByNameResponse(rsp)
+}
+
+// SetResourceProvidersResourcesWithBodyWithResponse request with arbitrary body returning *SetResourceProvidersResourcesResponse
+func (c *ClientWithResponses) SetResourceProvidersResourcesWithBodyWithResponse(ctx context.Context, workspaceId string, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetResourceProvidersResourcesResponse, error) {
+	rsp, err := c.SetResourceProvidersResourcesWithBody(ctx, workspaceId, providerId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetResourceProvidersResourcesResponse(rsp)
+}
+
+func (c *ClientWithResponses) SetResourceProvidersResourcesWithResponse(ctx context.Context, workspaceId string, providerId string, body SetResourceProvidersResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetResourceProvidersResourcesResponse, error) {
+	rsp, err := c.SetResourceProvidersResources(ctx, workspaceId, providerId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetResourceProvidersResourcesResponse(rsp)
+}
+
+// GetAllResourcesWithResponse request returning *GetAllResourcesResponse
+func (c *ClientWithResponses) GetAllResourcesWithResponse(ctx context.Context, workspaceId string, params *GetAllResourcesParams, reqEditors ...RequestEditorFn) (*GetAllResourcesResponse, error) {
+	rsp, err := c.GetAllResources(ctx, workspaceId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAllResourcesResponse(rsp)
 }
 
 // GetResourceByIdentifierWithResponse request returning *GetResourceByIdentifierResponse
@@ -9776,2456 +3215,95 @@ func (c *ClientWithResponses) GetResourceByIdentifierWithResponse(ctx context.Co
 	return ParseGetResourceByIdentifierResponse(rsp)
 }
 
-// GetGroupedCountsWithBodyWithResponse request with arbitrary body returning *GetGroupedCountsResponse
-func (c *ClientWithResponses) GetGroupedCountsWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetGroupedCountsResponse, error) {
-	rsp, err := c.GetGroupedCountsWithBody(ctx, workspaceId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetGroupedCountsResponse(rsp)
-}
-
-func (c *ClientWithResponses) GetGroupedCountsWithResponse(ctx context.Context, workspaceId string, body GetGroupedCountsJSONRequestBody, reqEditors ...RequestEditorFn) (*GetGroupedCountsResponse, error) {
-	rsp, err := c.GetGroupedCounts(ctx, workspaceId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetGroupedCountsResponse(rsp)
-}
-
-// ListSystemsWithResponse request returning *ListSystemsResponse
-func (c *ClientWithResponses) ListSystemsWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*ListSystemsResponse, error) {
-	rsp, err := c.ListSystems(ctx, workspaceId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListSystemsResponse(rsp)
-}
-
-// ParseGetCloudProviderRegionsResponse parses an HTTP response from a GetCloudProviderRegionsWithResponse call
-func ParseGetCloudProviderRegionsResponse(rsp *http.Response) (*GetCloudProviderRegionsResponse, error) {
+// ParseListWorkspacesResponse parses an HTTP response from a ListWorkspacesWithResponse call
+func ParseListWorkspacesResponse(rsp *http.Response) (*ListWorkspacesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetCloudProviderRegionsResponse{
+	response := &ListWorkspacesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest map[string]CloudRegionGeoData
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpsertDeploymentVersionResponse parses an HTTP response from a UpsertDeploymentVersionWithResponse call
-func ParseUpsertDeploymentVersionResponse(rsp *http.Response) (*UpsertDeploymentVersionResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpsertDeploymentVersionResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest DeploymentVersion
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateDeploymentVersionResponse parses an HTTP response from a UpdateDeploymentVersionWithResponse call
-func ParseUpdateDeploymentVersionResponse(rsp *http.Response) (*UpdateDeploymentVersionResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateDeploymentVersionResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DeploymentVersion
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseApproveDeploymentVersionResponse parses an HTTP response from a ApproveDeploymentVersionWithResponse call
-func ParseApproveDeploymentVersionResponse(rsp *http.Response) (*ApproveDeploymentVersionResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ApproveDeploymentVersionResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ApprovalRecord
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseApproveDeploymentVersionForEnvironmentResponse parses an HTTP response from a ApproveDeploymentVersionForEnvironmentWithResponse call
-func ParseApproveDeploymentVersionForEnvironmentResponse(rsp *http.Response) (*ApproveDeploymentVersionForEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ApproveDeploymentVersionForEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ApprovalRecord
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetRolloutInfoResponse parses an HTTP response from a GetRolloutInfoWithResponse call
-func ParseGetRolloutInfoResponse(rsp *http.Response) (*GetRolloutInfoResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetRolloutInfoResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []struct {
-			Deployment      Deployment         `json:"deployment"`
-			Environment     Environment        `json:"environment"`
-			Id              openapi_types.UUID `json:"id"`
-			Resource        Resource           `json:"resource"`
-			RolloutPosition float32            `json:"rolloutPosition"`
-			RolloutTime     *time.Time         `json:"rolloutTime"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRejectDeploymentVersionResponse parses an HTTP response from a RejectDeploymentVersionWithResponse call
-func ParseRejectDeploymentVersionResponse(rsp *http.Response) (*RejectDeploymentVersionResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RejectDeploymentVersionResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ApprovalRecord
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRejectDeploymentVersionForEnvironmentResponse parses an HTTP response from a RejectDeploymentVersionForEnvironmentWithResponse call
-func ParseRejectDeploymentVersionForEnvironmentResponse(rsp *http.Response) (*RejectDeploymentVersionForEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RejectDeploymentVersionForEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ApprovalRecord
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateDeploymentResponse parses an HTTP response from a CreateDeploymentWithResponse call
-func ParseCreateDeploymentResponse(rsp *http.Response) (*CreateDeploymentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateDeploymentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Deployment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Deployment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest struct {
-			Error string             `json:"error"`
-			Id    openapi_types.UUID `json:"id"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteDeploymentResponse parses an HTTP response from a DeleteDeploymentWithResponse call
-func ParseDeleteDeploymentResponse(rsp *http.Response) (*DeleteDeploymentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteDeploymentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Deployment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetDeploymentResponse parses an HTTP response from a GetDeploymentWithResponse call
-func ParseGetDeploymentResponse(rsp *http.Response) (*GetDeploymentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetDeploymentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Deployment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateDeploymentResponse parses an HTTP response from a UpdateDeploymentWithResponse call
-func ParseUpdateDeploymentResponse(rsp *http.Response) (*UpdateDeploymentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateDeploymentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Deployment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetResourcesForDeploymentResponse parses an HTTP response from a GetResourcesForDeploymentWithResponse call
-func ParseGetResourcesForDeploymentResponse(rsp *http.Response) (*GetResourcesForDeploymentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetResourcesForDeploymentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Count     *float32    `json:"count,omitempty"`
-			Resources *[]Resource `json:"resources,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetDeploymentVariablesResponse parses an HTTP response from a GetDeploymentVariablesWithResponse call
-func ParseGetDeploymentVariablesResponse(rsp *http.Response) (*GetDeploymentVariablesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetDeploymentVariablesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []DeploymentVariable
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateDeploymentVariableResponse parses an HTTP response from a CreateDeploymentVariableWithResponse call
-func ParseCreateDeploymentVariableResponse(rsp *http.Response) (*CreateDeploymentVariableResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateDeploymentVariableResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DeploymentVariable
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListDeploymentVersionsResponse parses an HTTP response from a ListDeploymentVersionsWithResponse call
-func ParseListDeploymentVersionsResponse(rsp *http.Response) (*ListDeploymentVersionsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListDeploymentVersionsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []DeploymentVersion
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateEnvironmentResponse parses an HTTP response from a CreateEnvironmentWithResponse call
-func ParseCreateEnvironmentResponse(rsp *http.Response) (*CreateEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Environment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-			Id    *string `json:"id,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteEnvironmentResponse parses an HTTP response from a DeleteEnvironmentWithResponse call
-func ParseDeleteEnvironmentResponse(rsp *http.Response) (*DeleteEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	return response, nil
-}
-
-// ParseGetEnvironmentResponse parses an HTTP response from a GetEnvironmentWithResponse call
-func ParseGetEnvironmentResponse(rsp *http.Response) (*GetEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Environment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetResourcesForEnvironmentResponse parses an HTTP response from a GetResourcesForEnvironmentWithResponse call
-func ParseGetResourcesForEnvironmentResponse(rsp *http.Response) (*GetResourcesForEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetResourcesForEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Count     *float32    `json:"count,omitempty"`
-			Resources *[]Resource `json:"resources,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpsertJobAgentResponse parses an HTTP response from a UpsertJobAgentWithResponse call
-func ParseUpsertJobAgentResponse(rsp *http.Response) (*UpsertJobAgentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpsertJobAgentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Id          string `json:"id"`
-			Name        string `json:"name"`
-			WorkspaceId string `json:"workspaceId"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetAgentRunningJobsResponse parses an HTTP response from a GetAgentRunningJobsWithResponse call
-func ParseGetAgentRunningJobsResponse(rsp *http.Response) (*GetAgentRunningJobsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetAgentRunningJobsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Jobs []Job `json:"jobs"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseAcknowledgeAgentJobResponse parses an HTTP response from a AcknowledgeAgentJobWithResponse call
-func ParseAcknowledgeAgentJobResponse(rsp *http.Response) (*AcknowledgeAgentJobResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &AcknowledgeAgentJobResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Job *Job `json:"job,omitempty"`
-		}
+		var dest WorkspaceList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON404 = &dest
+		response.JSON500 = &dest
 
 	}
 
 	return response, nil
 }
 
-// ParseGetNextJobsResponse parses an HTTP response from a GetNextJobsWithResponse call
-func ParseGetNextJobsResponse(rsp *http.Response) (*GetNextJobsResponse, error) {
+// ParseCreateWorkspaceResponse parses an HTTP response from a CreateWorkspaceWithResponse call
+func ParseCreateWorkspaceResponse(rsp *http.Response) (*CreateWorkspaceResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetNextJobsResponse{
+	response := &CreateWorkspaceResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Jobs *[]Job `json:"jobs,omitempty"`
-		}
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Workspace
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON200 = &dest
+		response.JSON201 = &dest
 
-	}
-
-	return response, nil
-}
-
-// ParseGetJobResponse parses an HTTP response from a GetJobWithResponse call
-func ParseGetJobResponse(rsp *http.Response) (*GetJobResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetJobResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest JobWithTrigger
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateJobResponse parses an HTTP response from a UpdateJobWithResponse call
-func ParseUpdateJobResponse(rsp *http.Response) (*UpdateJobResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateJobResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Message string `json:"message"`
-			Success bool   `json:"success"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseAcknowledgeJobResponse parses an HTTP response from a AcknowledgeJobWithResponse call
-func ParseAcknowledgeJobResponse(rsp *http.Response) (*AcknowledgeJobResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &AcknowledgeJobResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Sucess bool `json:"sucess"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest struct {
-			Error string `json:"error"`
-		}
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
-	}
-
-	return response, nil
-}
-
-// ParseUpsertPolicyResponse parses an HTTP response from a UpsertPolicyWithResponse call
-func ParseUpsertPolicyResponse(rsp *http.Response) (*UpsertPolicyResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpsertPolicyResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Policy
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeletePolicyResponse parses an HTTP response from a DeletePolicyWithResponse call
-func ParseDeletePolicyResponse(rsp *http.Response) (*DeletePolicyResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeletePolicyResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Count *float32 `json:"count,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetPolicyResponse parses an HTTP response from a GetPolicyWithResponse call
-func ParseGetPolicyResponse(rsp *http.Response) (*GetPolicyResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetPolicyResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Policy
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdatePolicyResponse parses an HTTP response from a UpdatePolicyWithResponse call
-func ParseUpdatePolicyResponse(rsp *http.Response) (*UpdatePolicyResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdatePolicyResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Policy
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetReleaseTargetsForPolicyResponse parses an HTTP response from a GetReleaseTargetsForPolicyWithResponse call
-func ParseGetReleaseTargetsForPolicyResponse(rsp *http.Response) (*GetReleaseTargetsForPolicyResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetReleaseTargetsForPolicyResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Count          *float32         `json:"count,omitempty"`
-			ReleaseTargets *[]ReleaseTarget `json:"releaseTargets,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateJobToResourceRelationshipResponse parses an HTTP response from a CreateJobToResourceRelationshipWithResponse call
-func ParseCreateJobToResourceRelationshipResponse(rsp *http.Response) (*CreateJobToResourceRelationshipResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateJobToResourceRelationshipResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Message *string `json:"message,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
-	}
-
-	return response, nil
-}
-
-// ParseCreateResourceToResourceRelationshipResponse parses an HTTP response from a CreateResourceToResourceRelationshipWithResponse call
-func ParseCreateResourceToResourceRelationshipResponse(rsp *http.Response) (*CreateResourceToResourceRelationshipResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateResourceToResourceRelationshipResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Message *string `json:"message,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetReleaseTargetResponse parses an HTTP response from a GetReleaseTargetWithResponse call
-func ParseGetReleaseTargetResponse(rsp *http.Response) (*GetReleaseTargetResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetReleaseTargetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ReleaseTarget
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetLatestJobsResponse parses an HTTP response from a GetLatestJobsWithResponse call
-func ParseGetLatestJobsResponse(rsp *http.Response) (*GetLatestJobsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetLatestJobsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []JobWithTrigger
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseLockReleaseTargetResponse parses an HTTP response from a LockReleaseTargetWithResponse call
-func ParseLockReleaseTargetResponse(rsp *http.Response) (*LockReleaseTargetResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &LockReleaseTargetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ReleaseTargetLockRecord
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePinReleaseTargetResponse parses an HTTP response from a PinReleaseTargetWithResponse call
-func ParsePinReleaseTargetResponse(rsp *http.Response) (*PinReleaseTargetResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PinReleaseTargetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Success *bool `json:"success,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetReleaseTargetReleasesResponse parses an HTTP response from a GetReleaseTargetReleasesWithResponse call
-func ParseGetReleaseTargetReleasesResponse(rsp *http.Response) (*GetReleaseTargetReleasesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetReleaseTargetReleasesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []struct {
-			Deployment Deployment `json:"deployment"`
-			Variables  []struct {
-				Key   string `json:"key"`
-				Value string `json:"value"`
-			} `json:"variables"`
-			Version DeploymentVersion `json:"version"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUnlockReleaseTargetResponse parses an HTTP response from a UnlockReleaseTargetWithResponse call
-func ParseUnlockReleaseTargetResponse(rsp *http.Response) (*UnlockReleaseTargetResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UnlockReleaseTargetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ReleaseTargetLockRecord
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUnpinReleaseTargetResponse parses an HTTP response from a UnpinReleaseTargetWithResponse call
-func ParseUnpinReleaseTargetResponse(rsp *http.Response) (*UnpinReleaseTargetResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UnpinReleaseTargetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Success *bool `json:"success,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpsertReleaseResponse parses an HTTP response from a UpsertReleaseWithResponse call
-func ParseUpsertReleaseResponse(rsp *http.Response) (*UpsertReleaseResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpsertReleaseResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Release
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-			Id    *string `json:"id,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateReleaseResponse parses an HTTP response from a UpdateReleaseWithResponse call
-func ParseUpdateReleaseResponse(rsp *http.Response) (*UpdateReleaseResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateReleaseResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Release
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseSetResourceProvidersResourcesResponse parses an HTTP response from a SetResourceProvidersResourcesWithResponse call
-func ParseSetResourceProvidersResourcesResponse(rsp *http.Response) (*SetResourceProvidersResourcesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &SetResourceProvidersResourcesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Resources *struct {
-				Deleted *[]struct {
-					Config  *map[string]interface{} `json:"config,omitempty"`
-					Id      *string                 `json:"id,omitempty"`
-					Kind    *string                 `json:"kind,omitempty"`
-					Name    *string                 `json:"name,omitempty"`
-					Version *string                 `json:"version,omitempty"`
-				} `json:"deleted,omitempty"`
-				Ignored *[]struct {
-					Identifier  *string `json:"identifier,omitempty"`
-					Kind        *string `json:"kind,omitempty"`
-					Name        *string `json:"name,omitempty"`
-					Version     *string `json:"version,omitempty"`
-					WorkspaceId *string `json:"workspaceId,omitempty"`
-				} `json:"ignored,omitempty"`
-				Inserted *[]struct {
-					Config  *map[string]interface{} `json:"config,omitempty"`
-					Id      *string                 `json:"id,omitempty"`
-					Kind    *string                 `json:"kind,omitempty"`
-					Name    *string                 `json:"name,omitempty"`
-					Version *string                 `json:"version,omitempty"`
-				} `json:"inserted,omitempty"`
-				Updated *[]struct {
-					Config  *map[string]interface{} `json:"config,omitempty"`
-					Id      *string                 `json:"id,omitempty"`
-					Kind    *string                 `json:"kind,omitempty"`
-					Name    *string                 `json:"name,omitempty"`
-					Version *string                 `json:"version,omitempty"`
-				} `json:"updated,omitempty"`
-			} `json:"resources,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateResourceRelationshipRuleResponse parses an HTTP response from a CreateResourceRelationshipRuleWithResponse call
-func ParseCreateResourceRelationshipRuleResponse(rsp *http.Response) (*CreateResourceRelationshipRuleResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateResourceRelationshipRuleResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ResourceRelationshipRule
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateResourceRelationshipRuleResponse parses an HTTP response from a UpdateResourceRelationshipRuleWithResponse call
-func ParseUpdateResourceRelationshipRuleResponse(rsp *http.Response) (*UpdateResourceRelationshipRuleResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateResourceRelationshipRuleResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ResourceRelationshipRule
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateResourceSchemaResponse parses an HTTP response from a CreateResourceSchemaWithResponse call
-func ParseCreateResourceSchemaResponse(rsp *http.Response) (*CreateResourceSchemaResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateResourceSchemaResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest struct {
-			Id          *openapi_types.UUID     `json:"id,omitempty"`
-			JsonSchema  *map[string]interface{} `json:"jsonSchema,omitempty"`
-			Kind        *string                 `json:"kind,omitempty"`
-			Version     *string                 `json:"version,omitempty"`
-			WorkspaceId *openapi_types.UUID     `json:"workspaceId,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest struct {
-			Error *string             `json:"error,omitempty"`
-			Id    *openapi_types.UUID `json:"id,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteResourceSchemaResponse parses an HTTP response from a DeleteResourceSchemaWithResponse call
-func ParseDeleteResourceSchemaResponse(rsp *http.Response) (*DeleteResourceSchemaResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteResourceSchemaResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Id *openapi_types.UUID `json:"id,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpsertResourceResponse parses an HTTP response from a UpsertResourceWithResponse call
-func ParseUpsertResourceResponse(rsp *http.Response) (*UpsertResourceResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpsertResourceResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Resource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteResourceResponse parses an HTTP response from a DeleteResourceWithResponse call
-func ParseDeleteResourceResponse(rsp *http.Response) (*DeleteResourceResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteResourceResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Success bool `json:"success"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetResourceResponse parses an HTTP response from a GetResourceWithResponse call
-func ParseGetResourceResponse(rsp *http.Response) (*GetResourceResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetResourceResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ResourceWithVariablesAndMetadata
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateResourceResponse parses an HTTP response from a UpdateResourceWithResponse call
-func ParseUpdateResourceResponse(rsp *http.Response) (*UpdateResourceResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateResourceResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ResourceWithVariablesAndMetadata
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetReleaseTargetsResponse parses an HTTP response from a GetReleaseTargetsWithResponse call
-func ParseGetReleaseTargetsResponse(rsp *http.Response) (*GetReleaseTargetsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetReleaseTargetsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []ReleaseTarget
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateSystemResponse parses an HTTP response from a CreateSystemWithResponse call
-func ParseCreateSystemResponse(rsp *http.Response) (*CreateSystemResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateSystemResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest System
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest System
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest struct {
-			Error *[]struct {
-				Code    CreateSystem400ErrorCode           `json:"code"`
-				Message string                             `json:"message"`
-				Path    []CreateSystem_400_Error_Path_Item `json:"path"`
-			} `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteSystemResponse parses an HTTP response from a DeleteSystemWithResponse call
-func ParseDeleteSystemResponse(rsp *http.Response) (*DeleteSystemResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteSystemResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Message *string `json:"message,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetSystemResponse parses an HTTP response from a GetSystemWithResponse call
-func ParseGetSystemResponse(rsp *http.Response) (*GetSystemResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetSystemResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Deployments *[]Deployment `json:"deployments,omitempty"`
-
-			// Description The description of the system
-			Description  *string        `json:"description,omitempty"`
-			Environments *[]Environment `json:"environments,omitempty"`
-
-			// Id The system ID
-			Id openapi_types.UUID `json:"id"`
-
-			// Name The name of the system
-			Name string `json:"name"`
-
-			// Slug The slug of the system
-			Slug string `json:"slug"`
-
-			// WorkspaceId The workspace ID of the system
-			WorkspaceId openapi_types.UUID `json:"workspaceId"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateSystemResponse parses an HTTP response from a UpdateSystemWithResponse call
-func ParseUpdateSystemResponse(rsp *http.Response) (*UpdateSystemResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateSystemResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest System
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteEnvironmentByNameResponse parses an HTTP response from a DeleteEnvironmentByNameWithResponse call
-func ParseDeleteEnvironmentByNameResponse(rsp *http.Response) (*DeleteEnvironmentByNameResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteEnvironmentByNameResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
 	}
 
 	return response, nil
@@ -12252,19 +3330,62 @@ func ParseGetWorkspaceBySlugResponse(rsp *http.Response) (*GetWorkspaceBySlugRes
 		}
 		response.JSON200 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
 		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
 		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteWorkspaceResponse parses an HTTP response from a DeleteWorkspaceWithResponse call
+func ParseDeleteWorkspaceResponse(rsp *http.Response) (*DeleteWorkspaceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteWorkspaceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -12296,19 +3417,83 @@ func ParseGetWorkspaceResponse(rsp *http.Response) (*GetWorkspaceResponse, error
 		}
 		response.JSON200 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
 		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
 		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateWorkspaceResponse parses an HTTP response from a UpdateWorkspaceWithResponse call
+func ParseUpdateWorkspaceResponse(rsp *http.Response) (*UpdateWorkspaceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateWorkspaceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Workspace
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -12335,12 +3520,220 @@ func ParseListDeploymentsResponse(rsp *http.Response) (*ListDeploymentsResponse,
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Data *[]Deployment `json:"data,omitempty"`
+			Items []DeploymentAndSystem `json:"items"`
+
+			// Limit Maximum number of items returned
+			Limit int `json:"limit"`
+
+			// Offset Number of items skipped
+			Offset int `json:"offset"`
+
+			// Total Total number of items available
+			Total int `json:"total"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpsertDeploymentResponse parses an HTTP response from a UpsertDeploymentWithResponse call
+func ParseUpsertDeploymentResponse(rsp *http.Response) (*UpsertDeploymentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpsertDeploymentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest Deployment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetDeploymentResponse parses an HTTP response from a GetDeploymentWithResponse call
+func ParseGetDeploymentResponse(rsp *http.Response) (*GetDeploymentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDeploymentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Deployment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListDeploymentVersionsResponse parses an HTTP response from a ListDeploymentVersionsWithResponse call
+func ParseListDeploymentVersionsResponse(rsp *http.Response) (*ListDeploymentVersionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListDeploymentVersionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Items []DeploymentVersion `json:"items"`
+
+			// Limit Maximum number of items returned
+			Limit int `json:"limit"`
+
+			// Offset Number of items skipped
+			Offset int `json:"offset"`
+
+			// Total Total number of items available
+			Total int `json:"total"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpsertDeploymentVersionResponse parses an HTTP response from a UpsertDeploymentVersionWithResponse call
+func ParseUpsertDeploymentVersionResponse(rsp *http.Response) (*UpsertDeploymentVersionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpsertDeploymentVersionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest DeploymentVersion
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpsertUserApprovalRecordResponse parses an HTTP response from a UpsertUserApprovalRecordWithResponse call
+func ParseUpsertUserApprovalRecordResponse(rsp *http.Response) (*UpsertUserApprovalRecordResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpsertUserApprovalRecordResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Success *bool `json:"success,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -12363,7 +3756,16 @@ func ParseListEnvironmentsResponse(rsp *http.Response) (*ListEnvironmentsRespons
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Data *[]Environment `json:"data,omitempty"`
+			Items []EnvironmentAndSystem `json:"items"`
+
+			// Limit Maximum number of items returned
+			Limit int `json:"limit"`
+
+			// Offset Number of items skipped
+			Offset int `json:"offset"`
+
+			// Total Total number of items available
+			Total int `json:"total"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -12375,59 +3777,81 @@ func ParseListEnvironmentsResponse(rsp *http.Response) (*ListEnvironmentsRespons
 	return response, nil
 }
 
-// ParseGetEventsByActionResponse parses an HTTP response from a GetEventsByActionWithResponse call
-func ParseGetEventsByActionResponse(rsp *http.Response) (*GetEventsByActionResponse, error) {
+// ParseUpsertEnvironmentResponse parses an HTTP response from a UpsertEnvironmentWithResponse call
+func ParseUpsertEnvironmentResponse(rsp *http.Response) (*UpsertEnvironmentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetEventsByActionResponse{
+	response := &UpsertEnvironmentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []Event
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest Environment
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest struct {
-			Error string `json:"error"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
+		response.JSON202 = &dest
 
 	}
 
 	return response, nil
 }
 
-// ParseDeletePolicyByNameResponse parses an HTTP response from a DeletePolicyByNameWithResponse call
-func ParseDeletePolicyByNameResponse(rsp *http.Response) (*DeletePolicyByNameResponse, error) {
+// ParseGetEnvironmentResponse parses an HTTP response from a GetEnvironmentWithResponse call
+func ParseGetEnvironmentResponse(rsp *http.Response) (*GetEnvironmentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeletePolicyByNameResponse{
+	response := &GetEnvironmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Environment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListPoliciesResponse parses an HTTP response from a ListPoliciesWithResponse call
+func ParseListPoliciesResponse(rsp *http.Response) (*ListPoliciesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListPoliciesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -12435,7 +3859,7 @@ func ParseDeletePolicyByNameResponse(rsp *http.Response) (*DeletePolicyByNameRes
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Success *bool `json:"success,omitempty"`
+			Policies *[]Policy `json:"policies,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -12443,13 +3867,88 @@ func ParseDeletePolicyByNameResponse(rsp *http.Response) (*DeletePolicyByNameRes
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
+		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpsertPolicyResponse parses an HTTP response from a UpsertPolicyWithResponse call
+func ParseUpsertPolicyResponse(rsp *http.Response) (*UpsertPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpsertPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Policy
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest Policy
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAllRelationshipsResponse parses an HTTP response from a GetAllRelationshipsWithResponse call
+func ParseGetAllRelationshipsResponse(rsp *http.Response) (*GetAllRelationshipsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAllRelationshipsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Items []RelationshipRule `json:"items"`
+
+			// Limit Maximum number of items returned
+			Limit int `json:"limit"`
+
+			// Offset Number of items skipped
+			Offset int `json:"offset"`
+
+			// Total Total number of items available
+			Total int `json:"total"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	}
 
@@ -12471,11 +3970,7 @@ func ParseUpsertResourceProviderResponse(rsp *http.Response) (*UpsertResourcePro
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Id          string `json:"id"`
-			Name        string `json:"name"`
-			WorkspaceId string `json:"workspaceId"`
-		}
+		var dest ResourceProvider
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -12486,24 +3981,22 @@ func ParseUpsertResourceProviderResponse(rsp *http.Response) (*UpsertResourcePro
 	return response, nil
 }
 
-// ParseListResourcesResponse parses an HTTP response from a ListResourcesWithResponse call
-func ParseListResourcesResponse(rsp *http.Response) (*ListResourcesResponse, error) {
+// ParseGetResourceProviderByNameResponse parses an HTTP response from a GetResourceProviderByNameWithResponse call
+func ParseGetResourceProviderByNameResponse(rsp *http.Response) (*GetResourceProviderByNameResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListResourcesResponse{
+	response := &GetResourceProviderByNameResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Resources *[]Resource `json:"resources,omitempty"`
-		}
+		var dest ResourceProvider
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -12514,15 +4007,41 @@ func ParseListResourcesResponse(rsp *http.Response) (*ListResourcesResponse, err
 	return response, nil
 }
 
-// ParseDeleteResourceByIdentifierResponse parses an HTTP response from a DeleteResourceByIdentifierWithResponse call
-func ParseDeleteResourceByIdentifierResponse(rsp *http.Response) (*DeleteResourceByIdentifierResponse, error) {
+// ParseSetResourceProvidersResourcesResponse parses an HTTP response from a SetResourceProvidersResourcesWithResponse call
+func ParseSetResourceProvidersResourcesResponse(rsp *http.Response) (*SetResourceProvidersResourcesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeleteResourceByIdentifierResponse{
+	response := &SetResourceProvidersResourcesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAllResourcesResponse parses an HTTP response from a GetAllResourcesWithResponse call
+func ParseGetAllResourcesResponse(rsp *http.Response) (*GetAllResourcesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAllResourcesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -12530,21 +4049,21 @@ func ParseDeleteResourceByIdentifierResponse(rsp *http.Response) (*DeleteResourc
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Success *bool `json:"success,omitempty"`
+			Items []Resource `json:"items"`
+
+			// Limit Maximum number of items returned
+			Limit int `json:"limit"`
+
+			// Offset Number of items skipped
+			Offset int `json:"offset"`
+
+			// Total Total number of items available
+			Total int `json:"total"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
 
 	}
 
@@ -12566,96 +4085,7 @@ func ParseGetResourceByIdentifierResponse(rsp *http.Response) (*GetResourceByIde
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Config        map[string]interface{} `json:"config"`
-			CreatedAt     time.Time              `json:"createdAt"`
-			DeletedAt     *time.Time             `json:"deletedAt"`
-			Id            openapi_types.UUID     `json:"id"`
-			Identifier    string                 `json:"identifier"`
-			Kind          string                 `json:"kind"`
-			Metadata      MetadataMap            `json:"metadata"`
-			Name          string                 `json:"name"`
-			ProviderId    *openapi_types.UUID    `json:"providerId,omitempty"`
-			Relationships *map[string]struct {
-				Reference string   `json:"reference"`
-				RuleId    string   `json:"ruleId"`
-				Target    Resource `json:"target"`
-				Type      string   `json:"type"`
-			} `json:"relationships,omitempty"`
-			UpdatedAt   time.Time          `json:"updatedAt"`
-			Variables   *VariableMap       `json:"variables,omitempty"`
-			Version     string             `json:"version"`
-			WorkspaceId openapi_types.UUID `json:"workspaceId"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest struct {
-			Error *string `json:"error,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetGroupedCountsResponse parses an HTTP response from a GetGroupedCountsWithResponse call
-func ParseGetGroupedCountsResponse(rsp *http.Response) (*GetGroupedCountsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetGroupedCountsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Combinations []struct {
-				Metadata  map[string]string `json:"metadata"`
-				Resources float32           `json:"resources"`
-			} `json:"combinations"`
-			Keys []string `json:"keys"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListSystemsResponse parses an HTTP response from a ListSystemsWithResponse call
-func ParseListSystemsResponse(rsp *http.Response) (*ListSystemsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListSystemsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Data *[]System `json:"data,omitempty"`
-		}
+		var dest Resource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

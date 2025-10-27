@@ -235,7 +235,7 @@ func AddToMetadata(metadata map[string]string, key string, value any) {
 	}
 }
 
-func UpsertToCtrlplane(ctx context.Context, resources []api.CreateResource, providerName string) error {
+func UpsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, providerName string) error {
 	apiURL := viper.GetString("url")
 	apiKey := viper.GetString("api-key")
 	workspaceId := viper.GetString("workspace")
@@ -245,7 +245,9 @@ func UpsertToCtrlplane(ctx context.Context, resources []api.CreateResource, prov
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	providerResp, err := ctrlplaneClient.UpsertResourceProviderWithResponse(ctx, workspaceId, providerName)
+	providerResp, err := ctrlplaneClient.UpsertResourceProviderWithResponse(ctx, workspaceId, api.UpsertResourceProviderJSONRequestBody{
+		Name: providerName,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to upsert resource provider: %w", err)
 	}
@@ -257,15 +259,15 @@ func UpsertToCtrlplane(ctx context.Context, resources []api.CreateResource, prov
 	providerId := providerResp.JSON200.Id
 	log.Info("Upserting resources", "provider", providerName, "count", len(resources))
 
-	setResp, err := ctrlplaneClient.SetResourceProvidersResourcesWithResponse(ctx, providerId, api.SetResourceProvidersResourcesJSONRequestBody{
+	setResp, err := ctrlplaneClient.SetResourceProvidersResourcesWithResponse(ctx, workspaceId, providerId, api.SetResourceProvidersResourcesJSONRequestBody{
 		Resources: resources,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to set resources: %w", err)
 	}
 
-	if setResp.JSON200 == nil {
-		return fmt.Errorf("failed to set resources: %s", setResp.Body)
+	if setResp.JSON202 == nil {
+		return fmt.Errorf("failed to set resources: %s", string(setResp.Body))
 	}
 
 	log.Info("Successfully synced resources", "count", len(resources))

@@ -10,6 +10,7 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/api/secretmanager/v1"
@@ -85,11 +86,11 @@ func initSecretManagerClient(ctx context.Context) (*secretmanager.Service, error
 }
 
 // processSecrets lists and processes all secrets
-func processSecrets(ctx context.Context, secretClient *secretmanager.Service, project string) ([]api.CreateResource, error) {
+func processSecrets(ctx context.Context, secretClient *secretmanager.Service, project string) ([]api.ResourceProviderResource, error) {
 	// Build the parent name for listing secrets
 	parent := fmt.Sprintf("projects/%s", project)
 
-	resources := []api.CreateResource{}
+	resources := []api.ResourceProviderResource{}
 	secretCount := 0
 	pageToken := ""
 
@@ -130,7 +131,7 @@ func processSecrets(ctx context.Context, secretClient *secretmanager.Service, pr
 }
 
 // processSecret handles processing of a single secret
-func processSecret(_ context.Context, secretClient *secretmanager.Service, secret *secretmanager.Secret, project string) (api.CreateResource, error) {
+func processSecret(_ context.Context, secretClient *secretmanager.Service, secret *secretmanager.Secret, project string) (api.ResourceProviderResource, error) {
 	// Extract secret name from full resource name
 	// Format: projects/{project}/secrets/{secret}
 	secretName := getResourceName(secret.Name)
@@ -174,7 +175,7 @@ func processSecret(_ context.Context, secretClient *secretmanager.Service, secre
 		secretName, project)
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"Google Cloud Console\": \"%s\" }", consoleUrl)
 
-	return api.CreateResource{
+	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/secret/v1",
 		Kind:       "GoogleSecret",
 		Name:       secretName,
@@ -334,7 +335,7 @@ func getResourceName(fullPath string) string {
 }
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, project, name *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, project, name *string) error {
 	if *name == "" {
 		*name = fmt.Sprintf("google-secrets-project-%s", *project)
 	}
@@ -348,7 +349,7 @@ func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, proj
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, *name)
+	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *name)
 	if err != nil {
 		return fmt.Errorf("failed to create resource provider: %w", err)
 	}

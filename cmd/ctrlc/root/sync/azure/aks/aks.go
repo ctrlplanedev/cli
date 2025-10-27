@@ -19,6 +19,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -159,8 +160,8 @@ func getDefaultSubscriptionID(ctx context.Context, cred azcore.TokenCredential) 
 	return "", fmt.Errorf("no subscriptions found")
 }
 
-func processClusters(ctx context.Context, cred azcore.TokenCredential, subscriptionID string, tenantID string) ([]api.CreateResource, error) {
-	var resources []api.CreateResource
+func processClusters(ctx context.Context, cred azcore.TokenCredential, subscriptionID string, tenantID string) ([]api.ResourceProviderResource, error) {
+	var resources []api.ResourceProviderResource
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	var syncErrors []error
@@ -211,7 +212,7 @@ func processClusters(ctx context.Context, cred azcore.TokenCredential, subscript
 	return resources, nil
 }
 
-func processCluster(_ context.Context, cluster *armcontainerservice.ManagedCluster, subscriptionID string, tenantID string) (api.CreateResource, error) {
+func processCluster(_ context.Context, cluster *armcontainerservice.ManagedCluster, subscriptionID string, tenantID string) (api.ResourceProviderResource, error) {
 	resourceGroup := extractResourceGroupFromID(*cluster.ID)
 	metadata := initClusterMetadata(cluster, subscriptionID, resourceGroup, tenantID)
 
@@ -229,7 +230,7 @@ func processCluster(_ context.Context, cluster *armcontainerservice.ManagedClust
 		endpoint = *cluster.Properties.Fqdn
 	}
 
-	return api.CreateResource{
+	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/kubernetes/cluster/v1",
 		Kind:       "AzureKubernetesService",
 		Name:       *cluster.Name,
@@ -409,26 +410,26 @@ func extractResourceGroupFromID(id string) string {
 	return ""
 }
 
-var relationshipRules = []api.CreateResourceRelationshipRule{
-	{
-		Reference:      "network",
-		Name:           "Azure Cluster Network",
-		DependencyType: api.ProvisionedIn,
+// var relationshipRules = []api.ResourceProviderResourceRelationshipRule{
+// 	{
+// 		Reference:      "network",
+// 		Name:           "Azure Cluster Network",
+// 		DependencyType: api.ProvisionedIn,
+//
+// 		SourceVersion: "ctrlplane.dev/kubernetes/cluster/v1",
+// 		SourceKind:    "AzureKubernetesService",
+//
+// 		TargetVersion: "ctrlplane.dev/network/v1",
+// 		TargetKind:    "AzureNetwork",
+//
+// 		MetadataKeysMatches: &[]api.MetadataKeyMatchConstraint{
+// 			{SourceKey: "azure/subscription", TargetKey: "azure/subscription"},
+// 			{SourceKey: "azure/resource-group", TargetKey: "azure/resource-group"},
+// 		},
+// 	},
+// }
 
-		SourceVersion: "ctrlplane.dev/kubernetes/cluster/v1",
-		SourceKind:    "AzureKubernetesService",
-
-		TargetVersion: "ctrlplane.dev/network/v1",
-		TargetKind:    "AzureNetwork",
-
-		MetadataKeysMatches: &[]api.MetadataKeyMatchConstraint{
-			{SourceKey: "azure/subscription", TargetKey: "azure/subscription"},
-			{SourceKey: "azure/resource-group", TargetKey: "azure/resource-group"},
-		},
-	},
-}
-
-func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, subscriptionID, name *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, subscriptionID, name *string) error {
 	if *name == "" {
 		*name = fmt.Sprintf("azure-aks-%s", *subscriptionID)
 	}
@@ -442,15 +443,15 @@ func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, subs
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, *name)
+	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *name)
 	if err != nil {
 		return fmt.Errorf("failed to create resource provider: %w", err)
 	}
 
-	err = rp.AddResourceRelationshipRule(ctx, relationshipRules)
-	if err != nil {
-		log.Error("Failed to add resource relationship rule", "name", *name, "error", err)
-	}
+	// err = rp.AddResourceRelationshipRule(ctx, relationshipRules)
+	// if err != nil {
+	// 	log.Error("Failed to add resource relationship rule", "name", *name, "error", err)
+	// }
 
 	upsertResp, err := rp.UpsertResource(ctx, resources)
 	if err != nil {

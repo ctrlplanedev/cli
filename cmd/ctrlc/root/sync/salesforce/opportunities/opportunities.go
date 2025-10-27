@@ -96,7 +96,7 @@ func NewSalesforceOpportunitiesCmd() *cobra.Command {
 }
 
 // processOpportunities queries and transforms opportunities
-func processOpportunities(ctx context.Context, sf *salesforce.Salesforce, metadataMappings map[string]string, limit int, listAllFields bool, whereClause string) ([]api.CreateResource, error) {
+func processOpportunities(ctx context.Context, sf *salesforce.Salesforce, metadataMappings map[string]string, limit int, listAllFields bool, whereClause string) ([]api.ResourceProviderResource, error) {
 	additionalFields := make([]string, 0, len(metadataMappings))
 	for _, fieldName := range metadataMappings {
 		additionalFields = append(additionalFields, fieldName)
@@ -110,7 +110,7 @@ func processOpportunities(ctx context.Context, sf *salesforce.Salesforce, metada
 
 	log.Info("Found Salesforce opportunities", "count", len(opportunities))
 
-	resources := []api.CreateResource{}
+	resources := []api.ResourceProviderResource{}
 	for _, opp := range opportunities {
 		resource := transformOpportunityToResource(opp, metadataMappings)
 		resources = append(resources, resource)
@@ -133,7 +133,7 @@ func formatCloseDate(closeDate any) string {
 	return closeDateStr
 }
 
-func transformOpportunityToResource(opportunity map[string]any, metadataMappings map[string]string) api.CreateResource {
+func transformOpportunityToResource(opportunity map[string]any, metadataMappings map[string]string) api.ResourceProviderResource {
 	metadata := map[string]string{}
 
 	common.AddToMetadata(metadata, "opportunity/id", opportunity["Id"])
@@ -201,7 +201,7 @@ func transformOpportunityToResource(opportunity map[string]any, metadataMappings
 		},
 	}
 
-	return api.CreateResource{
+	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/crm/opportunity/v1",
 		Kind:       "SalesforceOpportunity",
 		Name:       fmt.Sprintf("%v", opportunity["Name"]),

@@ -16,6 +16,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -97,7 +98,7 @@ func NewSyncEC2Cmd() *cobra.Command {
 				return fmt.Errorf("failed to describe instances: %w", err)
 			}
 
-			resources := []api.CreateResource{}
+			resources := []api.ResourceProviderResource{}
 			for _, reservation := range result.Reservations {
 				accountId := *reservation.OwnerId
 				for _, instance := range reservation.Instances {
@@ -231,7 +232,7 @@ func NewSyncEC2Cmd() *cobra.Command {
 
 					// Get ARN for the instance
 					arn := fmt.Sprintf("arn:aws:ec2:%s:%s:instance/%s", region, accountId, *instance.InstanceId)
-					resources = append(resources, api.CreateResource{
+					resources = append(resources, api.ResourceProviderResource{
 						Version:    "compute/v1",
 						Kind:       "Instance",
 						Name:       name,
@@ -252,7 +253,7 @@ func NewSyncEC2Cmd() *cobra.Command {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
 
-			rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, name)
+			rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, name)
 			if err != nil {
 				return fmt.Errorf("failed to create resource provider: %w", err)
 			}

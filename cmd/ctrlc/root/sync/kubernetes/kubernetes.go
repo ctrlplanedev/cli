@@ -8,6 +8,7 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	appsv1 "k8s.io/api/apps/v1"
@@ -16,7 +17,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func processNamespace(_ context.Context, clusterName string, namespace corev1.Namespace) api.CreateResource {
+func processNamespace(_ context.Context, clusterName string, namespace corev1.Namespace) api.ResourceProviderResource {
 	metadata := map[string]string{}
 	for key, value := range namespace.Labels {
 		metadata[fmt.Sprintf("tags/%s", key)] = value
@@ -27,7 +28,7 @@ func processNamespace(_ context.Context, clusterName string, namespace corev1.Na
 	metadata["namespace/api-version"] = namespace.APIVersion
 	metadata["namespace/status"] = string(namespace.Status.Phase)
 
-	return api.CreateResource{
+	return api.ResourceProviderResource{
 		Version: "ctrlplane.dev/kubernetes/namespace/v1",
 		Kind: "KubernetesNamespace",
 		Name: fmt.Sprintf("%s/%s", clusterName, namespace.Name),
@@ -41,7 +42,7 @@ func processNamespace(_ context.Context, clusterName string, namespace corev1.Na
 	}
 }
 
-func processDeployment(_ context.Context, clusterName string, deployment appsv1.Deployment) api.CreateResource {
+func processDeployment(_ context.Context, clusterName string, deployment appsv1.Deployment) api.ResourceProviderResource {
 	metadata := map[string]string{}
 	for key, value := range deployment.Labels {
 		metadata[fmt.Sprintf("tags/%s", key)] = value
@@ -51,7 +52,7 @@ func processDeployment(_ context.Context, clusterName string, deployment appsv1.
 	metadata["deployment/api-version"] = deployment.APIVersion
 	metadata["deployment/namespace"] = deployment.Namespace
 
-	return api.CreateResource{
+	return api.ResourceProviderResource{
 		Version: "ctrlplane.dev/kubernetes/deployment/v1",
 		Kind: "KubernetesDeployment",
 		Name: fmt.Sprintf("%s/%s/%s", clusterName, deployment.Namespace, deployment.Name),
@@ -118,7 +119,7 @@ func NewSyncKubernetesCmd() *cobra.Command {
 				return err
 			}
 
-			resources := []api.CreateResource{}
+			resources := []api.ResourceProviderResource{}
 			for _, namespace := range namespaces.Items {
 				resource := processNamespace(context.Background(), clusterName, namespace)
 				resources = append(resources, resource)
@@ -159,7 +160,7 @@ func NewSyncKubernetesCmd() *cobra.Command {
 }
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctrlplaneClient *api.ClientWithResponses, resources []api.CreateResource, clusterIdentifier string, clusterName string, providerName string) error {
+func upsertToCtrlplane(ctrlplaneClient *api.ClientWithResponses, resources []api.ResourceProviderResource, clusterIdentifier string, clusterName string, providerName string) error {
 	ctx := context.Background()
 	workspaceId := viper.GetString("workspace")
 
@@ -169,7 +170,7 @@ func upsertToCtrlplane(ctrlplaneClient *api.ClientWithResponses, resources []api
 
 	log.Info("Using provider name", "provider", providerName)
 
-	rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, providerName)
+	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, providerName)
 	if err != nil {
 		return fmt.Errorf("failed to create resource provider: %w", err)
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"helm.sh/helm/v3/pkg/action"
@@ -25,12 +26,12 @@ type clusterConfig struct {
 // The clusterName is used to:
 // - Create unique identifiers across clusters (cluster/namespace/release)
 // - Tag resources with their source cluster for filtering and relationships
-func helmReleaseToResource(release *release.Release, clusterName string) api.CreateResource {
+func helmReleaseToResource(release *release.Release, clusterName string) api.ResourceProviderResource {
 	metadata := buildHelmMetadata(release, clusterName)
 	config := buildHelmConfig(release)
 	identifier := fmt.Sprintf("%s/%s/%s", clusterName, release.Namespace, release.Name)
 
-	return api.CreateResource{
+	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/helm/release/v1",
 		Kind:       "HelmRelease",
 		Name:       identifier, // Use cluster/namespace/release for uniqueness
@@ -232,8 +233,8 @@ func fetchHelmReleases(kubeConfig *rest.Config, namespace string) ([]*release.Re
 }
 
 // convertReleasesToResources transforms Helm releases into Ctrlplane resource format
-func convertReleasesToResources(releases []*release.Release, clusterName string) []api.CreateResource {
-	resources := make([]api.CreateResource, 0, len(releases))
+func convertReleasesToResources(releases []*release.Release, clusterName string) []api.ResourceProviderResource {
+	resources := make([]api.ResourceProviderResource, 0, len(releases))
 	for _, release := range releases {
 		resource := helmReleaseToResource(release, clusterName)
 		resources = append(resources, resource)
@@ -243,7 +244,7 @@ func convertReleasesToResources(releases []*release.Release, clusterName string)
 
 // inheritClusterMetadata copies non-tag metadata from the parent cluster resource to all Helm releases.
 // This is useful for propagating environment labels, region info, etc. from the cluster to its workloads.
-func inheritClusterMetadata(ctx context.Context, client *api.ClientWithResponses, workspaceId, clusterIdentifier string, resources []api.CreateResource) {
+func inheritClusterMetadata(ctx context.Context, client *api.ClientWithResponses, workspaceId, clusterIdentifier string, resources []api.ResourceProviderResource) {
 	clusterResource, err := client.GetResourceByIdentifierWithResponse(ctx, workspaceId, clusterIdentifier)
 	if err != nil || clusterResource.JSON200 == nil {
 		log.Debug("Could not fetch cluster resource for metadata inheritance", "identifier", clusterIdentifier)
@@ -270,7 +271,7 @@ func inheritClusterMetadata(ctx context.Context, client *api.ClientWithResponses
 }
 
 // upsertResourcesToCtrlplane sends the resources to Ctrlplane via the resource provider API
-func upsertResourcesToCtrlplane(ctx context.Context, client *api.ClientWithResponses, workspaceId string, resources []api.CreateResource, clusterName, providerName string) error {
+func upsertResourcesToCtrlplane(ctx context.Context, client *api.ClientWithResponses, workspaceId string, resources []api.ResourceProviderResource, clusterName, providerName string) error {
 	// Generate default provider name if not specified
 	if providerName == "" {
 		providerName = fmt.Sprintf("helm-cluster-%s", clusterName)
@@ -279,7 +280,7 @@ func upsertResourcesToCtrlplane(ctx context.Context, client *api.ClientWithRespo
 	log.Info("Upserting to Ctrlplane", "provider", providerName, "resources", len(resources))
 
 	// Create or get resource provider
-	resourceProvider, err := api.NewResourceProvider(client, workspaceId, providerName)
+	resourceProvider, err := resourceprovider.New(client, workspaceId, providerName)
 	if err != nil {
 		return fmt.Errorf("failed to create resource provider: %w", err)
 	}

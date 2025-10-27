@@ -3,6 +3,10 @@ package networks
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+	"sync"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
@@ -13,11 +17,9 @@ import (
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/azure/common"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/kinds"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"os"
-	"strconv"
-	"sync"
 )
 
 func NewSyncNetworksCmd() *cobra.Command {
@@ -156,8 +158,8 @@ func getDefaultSubscriptionID(ctx context.Context, cred azcore.TokenCredential) 
 
 func processNetworks(
 	ctx context.Context, cred azcore.TokenCredential, subscriptionID string, tenantID string,
-) ([]api.CreateResource, error) {
-	var allResources []api.CreateResource
+) ([]api.ResourceProviderResource, error) {
+	var allResources []api.ResourceProviderResource
 	var resourceGroups []common.ResourceGroupInfo
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -219,8 +221,8 @@ func processNetworks(
 
 func processNetwork(
 	_ context.Context, network *armnetwork.VirtualNetwork, resourceGroup string, subscriptionID string, tenantID string,
-) ([]api.CreateResource, error) {
-	resources := make([]api.CreateResource, 0)
+) ([]api.ResourceProviderResource, error) {
+	resources := make([]api.ResourceProviderResource, 0)
 	networkName := network.Name
 	metadata := initNetworkMetadata(network, resourceGroup, subscriptionID, tenantID)
 
@@ -228,7 +230,7 @@ func processNetwork(
 	consoleUrl := getNetworkConsoleUrl(resourceGroup, subscriptionID, *networkName)
 	metadata[kinds.CtrlplaneMetadataLinks] = fmt.Sprintf("{ \"Azure Portal\": \"%s\" }", consoleUrl)
 
-	resources = append(resources, api.CreateResource{
+	resources = append(resources, api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/network/v1",
 		Kind:       "AzureNetwork",
 		Name:       *networkName,
@@ -263,7 +265,7 @@ func processNetwork(
 
 func processSubnet(
 	network *armnetwork.VirtualNetwork, subnet *armnetwork.Subnet, resourceGroup string, subscriptionID string, tenantID string,
-) (api.CreateResource, error) {
+) (api.ResourceProviderResource, error) {
 	metadata := initSubnetMetadata(network, subnet, resourceGroup, subscriptionID, tenantID)
 	networkName := network.Name
 	subnetName := subnet.Name
@@ -272,7 +274,7 @@ func processSubnet(
 	consoleUrl := getSubnetConsoleUrl(resourceGroup, subscriptionID, *networkName)
 	metadata[kinds.CtrlplaneMetadataLinks] = fmt.Sprintf("{ \"Azure Portal\": \"%s\" }", consoleUrl)
 
-	return api.CreateResource{
+	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/network/subnet/v1",
 		Kind:       "AzureSubnet",
 		Name:       *subnetName,
@@ -331,7 +333,7 @@ func initSubnetMetadata(network *armnetwork.VirtualNetwork, subnet *armnetwork.S
 
 	privateAccess := false
 	if subnet.Properties != nil {
-		if subnet.Properties.PrivateEndpoints != nil && len(subnet.Properties.PrivateEndpoints) > 0 {
+		if len(subnet.Properties.PrivateEndpoints) > 0 {
 			privateAccess = true
 		}
 	}
@@ -403,7 +405,7 @@ func getSubnetState(subnet *armnetwork.Subnet) string {
 	return ""
 }
 
-func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, subscriptionID, name *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, subscriptionID, name *string) error {
 	if *name == "" {
 		*name = fmt.Sprintf("azure-networks-%s", *subscriptionID)
 	}
@@ -417,7 +419,7 @@ func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, subs
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, *name)
+	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *name)
 	if err != nil {
 		return fmt.Errorf("failed to create resource provider: %w", err)
 	}

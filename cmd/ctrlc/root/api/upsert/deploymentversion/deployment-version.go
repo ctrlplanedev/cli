@@ -14,18 +14,18 @@ import (
 	"github.com/spf13/viper"
 )
 
-func safeConvertToDeploymentVersionStatus(status string) (*api.UpsertDeploymentVersionJSONBodyStatus, error) {
+func safeConvertToDeploymentVersionStatus(status string) (*api.DeploymentVersionStatus, error) {
 	statusLower := strings.ToLower(status)
 	if statusLower == "ready" || statusLower == "" {
-		s := api.UpsertDeploymentVersionJSONBodyStatusReady
+		s := api.DeploymentVersionStatusReady
 		return &s, nil
 	}
 	if statusLower == "building" {
-		s := api.UpsertDeploymentVersionJSONBodyStatusBuilding
+		s := api.DeploymentVersionStatusBuilding
 		return &s, nil
 	}
 	if statusLower == "failed" {
-		s := api.UpsertDeploymentVersionJSONBodyStatusFailed
+		s := api.DeploymentVersionStatusFailed
 		return &s, nil
 	}
 	return nil, fmt.Errorf("invalid deployment version status: %s", status)
@@ -33,6 +33,7 @@ func safeConvertToDeploymentVersionStatus(status string) (*api.UpsertDeploymentV
 
 func NewUpsertDeploymentVersionCmd() *cobra.Command {
 	var tag string
+	var workspace string
 	var deploymentID []string
 	var metadata map[string]string
 	var configArray map[string]string
@@ -43,18 +44,18 @@ func NewUpsertDeploymentVersionCmd() *cobra.Command {
 	var message string
 
 	cmd := &cobra.Command{
-		Use:   "deployment-version [flags]",
+		Use:   "version [flags]",
 		Short: "Upsert a deployment version",
 		Long:  `Upsert a deployment version with the specified tag and configuration.`,
 		Example: heredoc.Doc(`
 			# Upsert a deployment version
-			$ ctrlc upsert deployment-version --tag v1.0.0 --deployment 1234567890
+			$ ctrlc upsert version --tag v1.0.0 --workspace 00000000-0000-0000-0000-000000000000 --deployment 1234567890
 
 			# Upsert a deployment version using Go template syntax
-			$ ctrlc upsert deployment-version --tag v1.0.0 --deployment 1234567890 --template='{{.status.phase}}'
+			$ ctrlc upsert version --tag v1.0.0 --workspace my-workspace --deployment 1234567890 --template='{{.status.phase}}'
 
-			# Upsert a new deployment version for multiple deployments
-			$ ctrlc upsert deployment-version --tag v1.0.0 --deployment 1234567890 --deployment 0987654321
+			# Upsert a new version for multiple deployments
+			$ ctrlc upsert version --tag v1.0.0 --workspace my-workspace --deployment 1234567890 --deployment 0987654321
 		`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			apiURL := viper.GetString("url")
@@ -86,10 +87,12 @@ func NewUpsertDeploymentVersionCmd() *cobra.Command {
 				return fmt.Errorf("failed to convert deployment version status: %w", err)
 			}
 
+			workspaceID := client.GetWorkspaceID(cmd.Context(), workspace)
+
 			config := cliutil.ConvertConfigArrayToNestedMap(configArray)
 			var response *http.Response
 			for _, id := range deploymentID {
-				resp, err := client.UpsertDeploymentVersion(cmd.Context(), api.UpsertDeploymentVersionJSONRequestBody{
+				resp, err := client.UpsertDeploymentVersion(cmd.Context(), workspaceID.String(), id, api.UpsertDeploymentVersionJSONRequestBody{
 					Tag:          tag,
 					DeploymentId: id,
 					Metadata:     &metadata,
@@ -97,7 +100,6 @@ func NewUpsertDeploymentVersionCmd() *cobra.Command {
 					Config:       &config,
 					Name:         &name,
 					Status:       stat,
-					Message:      &message,
 				})
 				if err != nil {
 					return fmt.Errorf("failed to create deployment version: %w", err)
@@ -111,16 +113,18 @@ func NewUpsertDeploymentVersionCmd() *cobra.Command {
 
 	// Add flags
 	cmd.Flags().StringVarP(&tag, "tag", "t", "", "Tag of the deployment version (required)")
+	cmd.Flags().StringVarP(&workspace, "workspace", "w", "", "Workspace (ID or slug) of the workspace (required)")
 	cmd.Flags().StringArrayVarP(&deploymentID, "deployment", "d", []string{}, "IDs of the deployments (required, supports multiple)")
 	cmd.Flags().StringToStringVarP(&metadata, "metadata", "m", make(map[string]string), "Metadata key-value pairs (e.g. --metadata key=value)")
 	cmd.Flags().StringToStringVarP(&configArray, "config", "c", make(map[string]string), "Config key-value pairs with nested values (can be specified multiple times)")
 	cmd.Flags().StringToStringVarP(&links, "link", "l", make(map[string]string), "Links key-value pairs (can be specified multiple times)")
 	cmd.Flags().StringVarP(&createdAt, "created-at", "r", "", "Created at timestamp (e.g. --created-at 2024-01-01T00:00:00Z) for the deployment version")
 	cmd.Flags().StringVarP(&name, "name", "n", "", "Name of the deployment version")
-	cmd.Flags().StringVarP(&status, "status", "s", string(api.UpsertDeploymentVersionJSONBodyStatusReady), "Status of the deployment version (one of: ready, building, failed)")
+	cmd.Flags().StringVarP(&status, "status", "s", string(api.DeploymentVersionStatusReady), "Status of the deployment version (one of: ready, building, failed)")
 	cmd.Flags().StringVar(&message, "message", "", "Message of the deployment version")
 
 	cmd.MarkFlagRequired("tag")
+	cmd.MarkFlagRequired("workspace")
 	cmd.MarkFlagRequired("deployment")
 
 	return cmd

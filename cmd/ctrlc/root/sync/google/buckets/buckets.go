@@ -11,6 +11,7 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/api/storage/v1"
@@ -92,7 +93,7 @@ func initStorageClient(ctx context.Context) (*storage.Service, error) {
 }
 
 // processBuckets lists and processes all Storage buckets in the project
-func processBuckets(ctx context.Context, storageClient *storage.Service, project string) ([]api.CreateResource, error) {
+func processBuckets(ctx context.Context, storageClient *storage.Service, project string) ([]api.ResourceProviderResource, error) {
 	// List all buckets in the project
 	buckets, err := storageClient.Buckets.List(project).Do()
 	if err != nil {
@@ -101,7 +102,7 @@ func processBuckets(ctx context.Context, storageClient *storage.Service, project
 
 	log.Info("Found buckets", "count", len(buckets.Items))
 
-	resources := []api.CreateResource{}
+	resources := []api.ResourceProviderResource{}
 	for _, bucket := range buckets.Items {
 		resource, err := processBucket(ctx, storageClient, bucket, project)
 		if err != nil {
@@ -115,7 +116,7 @@ func processBuckets(ctx context.Context, storageClient *storage.Service, project
 }
 
 // processBucket handles processing of a single Storage bucket
-func processBucket(_ context.Context, storageClient *storage.Service, bucket *storage.Bucket, project string) (api.CreateResource, error) {
+func processBucket(_ context.Context, storageClient *storage.Service, bucket *storage.Bucket, project string) (api.ResourceProviderResource, error) {
 	metadata := initBucketMetadata(bucket, project)
 
 	// Process IAM policy if available
@@ -135,7 +136,7 @@ func processBucket(_ context.Context, storageClient *storage.Service, bucket *st
 		bucket.Name, project)
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"Google Cloud Console\": \"%s\" }", consoleUrl)
 
-	return api.CreateResource{
+	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/storage/v1",
 		Kind:       "GoogleBucket",
 		Name:       bucket.Name,
@@ -459,7 +460,7 @@ func processBucketStats(storageClient *storage.Service, bucket *storage.Bucket, 
 }
 
 // upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, project, name *string) error {
+func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, project, name *string) error {
 	if *name == "" {
 		*name = fmt.Sprintf("google-buckets-project-%s", *project)
 	}
@@ -473,7 +474,7 @@ func upsertToCtrlplane(ctx context.Context, resources []api.CreateResource, proj
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	rp, err := api.NewResourceProvider(ctrlplaneClient, workspaceId, *name)
+	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *name)
 	if err != nil {
 		return fmt.Errorf("failed to create resource provider: %w", err)
 	}
