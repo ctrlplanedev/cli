@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/api/get"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/api/upsert"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -41,7 +42,8 @@ func NewAPICmd() *cobra.Command {
 	}
 	cmd.PersistentFlags().String("template", "", "Template for output format. Accepts Go template format (e.g. --template='{{.status.phase}}')")
 	cmd.PersistentFlags().String("format", "json", "Output format. Accepts 'json', 'yaml', or 'github-action'")
-
+	
+	cmd.AddCommand(get.NewGetCmd())
 	cmd.AddCommand(upsert.NewUpsertCmd())
 
 	return cmd
