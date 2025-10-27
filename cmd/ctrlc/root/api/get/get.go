@@ -1,7 +1,7 @@
 package get
 
 import (
-	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/api/upsert/deploymentversion"
+	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/api/get/resources"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +15,7 @@ func NewGetCmd() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(deploymentversion.NewUpsertDeploymentVersionCmd())
+	cmd.AddCommand(resources.NewResourcesCmd())
 
 	return cmd
 }

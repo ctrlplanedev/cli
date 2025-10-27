@@ -6,7 +6,6 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/agent"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/api"
-	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/apply"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/config"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/run"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync"
@@ -51,7 +50,6 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(sync.NewSyncCmd())
 	cmd.AddCommand(run.NewRunCmd())
 	cmd.AddCommand(version.NewVersionCmd())
-	cmd.AddCommand(apply.NewApplyCmd())
 
 	return cmd
 }

@@ -5,3 +5,5 @@ test.bash
 .idea
 .vscode
 *.test.yaml
+
+switch.sh

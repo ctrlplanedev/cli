@@ -405,14 +405,16 @@ func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderReso
 
 	apiURL := viper.GetString("url")
 	apiKey := viper.GetString("api-key")
-	workspaceId := viper.GetString("workspace")
+	workspace := viper.GetString("workspace")
 
 	ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *name)
+	workspaceId := ctrlplaneClient.GetWorkspaceID(ctx, workspace)
+
+	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId.String(), *name)
 	if err != nil {
 		return fmt.Errorf("failed to create resource provider: %w", err)
 	}
