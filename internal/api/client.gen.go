@@ -52,6 +52,11 @@ const (
 	Successful          JobStatus = "successful"
 )
 
+// Defines values for NullValue.
+const (
+	True NullValue = true
+)
+
 // Defines values for RelatableEntityType.
 const (
 	RelatableEntityTypeDeployment  RelatableEntityType = "deployment"
@@ -67,6 +72,9 @@ type AnyApprovalRule struct {
 // ApprovalStatus defines model for ApprovalStatus.
 type ApprovalStatus string
 
+// BooleanValue defines model for BooleanValue.
+type BooleanValue = bool
+
 // CelMatcher defines model for CelMatcher.
 type CelMatcher struct {
 	Cel string `json:"cel"`
@@ -75,6 +83,74 @@ type CelMatcher struct {
 // CelSelector defines model for CelSelector.
 type CelSelector struct {
 	Cel string `json:"cel"`
+}
+
+// CreateDeploymentRequest defines model for CreateDeploymentRequest.
+type CreateDeploymentRequest struct {
+	Description      *string                 `json:"description,omitempty"`
+	JobAgentConfig   *map[string]interface{} `json:"jobAgentConfig,omitempty"`
+	JobAgentId       *string                 `json:"jobAgentId,omitempty"`
+	Name             string                  `json:"name"`
+	ResourceSelector *Selector               `json:"resourceSelector,omitempty"`
+	Slug             string                  `json:"slug"`
+	SystemId         string                  `json:"systemId"`
+}
+
+// CreateDeploymentVersionRequest defines model for CreateDeploymentVersionRequest.
+type CreateDeploymentVersionRequest struct {
+	Config         *map[string]interface{} `json:"config,omitempty"`
+	CreatedAt      *time.Time              `json:"createdAt,omitempty"`
+	JobAgentConfig *map[string]interface{} `json:"jobAgentConfig,omitempty"`
+	Metadata       *map[string]string      `json:"metadata,omitempty"`
+	Name           string                  `json:"name"`
+	Status         DeploymentVersionStatus `json:"status"`
+	Tag            string                  `json:"tag"`
+}
+
+// CreateEnvironmentRequest defines model for CreateEnvironmentRequest.
+type CreateEnvironmentRequest struct {
+	Description      *string   `json:"description,omitempty"`
+	Name             string    `json:"name"`
+	ResourceSelector *Selector `json:"resourceSelector,omitempty"`
+	SystemId         string    `json:"systemId"`
+}
+
+// CreatePolicyRequest defines model for CreatePolicyRequest.
+type CreatePolicyRequest struct {
+	Description *string `json:"description,omitempty"`
+	Enabled     *bool   `json:"enabled,omitempty"`
+
+	// Metadata Arbitrary metadata for the policy (record<string, string>)
+	Metadata  *map[string]string      `json:"metadata,omitempty"`
+	Name      string                  `json:"name"`
+	Priority  *int                    `json:"priority,omitempty"`
+	Rules     *[]PolicyRule           `json:"rules,omitempty"`
+	Selectors *[]PolicyTargetSelector `json:"selectors,omitempty"`
+}
+
+// CreateRelationshipRuleRequest defines model for CreateRelationshipRuleRequest.
+type CreateRelationshipRuleRequest struct {
+	Description      *string                               `json:"description,omitempty"`
+	FromSelector     *Selector                             `json:"fromSelector,omitempty"`
+	FromType         RelatableEntityType                   `json:"fromType"`
+	Matcher          CreateRelationshipRuleRequest_Matcher `json:"matcher"`
+	Metadata         map[string]string                     `json:"metadata"`
+	Name             string                                `json:"name"`
+	Reference        string                                `json:"reference"`
+	RelationshipType string                                `json:"relationshipType"`
+	ToSelector       *Selector                             `json:"toSelector,omitempty"`
+	ToType           RelatableEntityType                   `json:"toType"`
+}
+
+// CreateRelationshipRuleRequest_Matcher defines model for CreateRelationshipRuleRequest.Matcher.
+type CreateRelationshipRuleRequest_Matcher struct {
+	union json.RawMessage
+}
+
+// CreateSystemRequest defines model for CreateSystemRequest.
+type CreateSystemRequest struct {
+	Description *string `json:"description,omitempty"`
+	Name        string  `json:"name"`
 }
 
 // CreateWorkspaceRequest defines model for CreateWorkspaceRequest.
@@ -140,7 +216,6 @@ type EnvironmentAndSystem struct {
 // EnvironmentProgressionRule defines model for EnvironmentProgressionRule.
 type EnvironmentProgressionRule struct {
 	DependsOnEnvironmentSelector Selector `json:"dependsOnEnvironmentSelector"`
-	Id                           string   `json:"id"`
 
 	// MaximumAgeHours Maximum age of dependency deployment before blocking progression (prevents stale promotions)
 	MaximumAgeHours *int32 `json:"maximumAgeHours,omitempty"`
@@ -148,7 +223,6 @@ type EnvironmentProgressionRule struct {
 	// MinimumSockTimeMinutes Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
 	MinimumSockTimeMinutes   *int32       `json:"minimumSockTimeMinutes,omitempty"`
 	MinimumSuccessPercentage *float32     `json:"minimumSuccessPercentage,omitempty"`
-	PolicyId                 string       `json:"policyId"`
 	SuccessStatuses          *[]JobStatus `json:"successStatuses,omitempty"`
 }
 
@@ -169,12 +243,62 @@ type ErrorResponse struct {
 	Error *string `json:"error,omitempty"`
 }
 
+// GradualRolloutRule defines model for GradualRolloutRule.
+type GradualRolloutRule struct {
+	Id                string `json:"id"`
+	PolicyId          string `json:"policyId"`
+	TimeScaleInterval int32  `json:"timeScaleInterval"`
+}
+
+// IntegerValue defines model for IntegerValue.
+type IntegerValue = int
+
+// Job defines model for Job.
+type Job struct {
+	CompletedAt    *time.Time             `json:"completedAt,omitempty"`
+	CreatedAt      time.Time              `json:"createdAt"`
+	ExternalId     *string                `json:"externalId,omitempty"`
+	Id             string                 `json:"id"`
+	JobAgentConfig map[string]interface{} `json:"jobAgentConfig"`
+	JobAgentId     string                 `json:"jobAgentId"`
+	Metadata       map[string]string      `json:"metadata"`
+	ReleaseId      string                 `json:"releaseId"`
+	StartedAt      *time.Time             `json:"startedAt,omitempty"`
+	Status         JobStatus              `json:"status"`
+	UpdatedAt      time.Time              `json:"updatedAt"`
+}
+
 // JobStatus defines model for JobStatus.
 type JobStatus string
+
+// JobWithRelease defines model for JobWithRelease.
+type JobWithRelease struct {
+	Deployment  *Deployment  `json:"deployment,omitempty"`
+	Environment *Environment `json:"environment,omitempty"`
+	Job         Job          `json:"job"`
+	Release     Release      `json:"release"`
+	Resource    *Resource    `json:"resource,omitempty"`
+}
 
 // JsonSelector defines model for JsonSelector.
 type JsonSelector struct {
 	Json map[string]interface{} `json:"json"`
+}
+
+// LiteralValue defines model for LiteralValue.
+type LiteralValue struct {
+	union json.RawMessage
+}
+
+// NullValue defines model for NullValue.
+type NullValue bool
+
+// NumberValue defines model for NumberValue.
+type NumberValue = float32
+
+// ObjectValue defines model for ObjectValue.
+type ObjectValue struct {
+	Object map[string]interface{} `json:"object"`
 }
 
 // Policy defines model for Policy.
@@ -198,6 +322,7 @@ type PolicyRule struct {
 	AnyApproval            *AnyApprovalRule            `json:"anyApproval,omitempty"`
 	CreatedAt              string                      `json:"createdAt"`
 	EnvironmentProgression *EnvironmentProgressionRule `json:"environmentProgression,omitempty"`
+	GradualRollout         *GradualRolloutRule         `json:"gradualRollout,omitempty"`
 	Id                     string                      `json:"id"`
 	PolicyId               string                      `json:"policyId"`
 }
@@ -232,6 +357,22 @@ type RelationshipRule struct {
 // RelationshipRule_Matcher defines model for RelationshipRule.Matcher.
 type RelationshipRule_Matcher struct {
 	union json.RawMessage
+}
+
+// Release defines model for Release.
+type Release struct {
+	CreatedAt          string                  `json:"createdAt"`
+	EncryptedVariables []string                `json:"encryptedVariables"`
+	ReleaseTarget      ReleaseTarget           `json:"releaseTarget"`
+	Variables          map[string]LiteralValue `json:"variables"`
+	Version            DeploymentVersion       `json:"version"`
+}
+
+// ReleaseTarget defines model for ReleaseTarget.
+type ReleaseTarget struct {
+	DeploymentId  string `json:"deploymentId"`
+	EnvironmentId string `json:"environmentId"`
+	ResourceId    string `json:"resourceId"`
 }
 
 // Resource defines model for Resource.
@@ -280,11 +421,15 @@ type Selector struct {
 	union json.RawMessage
 }
 
+// StringValue defines model for StringValue.
+type StringValue = string
+
 // System defines model for System.
 type System struct {
 	Description *string `json:"description,omitempty"`
 	Id          string  `json:"id"`
 	Name        string  `json:"name"`
+	Slug        string  `json:"slug"`
 	WorkspaceId string  `json:"workspaceId"`
 }
 
@@ -308,18 +453,6 @@ type UpsertDeploymentRequest struct {
 	SystemId         string                  `json:"systemId"`
 }
 
-// UpsertDeploymentVersionRequest defines model for UpsertDeploymentVersionRequest.
-type UpsertDeploymentVersionRequest struct {
-	Config         *map[string]interface{}  `json:"config,omitempty"`
-	CreatedAt      *time.Time               `json:"createdAt,omitempty"`
-	DeploymentId   string                   `json:"deploymentId"`
-	JobAgentConfig *map[string]interface{}  `json:"jobAgentConfig,omitempty"`
-	Metadata       *map[string]string       `json:"metadata,omitempty"`
-	Name           *string                  `json:"name,omitempty"`
-	Status         *DeploymentVersionStatus `json:"status,omitempty"`
-	Tag            string                   `json:"tag"`
-}
-
 // UpsertEnvironmentRequest defines model for UpsertEnvironmentRequest.
 type UpsertEnvironmentRequest struct {
 	Description      *string   `json:"description,omitempty"`
@@ -341,6 +474,25 @@ type UpsertPolicyRequest struct {
 	Selectors *[]PolicyTargetSelector `json:"selectors,omitempty"`
 }
 
+// UpsertRelationshipRuleRequest defines model for UpsertRelationshipRuleRequest.
+type UpsertRelationshipRuleRequest struct {
+	Description      *string                               `json:"description,omitempty"`
+	FromSelector     *Selector                             `json:"fromSelector,omitempty"`
+	FromType         RelatableEntityType                   `json:"fromType"`
+	Matcher          UpsertRelationshipRuleRequest_Matcher `json:"matcher"`
+	Metadata         map[string]string                     `json:"metadata"`
+	Name             string                                `json:"name"`
+	Reference        string                                `json:"reference"`
+	RelationshipType string                                `json:"relationshipType"`
+	ToSelector       *Selector                             `json:"toSelector,omitempty"`
+	ToType           RelatableEntityType                   `json:"toType"`
+}
+
+// UpsertRelationshipRuleRequest_Matcher defines model for UpsertRelationshipRuleRequest.Matcher.
+type UpsertRelationshipRuleRequest_Matcher struct {
+	union json.RawMessage
+}
+
 // UpsertResourceProviderRequest defines model for UpsertResourceProviderRequest.
 type UpsertResourceProviderRequest struct {
 	Id string `json:"id"`
@@ -348,6 +500,12 @@ type UpsertResourceProviderRequest struct {
 	// Metadata Arbitrary metadata for the resource provider (record<string, string>)
 	Metadata *map[string]string `json:"metadata,omitempty"`
 	Name     string             `json:"name"`
+}
+
+// UpsertSystemRequest defines model for UpsertSystemRequest.
+type UpsertSystemRequest struct {
+	Description *string `json:"description,omitempty"`
+	Name        string  `json:"name"`
 }
 
 // UpsertUserApprovalRecordRequest defines model for UpsertUserApprovalRecordRequest.
@@ -412,6 +570,15 @@ type ListEnvironmentsParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// GetJobsParams defines parameters for GetJobs.
+type GetJobsParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // SetResourceProvidersResourcesJSONBody defines parameters for SetResourceProvidersResources.
 type SetResourceProvidersResourcesJSONBody struct {
 	Resources []ResourceProviderResource `json:"resources"`
@@ -429,32 +596,264 @@ type GetAllResourcesParams struct {
 	Cel *string `form:"cel,omitempty" json:"cel,omitempty"`
 }
 
+// ListSystemsParams defines parameters for ListSystems.
+type ListSystemsParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // CreateWorkspaceJSONRequestBody defines body for CreateWorkspace for application/json ContentType.
 type CreateWorkspaceJSONRequestBody = CreateWorkspaceRequest
 
 // UpdateWorkspaceJSONRequestBody defines body for UpdateWorkspace for application/json ContentType.
 type UpdateWorkspaceJSONRequestBody = UpdateWorkspaceRequest
 
+// CreateUserApprovalRecordJSONRequestBody defines body for CreateUserApprovalRecord for application/json ContentType.
+type CreateUserApprovalRecordJSONRequestBody = UpsertUserApprovalRecordRequest
+
+// CreateDeploymentJSONRequestBody defines body for CreateDeployment for application/json ContentType.
+type CreateDeploymentJSONRequestBody = CreateDeploymentRequest
+
 // UpsertDeploymentJSONRequestBody defines body for UpsertDeployment for application/json ContentType.
 type UpsertDeploymentJSONRequestBody = UpsertDeploymentRequest
 
-// UpsertDeploymentVersionJSONRequestBody defines body for UpsertDeploymentVersion for application/json ContentType.
-type UpsertDeploymentVersionJSONRequestBody = UpsertDeploymentVersionRequest
+// CreateDeploymentVersionJSONRequestBody defines body for CreateDeploymentVersion for application/json ContentType.
+type CreateDeploymentVersionJSONRequestBody = CreateDeploymentVersionRequest
 
-// UpsertUserApprovalRecordJSONRequestBody defines body for UpsertUserApprovalRecord for application/json ContentType.
-type UpsertUserApprovalRecordJSONRequestBody = UpsertUserApprovalRecordRequest
+// CreateEnvironmentJSONRequestBody defines body for CreateEnvironment for application/json ContentType.
+type CreateEnvironmentJSONRequestBody = CreateEnvironmentRequest
 
-// UpsertEnvironmentJSONRequestBody defines body for UpsertEnvironment for application/json ContentType.
-type UpsertEnvironmentJSONRequestBody = UpsertEnvironmentRequest
+// UpsertEnvironmentByIdJSONRequestBody defines body for UpsertEnvironmentById for application/json ContentType.
+type UpsertEnvironmentByIdJSONRequestBody = UpsertEnvironmentRequest
 
-// UpsertPolicyJSONRequestBody defines body for UpsertPolicy for application/json ContentType.
-type UpsertPolicyJSONRequestBody = UpsertPolicyRequest
+// CreatePolicyJSONRequestBody defines body for CreatePolicy for application/json ContentType.
+type CreatePolicyJSONRequestBody = CreatePolicyRequest
+
+// UpdatePolicyJSONRequestBody defines body for UpdatePolicy for application/json ContentType.
+type UpdatePolicyJSONRequestBody = UpsertPolicyRequest
+
+// CreateRelationshipRuleJSONRequestBody defines body for CreateRelationshipRule for application/json ContentType.
+type CreateRelationshipRuleJSONRequestBody = CreateRelationshipRuleRequest
+
+// UpsertRelationshipByIdJSONRequestBody defines body for UpsertRelationshipById for application/json ContentType.
+type UpsertRelationshipByIdJSONRequestBody = UpsertRelationshipRuleRequest
 
 // UpsertResourceProviderJSONRequestBody defines body for UpsertResourceProvider for application/json ContentType.
 type UpsertResourceProviderJSONRequestBody = UpsertResourceProviderRequest
 
 // SetResourceProvidersResourcesJSONRequestBody defines body for SetResourceProvidersResources for application/json ContentType.
 type SetResourceProvidersResourcesJSONRequestBody SetResourceProvidersResourcesJSONBody
+
+// CreateSystemJSONRequestBody defines body for CreateSystem for application/json ContentType.
+type CreateSystemJSONRequestBody = CreateSystemRequest
+
+// UpsertSystemByIdJSONRequestBody defines body for UpsertSystemById for application/json ContentType.
+type UpsertSystemByIdJSONRequestBody = UpsertSystemRequest
+
+// AsCelMatcher returns the union data inside the CreateRelationshipRuleRequest_Matcher as a CelMatcher
+func (t CreateRelationshipRuleRequest_Matcher) AsCelMatcher() (CelMatcher, error) {
+	var body CelMatcher
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCelMatcher overwrites any union data inside the CreateRelationshipRuleRequest_Matcher as the provided CelMatcher
+func (t *CreateRelationshipRuleRequest_Matcher) FromCelMatcher(v CelMatcher) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCelMatcher performs a merge with any union data inside the CreateRelationshipRuleRequest_Matcher, using the provided CelMatcher
+func (t *CreateRelationshipRuleRequest_Matcher) MergeCelMatcher(v CelMatcher) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CreateRelationshipRuleRequest_Matcher) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *CreateRelationshipRuleRequest_Matcher) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsBooleanValue returns the union data inside the LiteralValue as a BooleanValue
+func (t LiteralValue) AsBooleanValue() (BooleanValue, error) {
+	var body BooleanValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromBooleanValue overwrites any union data inside the LiteralValue as the provided BooleanValue
+func (t *LiteralValue) FromBooleanValue(v BooleanValue) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeBooleanValue performs a merge with any union data inside the LiteralValue, using the provided BooleanValue
+func (t *LiteralValue) MergeBooleanValue(v BooleanValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsNumberValue returns the union data inside the LiteralValue as a NumberValue
+func (t LiteralValue) AsNumberValue() (NumberValue, error) {
+	var body NumberValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromNumberValue overwrites any union data inside the LiteralValue as the provided NumberValue
+func (t *LiteralValue) FromNumberValue(v NumberValue) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeNumberValue performs a merge with any union data inside the LiteralValue, using the provided NumberValue
+func (t *LiteralValue) MergeNumberValue(v NumberValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsIntegerValue returns the union data inside the LiteralValue as a IntegerValue
+func (t LiteralValue) AsIntegerValue() (IntegerValue, error) {
+	var body IntegerValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromIntegerValue overwrites any union data inside the LiteralValue as the provided IntegerValue
+func (t *LiteralValue) FromIntegerValue(v IntegerValue) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeIntegerValue performs a merge with any union data inside the LiteralValue, using the provided IntegerValue
+func (t *LiteralValue) MergeIntegerValue(v IntegerValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsStringValue returns the union data inside the LiteralValue as a StringValue
+func (t LiteralValue) AsStringValue() (StringValue, error) {
+	var body StringValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromStringValue overwrites any union data inside the LiteralValue as the provided StringValue
+func (t *LiteralValue) FromStringValue(v StringValue) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeStringValue performs a merge with any union data inside the LiteralValue, using the provided StringValue
+func (t *LiteralValue) MergeStringValue(v StringValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsObjectValue returns the union data inside the LiteralValue as a ObjectValue
+func (t LiteralValue) AsObjectValue() (ObjectValue, error) {
+	var body ObjectValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromObjectValue overwrites any union data inside the LiteralValue as the provided ObjectValue
+func (t *LiteralValue) FromObjectValue(v ObjectValue) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeObjectValue performs a merge with any union data inside the LiteralValue, using the provided ObjectValue
+func (t *LiteralValue) MergeObjectValue(v ObjectValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsNullValue returns the union data inside the LiteralValue as a NullValue
+func (t LiteralValue) AsNullValue() (NullValue, error) {
+	var body NullValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromNullValue overwrites any union data inside the LiteralValue as the provided NullValue
+func (t *LiteralValue) FromNullValue(v NullValue) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeNullValue performs a merge with any union data inside the LiteralValue, using the provided NullValue
+func (t *LiteralValue) MergeNullValue(v NullValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LiteralValue) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *LiteralValue) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
 
 // AsCelMatcher returns the union data inside the RelationshipRule_Matcher as a CelMatcher
 func (t RelationshipRule_Matcher) AsCelMatcher() (CelMatcher, error) {
@@ -554,6 +953,42 @@ func (t *Selector) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsCelMatcher returns the union data inside the UpsertRelationshipRuleRequest_Matcher as a CelMatcher
+func (t UpsertRelationshipRuleRequest_Matcher) AsCelMatcher() (CelMatcher, error) {
+	var body CelMatcher
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCelMatcher overwrites any union data inside the UpsertRelationshipRuleRequest_Matcher as the provided CelMatcher
+func (t *UpsertRelationshipRuleRequest_Matcher) FromCelMatcher(v CelMatcher) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCelMatcher performs a merge with any union data inside the UpsertRelationshipRuleRequest_Matcher, using the provided CelMatcher
+func (t *UpsertRelationshipRuleRequest_Matcher) MergeCelMatcher(v CelMatcher) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t UpsertRelationshipRuleRequest_Matcher) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *UpsertRelationshipRuleRequest_Matcher) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
 
@@ -649,51 +1084,100 @@ type ClientInterface interface {
 
 	UpdateWorkspace(ctx context.Context, workspaceId openapi_types.UUID, body UpdateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CreateUserApprovalRecordWithBody request with any body
+	CreateUserApprovalRecordWithBody(ctx context.Context, workspaceId string, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateUserApprovalRecord(ctx context.Context, workspaceId string, deploymentVersionId string, body CreateUserApprovalRecordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListDeployments request
 	ListDeployments(ctx context.Context, workspaceId string, params *ListDeploymentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpsertDeploymentWithBody request with any body
-	UpsertDeploymentWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateDeploymentWithBody request with any body
+	CreateDeploymentWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpsertDeployment(ctx context.Context, workspaceId string, body UpsertDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDeployment(ctx context.Context, workspaceId string, body CreateDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteDeployment request
+	DeleteDeployment(ctx context.Context, workspaceId string, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetDeployment request
 	GetDeployment(ctx context.Context, workspaceId string, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// UpsertDeploymentWithBody request with any body
+	UpsertDeploymentWithBody(ctx context.Context, workspaceId string, deploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpsertDeployment(ctx context.Context, workspaceId string, deploymentId string, body UpsertDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListDeploymentVersions request
 	ListDeploymentVersions(ctx context.Context, workspaceId string, deploymentId string, params *ListDeploymentVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpsertDeploymentVersionWithBody request with any body
-	UpsertDeploymentVersionWithBody(ctx context.Context, workspaceId string, deploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateDeploymentVersionWithBody request with any body
+	CreateDeploymentVersionWithBody(ctx context.Context, workspaceId string, deploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpsertDeploymentVersion(ctx context.Context, workspaceId string, deploymentId string, body UpsertDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpsertUserApprovalRecordWithBody request with any body
-	UpsertUserApprovalRecordWithBody(ctx context.Context, workspaceId string, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpsertUserApprovalRecord(ctx context.Context, workspaceId string, deploymentVersionId string, body UpsertUserApprovalRecordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDeploymentVersion(ctx context.Context, workspaceId string, deploymentId string, body CreateDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListEnvironments request
 	ListEnvironments(ctx context.Context, workspaceId string, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpsertEnvironmentWithBody request with any body
-	UpsertEnvironmentWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateEnvironmentWithBody request with any body
+	CreateEnvironmentWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpsertEnvironment(ctx context.Context, workspaceId string, body UpsertEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateEnvironment(ctx context.Context, workspaceId string, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteEnvironment request
+	DeleteEnvironment(ctx context.Context, workspaceId string, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetEnvironment request
 	GetEnvironment(ctx context.Context, workspaceId string, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// UpsertEnvironmentByIdWithBody request with any body
+	UpsertEnvironmentByIdWithBody(ctx context.Context, workspaceId string, environmentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpsertEnvironmentById(ctx context.Context, workspaceId string, environmentId string, body UpsertEnvironmentByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetJobs request
+	GetJobs(ctx context.Context, workspaceId string, params *GetJobsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetJob request
+	GetJob(ctx context.Context, workspaceId string, jobId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetJobWithRelease request
+	GetJobWithRelease(ctx context.Context, workspaceId string, jobId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListPolicies request
 	ListPolicies(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpsertPolicyWithBody request with any body
-	UpsertPolicyWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreatePolicyWithBody request with any body
+	CreatePolicyWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpsertPolicy(ctx context.Context, workspaceId string, body UpsertPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreatePolicy(ctx context.Context, workspaceId string, body CreatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetAllRelationships request
-	GetAllRelationships(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// DeletePolicy request
+	DeletePolicy(ctx context.Context, workspaceId string, policyId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetPolicy request
+	GetPolicy(ctx context.Context, workspaceId string, policyId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdatePolicyWithBody request with any body
+	UpdatePolicyWithBody(ctx context.Context, workspaceId string, policyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdatePolicy(ctx context.Context, workspaceId string, policyId string, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateRelationshipRuleWithBody request with any body
+	CreateRelationshipRuleWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateRelationshipRule(ctx context.Context, workspaceId string, body CreateRelationshipRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteRelationship request
+	DeleteRelationship(ctx context.Context, workspaceId string, relationshipRuleId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetRelationshipRule request
+	GetRelationshipRule(ctx context.Context, workspaceId string, relationshipRuleId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpsertRelationshipByIdWithBody request with any body
+	UpsertRelationshipByIdWithBody(ctx context.Context, workspaceId string, relationshipRuleId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpsertRelationshipById(ctx context.Context, workspaceId string, relationshipRuleId string, body UpsertRelationshipByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpsertResourceProviderWithBody request with any body
 	UpsertResourceProviderWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -713,6 +1197,25 @@ type ClientInterface interface {
 
 	// GetResourceByIdentifier request
 	GetResourceByIdentifier(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListSystems request
+	ListSystems(ctx context.Context, workspaceId string, params *ListSystemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateSystemWithBody request with any body
+	CreateSystemWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateSystem(ctx context.Context, workspaceId string, body CreateSystemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteSystem request
+	DeleteSystem(ctx context.Context, workspaceId string, systemId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSystem request
+	GetSystem(ctx context.Context, workspaceId string, systemId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpsertSystemByIdWithBody request with any body
+	UpsertSystemByIdWithBody(ctx context.Context, workspaceId string, systemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpsertSystemById(ctx context.Context, workspaceId string, systemId string, body UpsertSystemByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) ListWorkspaces(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -811,6 +1314,30 @@ func (c *Client) UpdateWorkspace(ctx context.Context, workspaceId openapi_types.
 	return c.Client.Do(req)
 }
 
+func (c *Client) CreateUserApprovalRecordWithBody(ctx context.Context, workspaceId string, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateUserApprovalRecordRequestWithBody(c.Server, workspaceId, deploymentVersionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateUserApprovalRecord(ctx context.Context, workspaceId string, deploymentVersionId string, body CreateUserApprovalRecordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateUserApprovalRecordRequest(c.Server, workspaceId, deploymentVersionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListDeployments(ctx context.Context, workspaceId string, params *ListDeploymentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListDeploymentsRequest(c.Server, workspaceId, params)
 	if err != nil {
@@ -823,8 +1350,8 @@ func (c *Client) ListDeployments(ctx context.Context, workspaceId string, params
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpsertDeploymentWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertDeploymentRequestWithBody(c.Server, workspaceId, contentType, body)
+func (c *Client) CreateDeploymentWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDeploymentRequestWithBody(c.Server, workspaceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -835,8 +1362,20 @@ func (c *Client) UpsertDeploymentWithBody(ctx context.Context, workspaceId strin
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpsertDeployment(ctx context.Context, workspaceId string, body UpsertDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertDeploymentRequest(c.Server, workspaceId, body)
+func (c *Client) CreateDeployment(ctx context.Context, workspaceId string, body CreateDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDeploymentRequest(c.Server, workspaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteDeployment(ctx context.Context, workspaceId string, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteDeploymentRequest(c.Server, workspaceId, deploymentId)
 	if err != nil {
 		return nil, err
 	}
@@ -859,6 +1398,30 @@ func (c *Client) GetDeployment(ctx context.Context, workspaceId string, deployme
 	return c.Client.Do(req)
 }
 
+func (c *Client) UpsertDeploymentWithBody(ctx context.Context, workspaceId string, deploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertDeploymentRequestWithBody(c.Server, workspaceId, deploymentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertDeployment(ctx context.Context, workspaceId string, deploymentId string, body UpsertDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertDeploymentRequest(c.Server, workspaceId, deploymentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListDeploymentVersions(ctx context.Context, workspaceId string, deploymentId string, params *ListDeploymentVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListDeploymentVersionsRequest(c.Server, workspaceId, deploymentId, params)
 	if err != nil {
@@ -871,8 +1434,8 @@ func (c *Client) ListDeploymentVersions(ctx context.Context, workspaceId string,
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpsertDeploymentVersionWithBody(ctx context.Context, workspaceId string, deploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertDeploymentVersionRequestWithBody(c.Server, workspaceId, deploymentId, contentType, body)
+func (c *Client) CreateDeploymentVersionWithBody(ctx context.Context, workspaceId string, deploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDeploymentVersionRequestWithBody(c.Server, workspaceId, deploymentId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -883,32 +1446,8 @@ func (c *Client) UpsertDeploymentVersionWithBody(ctx context.Context, workspaceI
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpsertDeploymentVersion(ctx context.Context, workspaceId string, deploymentId string, body UpsertDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertDeploymentVersionRequest(c.Server, workspaceId, deploymentId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpsertUserApprovalRecordWithBody(ctx context.Context, workspaceId string, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertUserApprovalRecordRequestWithBody(c.Server, workspaceId, deploymentVersionId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpsertUserApprovalRecord(ctx context.Context, workspaceId string, deploymentVersionId string, body UpsertUserApprovalRecordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertUserApprovalRecordRequest(c.Server, workspaceId, deploymentVersionId, body)
+func (c *Client) CreateDeploymentVersion(ctx context.Context, workspaceId string, deploymentId string, body CreateDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDeploymentVersionRequest(c.Server, workspaceId, deploymentId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -931,8 +1470,8 @@ func (c *Client) ListEnvironments(ctx context.Context, workspaceId string, param
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpsertEnvironmentWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertEnvironmentRequestWithBody(c.Server, workspaceId, contentType, body)
+func (c *Client) CreateEnvironmentWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEnvironmentRequestWithBody(c.Server, workspaceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -943,8 +1482,20 @@ func (c *Client) UpsertEnvironmentWithBody(ctx context.Context, workspaceId stri
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpsertEnvironment(ctx context.Context, workspaceId string, body UpsertEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertEnvironmentRequest(c.Server, workspaceId, body)
+func (c *Client) CreateEnvironment(ctx context.Context, workspaceId string, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEnvironmentRequest(c.Server, workspaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteEnvironment(ctx context.Context, workspaceId string, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteEnvironmentRequest(c.Server, workspaceId, environmentId)
 	if err != nil {
 		return nil, err
 	}
@@ -967,6 +1518,66 @@ func (c *Client) GetEnvironment(ctx context.Context, workspaceId string, environ
 	return c.Client.Do(req)
 }
 
+func (c *Client) UpsertEnvironmentByIdWithBody(ctx context.Context, workspaceId string, environmentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertEnvironmentByIdRequestWithBody(c.Server, workspaceId, environmentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertEnvironmentById(ctx context.Context, workspaceId string, environmentId string, body UpsertEnvironmentByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertEnvironmentByIdRequest(c.Server, workspaceId, environmentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetJobs(ctx context.Context, workspaceId string, params *GetJobsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetJobsRequest(c.Server, workspaceId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetJob(ctx context.Context, workspaceId string, jobId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetJobRequest(c.Server, workspaceId, jobId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetJobWithRelease(ctx context.Context, workspaceId string, jobId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetJobWithReleaseRequest(c.Server, workspaceId, jobId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListPolicies(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListPoliciesRequest(c.Server, workspaceId)
 	if err != nil {
@@ -979,8 +1590,8 @@ func (c *Client) ListPolicies(ctx context.Context, workspaceId string, reqEditor
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpsertPolicyWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertPolicyRequestWithBody(c.Server, workspaceId, contentType, body)
+func (c *Client) CreatePolicyWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePolicyRequestWithBody(c.Server, workspaceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -991,8 +1602,8 @@ func (c *Client) UpsertPolicyWithBody(ctx context.Context, workspaceId string, c
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpsertPolicy(ctx context.Context, workspaceId string, body UpsertPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertPolicyRequest(c.Server, workspaceId, body)
+func (c *Client) CreatePolicy(ctx context.Context, workspaceId string, body CreatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePolicyRequest(c.Server, workspaceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1003,8 +1614,116 @@ func (c *Client) UpsertPolicy(ctx context.Context, workspaceId string, body Upse
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetAllRelationships(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAllRelationshipsRequest(c.Server, workspaceId)
+func (c *Client) DeletePolicy(ctx context.Context, workspaceId string, policyId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeletePolicyRequest(c.Server, workspaceId, policyId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetPolicy(ctx context.Context, workspaceId string, policyId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPolicyRequest(c.Server, workspaceId, policyId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdatePolicyWithBody(ctx context.Context, workspaceId string, policyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdatePolicyRequestWithBody(c.Server, workspaceId, policyId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdatePolicy(ctx context.Context, workspaceId string, policyId string, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdatePolicyRequest(c.Server, workspaceId, policyId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateRelationshipRuleWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRelationshipRuleRequestWithBody(c.Server, workspaceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateRelationshipRule(ctx context.Context, workspaceId string, body CreateRelationshipRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRelationshipRuleRequest(c.Server, workspaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteRelationship(ctx context.Context, workspaceId string, relationshipRuleId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteRelationshipRequest(c.Server, workspaceId, relationshipRuleId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetRelationshipRule(ctx context.Context, workspaceId string, relationshipRuleId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRelationshipRuleRequest(c.Server, workspaceId, relationshipRuleId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertRelationshipByIdWithBody(ctx context.Context, workspaceId string, relationshipRuleId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertRelationshipByIdRequestWithBody(c.Server, workspaceId, relationshipRuleId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertRelationshipById(ctx context.Context, workspaceId string, relationshipRuleId string, body UpsertRelationshipByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertRelationshipByIdRequest(c.Server, workspaceId, relationshipRuleId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1089,6 +1808,90 @@ func (c *Client) GetAllResources(ctx context.Context, workspaceId string, params
 
 func (c *Client) GetResourceByIdentifier(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetResourceByIdentifierRequest(c.Server, workspaceId, identifier)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListSystems(ctx context.Context, workspaceId string, params *ListSystemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSystemsRequest(c.Server, workspaceId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateSystemWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSystemRequestWithBody(c.Server, workspaceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateSystem(ctx context.Context, workspaceId string, body CreateSystemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSystemRequest(c.Server, workspaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteSystem(ctx context.Context, workspaceId string, systemId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteSystemRequest(c.Server, workspaceId, systemId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSystem(ctx context.Context, workspaceId string, systemId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSystemRequest(c.Server, workspaceId, systemId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertSystemByIdWithBody(ctx context.Context, workspaceId string, systemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertSystemByIdRequestWithBody(c.Server, workspaceId, systemId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertSystemById(ctx context.Context, workspaceId string, systemId string, body UpsertSystemByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertSystemByIdRequest(c.Server, workspaceId, systemId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1315,6 +2118,60 @@ func NewUpdateWorkspaceRequestWithBody(server string, workspaceId openapi_types.
 	return req, nil
 }
 
+// NewCreateUserApprovalRecordRequest calls the generic CreateUserApprovalRecord builder with application/json body
+func NewCreateUserApprovalRecordRequest(server string, workspaceId string, deploymentVersionId string, body CreateUserApprovalRecordJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateUserApprovalRecordRequestWithBody(server, workspaceId, deploymentVersionId, "application/json", bodyReader)
+}
+
+// NewCreateUserApprovalRecordRequestWithBody generates requests for CreateUserApprovalRecord with any type of body
+func NewCreateUserApprovalRecordRequestWithBody(server string, workspaceId string, deploymentVersionId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/deployment-versions/%s/user-approval-records", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListDeploymentsRequest generates requests for ListDeployments
 func NewListDeploymentsRequest(server string, workspaceId string, params *ListDeploymentsParams) (*http.Request, error) {
 	var err error
@@ -1387,19 +2244,19 @@ func NewListDeploymentsRequest(server string, workspaceId string, params *ListDe
 	return req, nil
 }
 
-// NewUpsertDeploymentRequest calls the generic UpsertDeployment builder with application/json body
-func NewUpsertDeploymentRequest(server string, workspaceId string, body UpsertDeploymentJSONRequestBody) (*http.Request, error) {
+// NewCreateDeploymentRequest calls the generic CreateDeployment builder with application/json body
+func NewCreateDeploymentRequest(server string, workspaceId string, body CreateDeploymentJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpsertDeploymentRequestWithBody(server, workspaceId, "application/json", bodyReader)
+	return NewCreateDeploymentRequestWithBody(server, workspaceId, "application/json", bodyReader)
 }
 
-// NewUpsertDeploymentRequestWithBody generates requests for UpsertDeployment with any type of body
-func NewUpsertDeploymentRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateDeploymentRequestWithBody generates requests for CreateDeployment with any type of body
+func NewCreateDeploymentRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1424,12 +2281,53 @@ func NewUpsertDeploymentRequestWithBody(server string, workspaceId string, conte
 		return nil, err
 	}
 
-	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteDeploymentRequest generates requests for DeleteDeployment
+func NewDeleteDeploymentRequest(server string, workspaceId string, deploymentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/deployments/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -1471,6 +2369,60 @@ func NewGetDeploymentRequest(server string, workspaceId string, deploymentId str
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewUpsertDeploymentRequest calls the generic UpsertDeployment builder with application/json body
+func NewUpsertDeploymentRequest(server string, workspaceId string, deploymentId string, body UpsertDeploymentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpsertDeploymentRequestWithBody(server, workspaceId, deploymentId, "application/json", bodyReader)
+}
+
+// NewUpsertDeploymentRequestWithBody generates requests for UpsertDeployment with any type of body
+func NewUpsertDeploymentRequestWithBody(server string, workspaceId string, deploymentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/deployments/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -1554,19 +2506,19 @@ func NewListDeploymentVersionsRequest(server string, workspaceId string, deploym
 	return req, nil
 }
 
-// NewUpsertDeploymentVersionRequest calls the generic UpsertDeploymentVersion builder with application/json body
-func NewUpsertDeploymentVersionRequest(server string, workspaceId string, deploymentId string, body UpsertDeploymentVersionJSONRequestBody) (*http.Request, error) {
+// NewCreateDeploymentVersionRequest calls the generic CreateDeploymentVersion builder with application/json body
+func NewCreateDeploymentVersionRequest(server string, workspaceId string, deploymentId string, body CreateDeploymentVersionJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpsertDeploymentVersionRequestWithBody(server, workspaceId, deploymentId, "application/json", bodyReader)
+	return NewCreateDeploymentVersionRequestWithBody(server, workspaceId, deploymentId, "application/json", bodyReader)
 }
 
-// NewUpsertDeploymentVersionRequestWithBody generates requests for UpsertDeploymentVersion with any type of body
-func NewUpsertDeploymentVersionRequestWithBody(server string, workspaceId string, deploymentId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateDeploymentVersionRequestWithBody generates requests for CreateDeploymentVersion with any type of body
+func NewCreateDeploymentVersionRequestWithBody(server string, workspaceId string, deploymentId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1598,61 +2550,7 @@ func NewUpsertDeploymentVersionRequestWithBody(server string, workspaceId string
 		return nil, err
 	}
 
-	req, err := http.NewRequest("PUT", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewUpsertUserApprovalRecordRequest calls the generic UpsertUserApprovalRecord builder with application/json body
-func NewUpsertUserApprovalRecordRequest(server string, workspaceId string, deploymentVersionId string, body UpsertUserApprovalRecordJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpsertUserApprovalRecordRequestWithBody(server, workspaceId, deploymentVersionId, "application/json", bodyReader)
-}
-
-// NewUpsertUserApprovalRecordRequestWithBody generates requests for UpsertUserApprovalRecord with any type of body
-func NewUpsertUserApprovalRecordRequestWithBody(server string, workspaceId string, deploymentVersionId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/deploymentversions/%s/user-approval-records", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -1734,19 +2632,19 @@ func NewListEnvironmentsRequest(server string, workspaceId string, params *ListE
 	return req, nil
 }
 
-// NewUpsertEnvironmentRequest calls the generic UpsertEnvironment builder with application/json body
-func NewUpsertEnvironmentRequest(server string, workspaceId string, body UpsertEnvironmentJSONRequestBody) (*http.Request, error) {
+// NewCreateEnvironmentRequest calls the generic CreateEnvironment builder with application/json body
+func NewCreateEnvironmentRequest(server string, workspaceId string, body CreateEnvironmentJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpsertEnvironmentRequestWithBody(server, workspaceId, "application/json", bodyReader)
+	return NewCreateEnvironmentRequestWithBody(server, workspaceId, "application/json", bodyReader)
 }
 
-// NewUpsertEnvironmentRequestWithBody generates requests for UpsertEnvironment with any type of body
-func NewUpsertEnvironmentRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateEnvironmentRequestWithBody generates requests for CreateEnvironment with any type of body
+func NewCreateEnvironmentRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1771,12 +2669,53 @@ func NewUpsertEnvironmentRequestWithBody(server string, workspaceId string, cont
 		return nil, err
 	}
 
-	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteEnvironmentRequest generates requests for DeleteEnvironment
+func NewDeleteEnvironmentRequest(server string, workspaceId string, environmentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "environmentId", runtime.ParamLocationPath, environmentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/environments/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -1805,6 +2744,214 @@ func NewGetEnvironmentRequest(server string, workspaceId string, environmentId s
 	}
 
 	operationPath := fmt.Sprintf("/v1/workspaces/%s/environments/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpsertEnvironmentByIdRequest calls the generic UpsertEnvironmentById builder with application/json body
+func NewUpsertEnvironmentByIdRequest(server string, workspaceId string, environmentId string, body UpsertEnvironmentByIdJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpsertEnvironmentByIdRequestWithBody(server, workspaceId, environmentId, "application/json", bodyReader)
+}
+
+// NewUpsertEnvironmentByIdRequestWithBody generates requests for UpsertEnvironmentById with any type of body
+func NewUpsertEnvironmentByIdRequestWithBody(server string, workspaceId string, environmentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "environmentId", runtime.ParamLocationPath, environmentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/environments/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetJobsRequest generates requests for GetJobs
+func NewGetJobsRequest(server string, workspaceId string, params *GetJobsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/jobs", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetJobRequest generates requests for GetJob
+func NewGetJobRequest(server string, workspaceId string, jobId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "jobId", runtime.ParamLocationPath, jobId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/jobs/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetJobWithReleaseRequest generates requests for GetJobWithRelease
+func NewGetJobWithReleaseRequest(server string, workspaceId string, jobId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "jobId", runtime.ParamLocationPath, jobId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/jobs/%s/with-release", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1856,19 +3003,19 @@ func NewListPoliciesRequest(server string, workspaceId string) (*http.Request, e
 	return req, nil
 }
 
-// NewUpsertPolicyRequest calls the generic UpsertPolicy builder with application/json body
-func NewUpsertPolicyRequest(server string, workspaceId string, body UpsertPolicyJSONRequestBody) (*http.Request, error) {
+// NewCreatePolicyRequest calls the generic CreatePolicy builder with application/json body
+func NewCreatePolicyRequest(server string, workspaceId string, body CreatePolicyJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpsertPolicyRequestWithBody(server, workspaceId, "application/json", bodyReader)
+	return NewCreatePolicyRequestWithBody(server, workspaceId, "application/json", bodyReader)
 }
 
-// NewUpsertPolicyRequestWithBody generates requests for UpsertPolicy with any type of body
-func NewUpsertPolicyRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreatePolicyRequestWithBody generates requests for CreatePolicy with any type of body
+func NewCreatePolicyRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1893,6 +3040,142 @@ func NewUpsertPolicyRequestWithBody(server string, workspaceId string, contentTy
 		return nil, err
 	}
 
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeletePolicyRequest generates requests for DeletePolicy
+func NewDeletePolicyRequest(server string, workspaceId string, policyId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "policyId", runtime.ParamLocationPath, policyId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/policies/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetPolicyRequest generates requests for GetPolicy
+func NewGetPolicyRequest(server string, workspaceId string, policyId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "policyId", runtime.ParamLocationPath, policyId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/policies/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdatePolicyRequest calls the generic UpdatePolicy builder with application/json body
+func NewUpdatePolicyRequest(server string, workspaceId string, policyId string, body UpdatePolicyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdatePolicyRequestWithBody(server, workspaceId, policyId, "application/json", bodyReader)
+}
+
+// NewUpdatePolicyRequestWithBody generates requests for UpdatePolicy with any type of body
+func NewUpdatePolicyRequestWithBody(server string, workspaceId string, policyId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "policyId", runtime.ParamLocationPath, policyId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/policies/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
 	req, err := http.NewRequest("PUT", queryURL.String(), body)
 	if err != nil {
 		return nil, err
@@ -1903,8 +3186,19 @@ func NewUpsertPolicyRequestWithBody(server string, workspaceId string, contentTy
 	return req, nil
 }
 
-// NewGetAllRelationshipsRequest generates requests for GetAllRelationships
-func NewGetAllRelationshipsRequest(server string, workspaceId string) (*http.Request, error) {
+// NewCreateRelationshipRuleRequest calls the generic CreateRelationshipRule builder with application/json body
+func NewCreateRelationshipRuleRequest(server string, workspaceId string, body CreateRelationshipRuleJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateRelationshipRuleRequestWithBody(server, workspaceId, "application/json", bodyReader)
+}
+
+// NewCreateRelationshipRuleRequestWithBody generates requests for CreateRelationshipRule with any type of body
+func NewCreateRelationshipRuleRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1919,7 +3213,91 @@ func NewGetAllRelationshipsRequest(server string, workspaceId string) (*http.Req
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/relationships", pathParam0)
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/relationship-rules", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteRelationshipRequest generates requests for DeleteRelationship
+func NewDeleteRelationshipRequest(server string, workspaceId string, relationshipRuleId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "relationshipRuleId", runtime.ParamLocationPath, relationshipRuleId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/relationship-rules/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetRelationshipRuleRequest generates requests for GetRelationshipRule
+func NewGetRelationshipRuleRequest(server string, workspaceId string, relationshipRuleId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "relationshipRuleId", runtime.ParamLocationPath, relationshipRuleId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/relationship-rules/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1933,6 +3311,60 @@ func NewGetAllRelationshipsRequest(server string, workspaceId string) (*http.Req
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewUpsertRelationshipByIdRequest calls the generic UpsertRelationshipById builder with application/json body
+func NewUpsertRelationshipByIdRequest(server string, workspaceId string, relationshipRuleId string, body UpsertRelationshipByIdJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpsertRelationshipByIdRequestWithBody(server, workspaceId, relationshipRuleId, "application/json", bodyReader)
+}
+
+// NewUpsertRelationshipByIdRequestWithBody generates requests for UpsertRelationshipById with any type of body
+func NewUpsertRelationshipByIdRequestWithBody(server string, workspaceId string, relationshipRuleId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "relationshipRuleId", runtime.ParamLocationPath, relationshipRuleId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/relationship-rules/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -2208,6 +3640,261 @@ func NewGetResourceByIdentifierRequest(server string, workspaceId string, identi
 	return req, nil
 }
 
+// NewListSystemsRequest generates requests for ListSystems
+func NewListSystemsRequest(server string, workspaceId string, params *ListSystemsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/systems", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateSystemRequest calls the generic CreateSystem builder with application/json body
+func NewCreateSystemRequest(server string, workspaceId string, body CreateSystemJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateSystemRequestWithBody(server, workspaceId, "application/json", bodyReader)
+}
+
+// NewCreateSystemRequestWithBody generates requests for CreateSystem with any type of body
+func NewCreateSystemRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/systems", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteSystemRequest generates requests for DeleteSystem
+func NewDeleteSystemRequest(server string, workspaceId string, systemId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "systemId", runtime.ParamLocationPath, systemId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/systems/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetSystemRequest generates requests for GetSystem
+func NewGetSystemRequest(server string, workspaceId string, systemId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "systemId", runtime.ParamLocationPath, systemId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/systems/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpsertSystemByIdRequest calls the generic UpsertSystemById builder with application/json body
+func NewUpsertSystemByIdRequest(server string, workspaceId string, systemId string, body UpsertSystemByIdJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpsertSystemByIdRequestWithBody(server, workspaceId, systemId, "application/json", bodyReader)
+}
+
+// NewUpsertSystemByIdRequestWithBody generates requests for UpsertSystemById with any type of body
+func NewUpsertSystemByIdRequestWithBody(server string, workspaceId string, systemId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "systemId", runtime.ParamLocationPath, systemId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/systems/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -2273,51 +3960,100 @@ type ClientWithResponsesInterface interface {
 
 	UpdateWorkspaceWithResponse(ctx context.Context, workspaceId openapi_types.UUID, body UpdateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWorkspaceResponse, error)
 
+	// CreateUserApprovalRecordWithBodyWithResponse request with any body
+	CreateUserApprovalRecordWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUserApprovalRecordResponse, error)
+
+	CreateUserApprovalRecordWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, body CreateUserApprovalRecordJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUserApprovalRecordResponse, error)
+
 	// ListDeploymentsWithResponse request
 	ListDeploymentsWithResponse(ctx context.Context, workspaceId string, params *ListDeploymentsParams, reqEditors ...RequestEditorFn) (*ListDeploymentsResponse, error)
 
-	// UpsertDeploymentWithBodyWithResponse request with any body
-	UpsertDeploymentWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDeploymentResponse, error)
+	// CreateDeploymentWithBodyWithResponse request with any body
+	CreateDeploymentWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeploymentResponse, error)
 
-	UpsertDeploymentWithResponse(ctx context.Context, workspaceId string, body UpsertDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDeploymentResponse, error)
+	CreateDeploymentWithResponse(ctx context.Context, workspaceId string, body CreateDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDeploymentResponse, error)
+
+	// DeleteDeploymentWithResponse request
+	DeleteDeploymentWithResponse(ctx context.Context, workspaceId string, deploymentId string, reqEditors ...RequestEditorFn) (*DeleteDeploymentResponse, error)
 
 	// GetDeploymentWithResponse request
 	GetDeploymentWithResponse(ctx context.Context, workspaceId string, deploymentId string, reqEditors ...RequestEditorFn) (*GetDeploymentResponse, error)
 
+	// UpsertDeploymentWithBodyWithResponse request with any body
+	UpsertDeploymentWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDeploymentResponse, error)
+
+	UpsertDeploymentWithResponse(ctx context.Context, workspaceId string, deploymentId string, body UpsertDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDeploymentResponse, error)
+
 	// ListDeploymentVersionsWithResponse request
 	ListDeploymentVersionsWithResponse(ctx context.Context, workspaceId string, deploymentId string, params *ListDeploymentVersionsParams, reqEditors ...RequestEditorFn) (*ListDeploymentVersionsResponse, error)
 
-	// UpsertDeploymentVersionWithBodyWithResponse request with any body
-	UpsertDeploymentVersionWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDeploymentVersionResponse, error)
+	// CreateDeploymentVersionWithBodyWithResponse request with any body
+	CreateDeploymentVersionWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeploymentVersionResponse, error)
 
-	UpsertDeploymentVersionWithResponse(ctx context.Context, workspaceId string, deploymentId string, body UpsertDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDeploymentVersionResponse, error)
-
-	// UpsertUserApprovalRecordWithBodyWithResponse request with any body
-	UpsertUserApprovalRecordWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertUserApprovalRecordResponse, error)
-
-	UpsertUserApprovalRecordWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, body UpsertUserApprovalRecordJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertUserApprovalRecordResponse, error)
+	CreateDeploymentVersionWithResponse(ctx context.Context, workspaceId string, deploymentId string, body CreateDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDeploymentVersionResponse, error)
 
 	// ListEnvironmentsWithResponse request
 	ListEnvironmentsWithResponse(ctx context.Context, workspaceId string, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*ListEnvironmentsResponse, error)
 
-	// UpsertEnvironmentWithBodyWithResponse request with any body
-	UpsertEnvironmentWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertEnvironmentResponse, error)
+	// CreateEnvironmentWithBodyWithResponse request with any body
+	CreateEnvironmentWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error)
 
-	UpsertEnvironmentWithResponse(ctx context.Context, workspaceId string, body UpsertEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertEnvironmentResponse, error)
+	CreateEnvironmentWithResponse(ctx context.Context, workspaceId string, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error)
+
+	// DeleteEnvironmentWithResponse request
+	DeleteEnvironmentWithResponse(ctx context.Context, workspaceId string, environmentId string, reqEditors ...RequestEditorFn) (*DeleteEnvironmentResponse, error)
 
 	// GetEnvironmentWithResponse request
 	GetEnvironmentWithResponse(ctx context.Context, workspaceId string, environmentId string, reqEditors ...RequestEditorFn) (*GetEnvironmentResponse, error)
 
+	// UpsertEnvironmentByIdWithBodyWithResponse request with any body
+	UpsertEnvironmentByIdWithBodyWithResponse(ctx context.Context, workspaceId string, environmentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertEnvironmentByIdResponse, error)
+
+	UpsertEnvironmentByIdWithResponse(ctx context.Context, workspaceId string, environmentId string, body UpsertEnvironmentByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertEnvironmentByIdResponse, error)
+
+	// GetJobsWithResponse request
+	GetJobsWithResponse(ctx context.Context, workspaceId string, params *GetJobsParams, reqEditors ...RequestEditorFn) (*GetJobsResponse, error)
+
+	// GetJobWithResponse request
+	GetJobWithResponse(ctx context.Context, workspaceId string, jobId string, reqEditors ...RequestEditorFn) (*GetJobResponse, error)
+
+	// GetJobWithReleaseWithResponse request
+	GetJobWithReleaseWithResponse(ctx context.Context, workspaceId string, jobId string, reqEditors ...RequestEditorFn) (*GetJobWithReleaseResponse, error)
+
 	// ListPoliciesWithResponse request
 	ListPoliciesWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*ListPoliciesResponse, error)
 
-	// UpsertPolicyWithBodyWithResponse request with any body
-	UpsertPolicyWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertPolicyResponse, error)
+	// CreatePolicyWithBodyWithResponse request with any body
+	CreatePolicyWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePolicyResponse, error)
 
-	UpsertPolicyWithResponse(ctx context.Context, workspaceId string, body UpsertPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertPolicyResponse, error)
+	CreatePolicyWithResponse(ctx context.Context, workspaceId string, body CreatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePolicyResponse, error)
 
-	// GetAllRelationshipsWithResponse request
-	GetAllRelationshipsWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*GetAllRelationshipsResponse, error)
+	// DeletePolicyWithResponse request
+	DeletePolicyWithResponse(ctx context.Context, workspaceId string, policyId string, reqEditors ...RequestEditorFn) (*DeletePolicyResponse, error)
+
+	// GetPolicyWithResponse request
+	GetPolicyWithResponse(ctx context.Context, workspaceId string, policyId string, reqEditors ...RequestEditorFn) (*GetPolicyResponse, error)
+
+	// UpdatePolicyWithBodyWithResponse request with any body
+	UpdatePolicyWithBodyWithResponse(ctx context.Context, workspaceId string, policyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error)
+
+	UpdatePolicyWithResponse(ctx context.Context, workspaceId string, policyId string, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error)
+
+	// CreateRelationshipRuleWithBodyWithResponse request with any body
+	CreateRelationshipRuleWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRelationshipRuleResponse, error)
+
+	CreateRelationshipRuleWithResponse(ctx context.Context, workspaceId string, body CreateRelationshipRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRelationshipRuleResponse, error)
+
+	// DeleteRelationshipWithResponse request
+	DeleteRelationshipWithResponse(ctx context.Context, workspaceId string, relationshipRuleId string, reqEditors ...RequestEditorFn) (*DeleteRelationshipResponse, error)
+
+	// GetRelationshipRuleWithResponse request
+	GetRelationshipRuleWithResponse(ctx context.Context, workspaceId string, relationshipRuleId string, reqEditors ...RequestEditorFn) (*GetRelationshipRuleResponse, error)
+
+	// UpsertRelationshipByIdWithBodyWithResponse request with any body
+	UpsertRelationshipByIdWithBodyWithResponse(ctx context.Context, workspaceId string, relationshipRuleId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertRelationshipByIdResponse, error)
+
+	UpsertRelationshipByIdWithResponse(ctx context.Context, workspaceId string, relationshipRuleId string, body UpsertRelationshipByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertRelationshipByIdResponse, error)
 
 	// UpsertResourceProviderWithBodyWithResponse request with any body
 	UpsertResourceProviderWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertResourceProviderResponse, error)
@@ -2337,6 +4073,25 @@ type ClientWithResponsesInterface interface {
 
 	// GetResourceByIdentifierWithResponse request
 	GetResourceByIdentifierWithResponse(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*GetResourceByIdentifierResponse, error)
+
+	// ListSystemsWithResponse request
+	ListSystemsWithResponse(ctx context.Context, workspaceId string, params *ListSystemsParams, reqEditors ...RequestEditorFn) (*ListSystemsResponse, error)
+
+	// CreateSystemWithBodyWithResponse request with any body
+	CreateSystemWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSystemResponse, error)
+
+	CreateSystemWithResponse(ctx context.Context, workspaceId string, body CreateSystemJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSystemResponse, error)
+
+	// DeleteSystemWithResponse request
+	DeleteSystemWithResponse(ctx context.Context, workspaceId string, systemId string, reqEditors ...RequestEditorFn) (*DeleteSystemResponse, error)
+
+	// GetSystemWithResponse request
+	GetSystemWithResponse(ctx context.Context, workspaceId string, systemId string, reqEditors ...RequestEditorFn) (*GetSystemResponse, error)
+
+	// UpsertSystemByIdWithBodyWithResponse request with any body
+	UpsertSystemByIdWithBodyWithResponse(ctx context.Context, workspaceId string, systemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertSystemByIdResponse, error)
+
+	UpsertSystemByIdWithResponse(ctx context.Context, workspaceId string, systemId string, body UpsertSystemByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertSystemByIdResponse, error)
 }
 
 type ListWorkspacesResponse struct {
@@ -2490,6 +4245,32 @@ func (r UpdateWorkspaceResponse) StatusCode() int {
 	return 0
 }
 
+type CreateUserApprovalRecordResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Success *bool `json:"success,omitempty"`
+	}
+	JSON400 *ErrorResponse
+	JSON404 *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateUserApprovalRecordResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateUserApprovalRecordResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListDeploymentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -2523,14 +4304,14 @@ func (r ListDeploymentsResponse) StatusCode() int {
 	return 0
 }
 
-type UpsertDeploymentResponse struct {
+type CreateDeploymentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON202      *Deployment
 }
 
 // Status returns HTTPResponse.Status
-func (r UpsertDeploymentResponse) Status() string {
+func (r CreateDeploymentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -2538,7 +4319,29 @@ func (r UpsertDeploymentResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpsertDeploymentResponse) StatusCode() int {
+func (r CreateDeploymentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteDeploymentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *Deployment
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteDeploymentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteDeploymentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2563,6 +4366,28 @@ func (r GetDeploymentResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetDeploymentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpsertDeploymentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *Deployment
+}
+
+// Status returns HTTPResponse.Status
+func (r UpsertDeploymentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpsertDeploymentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2604,16 +4429,15 @@ func (r ListDeploymentVersionsResponse) StatusCode() int {
 	return 0
 }
 
-type UpsertDeploymentVersionResponse struct {
+type CreateDeploymentVersionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON202      *DeploymentVersion
 	JSON400      *ErrorResponse
-	JSON404      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r UpsertDeploymentVersionResponse) Status() string {
+func (r CreateDeploymentVersionResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -2621,33 +4445,7 @@ func (r UpsertDeploymentVersionResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpsertDeploymentVersionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpsertUserApprovalRecordResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Success *bool `json:"success,omitempty"`
-	}
-	JSON400 *ErrorResponse
-	JSON404 *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r UpsertUserApprovalRecordResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpsertUserApprovalRecordResponse) StatusCode() int {
+func (r CreateDeploymentVersionResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2687,14 +4485,14 @@ func (r ListEnvironmentsResponse) StatusCode() int {
 	return 0
 }
 
-type UpsertEnvironmentResponse struct {
+type CreateEnvironmentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON202      *Environment
 }
 
 // Status returns HTTPResponse.Status
-func (r UpsertEnvironmentResponse) Status() string {
+func (r CreateEnvironmentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -2702,7 +4500,29 @@ func (r UpsertEnvironmentResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpsertEnvironmentResponse) StatusCode() int {
+func (r CreateEnvironmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteEnvironmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *Environment
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteEnvironmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteEnvironmentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2727,6 +4547,113 @@ func (r GetEnvironmentResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetEnvironmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpsertEnvironmentByIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Environment
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpsertEnvironmentByIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpsertEnvironmentByIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetJobsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Items []JobWithRelease `json:"items"`
+
+		// Limit Maximum number of items returned
+		Limit int `json:"limit"`
+
+		// Offset Number of items skipped
+		Offset int `json:"offset"`
+
+		// Total Total number of items available
+		Total int `json:"total"`
+	}
+	JSON400 *ErrorResponse
+	JSON404 *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetJobsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetJobsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetJobResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Job
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetJobResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetJobResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetJobWithReleaseResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *JobWithRelease
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetJobWithReleaseResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetJobWithReleaseResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2758,16 +4685,15 @@ func (r ListPoliciesResponse) StatusCode() int {
 	return 0
 }
 
-type UpsertPolicyResponse struct {
+type CreatePolicyResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *Policy
 	JSON202      *Policy
 	JSON400      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r UpsertPolicyResponse) Status() string {
+func (r CreatePolicyResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -2775,32 +4701,23 @@ func (r UpsertPolicyResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpsertPolicyResponse) StatusCode() int {
+func (r CreatePolicyResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetAllRelationshipsResponse struct {
+type DeletePolicyResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *struct {
-		Items []RelationshipRule `json:"items"`
-
-		// Limit Maximum number of items returned
-		Limit int `json:"limit"`
-
-		// Offset Number of items skipped
-		Offset int `json:"offset"`
-
-		// Total Total number of items available
-		Total int `json:"total"`
-	}
+	JSON202      *Policy
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r GetAllRelationshipsResponse) Status() string {
+func (r DeletePolicyResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -2808,7 +4725,150 @@ func (r GetAllRelationshipsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetAllRelationshipsResponse) StatusCode() int {
+func (r DeletePolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Policy
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdatePolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *Policy
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdatePolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdatePolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateRelationshipRuleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *RelationshipRule
+	JSON400      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateRelationshipRuleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateRelationshipRuleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteRelationshipResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *RelationshipRule
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteRelationshipResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteRelationshipResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetRelationshipRuleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RelationshipRule
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetRelationshipRuleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetRelationshipRuleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpsertRelationshipByIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *RelationshipRule
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpsertRelationshipByIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpsertRelationshipByIdResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2936,6 +4996,131 @@ func (r GetResourceByIdentifierResponse) StatusCode() int {
 	return 0
 }
 
+type ListSystemsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Items []System `json:"items"`
+
+		// Limit Maximum number of items returned
+		Limit int `json:"limit"`
+
+		// Offset Number of items skipped
+		Offset int `json:"offset"`
+
+		// Total Total number of items available
+		Total int `json:"total"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSystemsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSystemsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateSystemResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *System
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateSystemResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateSystemResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteSystemResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *System
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteSystemResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteSystemResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetSystemResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *System
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSystemResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSystemResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpsertSystemByIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *System
+}
+
+// Status returns HTTPResponse.Status
+func (r UpsertSystemByIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpsertSystemByIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // ListWorkspacesWithResponse request returning *ListWorkspacesResponse
 func (c *ClientWithResponses) ListWorkspacesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListWorkspacesResponse, error) {
 	rsp, err := c.ListWorkspaces(ctx, reqEditors...)
@@ -3006,6 +5191,23 @@ func (c *ClientWithResponses) UpdateWorkspaceWithResponse(ctx context.Context, w
 	return ParseUpdateWorkspaceResponse(rsp)
 }
 
+// CreateUserApprovalRecordWithBodyWithResponse request with arbitrary body returning *CreateUserApprovalRecordResponse
+func (c *ClientWithResponses) CreateUserApprovalRecordWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUserApprovalRecordResponse, error) {
+	rsp, err := c.CreateUserApprovalRecordWithBody(ctx, workspaceId, deploymentVersionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateUserApprovalRecordResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateUserApprovalRecordWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, body CreateUserApprovalRecordJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUserApprovalRecordResponse, error) {
+	rsp, err := c.CreateUserApprovalRecord(ctx, workspaceId, deploymentVersionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateUserApprovalRecordResponse(rsp)
+}
+
 // ListDeploymentsWithResponse request returning *ListDeploymentsResponse
 func (c *ClientWithResponses) ListDeploymentsWithResponse(ctx context.Context, workspaceId string, params *ListDeploymentsParams, reqEditors ...RequestEditorFn) (*ListDeploymentsResponse, error) {
 	rsp, err := c.ListDeployments(ctx, workspaceId, params, reqEditors...)
@@ -3015,21 +5217,30 @@ func (c *ClientWithResponses) ListDeploymentsWithResponse(ctx context.Context, w
 	return ParseListDeploymentsResponse(rsp)
 }
 
-// UpsertDeploymentWithBodyWithResponse request with arbitrary body returning *UpsertDeploymentResponse
-func (c *ClientWithResponses) UpsertDeploymentWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDeploymentResponse, error) {
-	rsp, err := c.UpsertDeploymentWithBody(ctx, workspaceId, contentType, body, reqEditors...)
+// CreateDeploymentWithBodyWithResponse request with arbitrary body returning *CreateDeploymentResponse
+func (c *ClientWithResponses) CreateDeploymentWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeploymentResponse, error) {
+	rsp, err := c.CreateDeploymentWithBody(ctx, workspaceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpsertDeploymentResponse(rsp)
+	return ParseCreateDeploymentResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpsertDeploymentWithResponse(ctx context.Context, workspaceId string, body UpsertDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDeploymentResponse, error) {
-	rsp, err := c.UpsertDeployment(ctx, workspaceId, body, reqEditors...)
+func (c *ClientWithResponses) CreateDeploymentWithResponse(ctx context.Context, workspaceId string, body CreateDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDeploymentResponse, error) {
+	rsp, err := c.CreateDeployment(ctx, workspaceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpsertDeploymentResponse(rsp)
+	return ParseCreateDeploymentResponse(rsp)
+}
+
+// DeleteDeploymentWithResponse request returning *DeleteDeploymentResponse
+func (c *ClientWithResponses) DeleteDeploymentWithResponse(ctx context.Context, workspaceId string, deploymentId string, reqEditors ...RequestEditorFn) (*DeleteDeploymentResponse, error) {
+	rsp, err := c.DeleteDeployment(ctx, workspaceId, deploymentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteDeploymentResponse(rsp)
 }
 
 // GetDeploymentWithResponse request returning *GetDeploymentResponse
@@ -3041,6 +5252,23 @@ func (c *ClientWithResponses) GetDeploymentWithResponse(ctx context.Context, wor
 	return ParseGetDeploymentResponse(rsp)
 }
 
+// UpsertDeploymentWithBodyWithResponse request with arbitrary body returning *UpsertDeploymentResponse
+func (c *ClientWithResponses) UpsertDeploymentWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDeploymentResponse, error) {
+	rsp, err := c.UpsertDeploymentWithBody(ctx, workspaceId, deploymentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertDeploymentResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpsertDeploymentWithResponse(ctx context.Context, workspaceId string, deploymentId string, body UpsertDeploymentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDeploymentResponse, error) {
+	rsp, err := c.UpsertDeployment(ctx, workspaceId, deploymentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertDeploymentResponse(rsp)
+}
+
 // ListDeploymentVersionsWithResponse request returning *ListDeploymentVersionsResponse
 func (c *ClientWithResponses) ListDeploymentVersionsWithResponse(ctx context.Context, workspaceId string, deploymentId string, params *ListDeploymentVersionsParams, reqEditors ...RequestEditorFn) (*ListDeploymentVersionsResponse, error) {
 	rsp, err := c.ListDeploymentVersions(ctx, workspaceId, deploymentId, params, reqEditors...)
@@ -3050,38 +5278,21 @@ func (c *ClientWithResponses) ListDeploymentVersionsWithResponse(ctx context.Con
 	return ParseListDeploymentVersionsResponse(rsp)
 }
 
-// UpsertDeploymentVersionWithBodyWithResponse request with arbitrary body returning *UpsertDeploymentVersionResponse
-func (c *ClientWithResponses) UpsertDeploymentVersionWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDeploymentVersionResponse, error) {
-	rsp, err := c.UpsertDeploymentVersionWithBody(ctx, workspaceId, deploymentId, contentType, body, reqEditors...)
+// CreateDeploymentVersionWithBodyWithResponse request with arbitrary body returning *CreateDeploymentVersionResponse
+func (c *ClientWithResponses) CreateDeploymentVersionWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeploymentVersionResponse, error) {
+	rsp, err := c.CreateDeploymentVersionWithBody(ctx, workspaceId, deploymentId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpsertDeploymentVersionResponse(rsp)
+	return ParseCreateDeploymentVersionResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpsertDeploymentVersionWithResponse(ctx context.Context, workspaceId string, deploymentId string, body UpsertDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDeploymentVersionResponse, error) {
-	rsp, err := c.UpsertDeploymentVersion(ctx, workspaceId, deploymentId, body, reqEditors...)
+func (c *ClientWithResponses) CreateDeploymentVersionWithResponse(ctx context.Context, workspaceId string, deploymentId string, body CreateDeploymentVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDeploymentVersionResponse, error) {
+	rsp, err := c.CreateDeploymentVersion(ctx, workspaceId, deploymentId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpsertDeploymentVersionResponse(rsp)
-}
-
-// UpsertUserApprovalRecordWithBodyWithResponse request with arbitrary body returning *UpsertUserApprovalRecordResponse
-func (c *ClientWithResponses) UpsertUserApprovalRecordWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertUserApprovalRecordResponse, error) {
-	rsp, err := c.UpsertUserApprovalRecordWithBody(ctx, workspaceId, deploymentVersionId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpsertUserApprovalRecordResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpsertUserApprovalRecordWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, body UpsertUserApprovalRecordJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertUserApprovalRecordResponse, error) {
-	rsp, err := c.UpsertUserApprovalRecord(ctx, workspaceId, deploymentVersionId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpsertUserApprovalRecordResponse(rsp)
+	return ParseCreateDeploymentVersionResponse(rsp)
 }
 
 // ListEnvironmentsWithResponse request returning *ListEnvironmentsResponse
@@ -3093,21 +5304,30 @@ func (c *ClientWithResponses) ListEnvironmentsWithResponse(ctx context.Context, 
 	return ParseListEnvironmentsResponse(rsp)
 }
 
-// UpsertEnvironmentWithBodyWithResponse request with arbitrary body returning *UpsertEnvironmentResponse
-func (c *ClientWithResponses) UpsertEnvironmentWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertEnvironmentResponse, error) {
-	rsp, err := c.UpsertEnvironmentWithBody(ctx, workspaceId, contentType, body, reqEditors...)
+// CreateEnvironmentWithBodyWithResponse request with arbitrary body returning *CreateEnvironmentResponse
+func (c *ClientWithResponses) CreateEnvironmentWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error) {
+	rsp, err := c.CreateEnvironmentWithBody(ctx, workspaceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpsertEnvironmentResponse(rsp)
+	return ParseCreateEnvironmentResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpsertEnvironmentWithResponse(ctx context.Context, workspaceId string, body UpsertEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertEnvironmentResponse, error) {
-	rsp, err := c.UpsertEnvironment(ctx, workspaceId, body, reqEditors...)
+func (c *ClientWithResponses) CreateEnvironmentWithResponse(ctx context.Context, workspaceId string, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error) {
+	rsp, err := c.CreateEnvironment(ctx, workspaceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpsertEnvironmentResponse(rsp)
+	return ParseCreateEnvironmentResponse(rsp)
+}
+
+// DeleteEnvironmentWithResponse request returning *DeleteEnvironmentResponse
+func (c *ClientWithResponses) DeleteEnvironmentWithResponse(ctx context.Context, workspaceId string, environmentId string, reqEditors ...RequestEditorFn) (*DeleteEnvironmentResponse, error) {
+	rsp, err := c.DeleteEnvironment(ctx, workspaceId, environmentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteEnvironmentResponse(rsp)
 }
 
 // GetEnvironmentWithResponse request returning *GetEnvironmentResponse
@@ -3119,6 +5339,50 @@ func (c *ClientWithResponses) GetEnvironmentWithResponse(ctx context.Context, wo
 	return ParseGetEnvironmentResponse(rsp)
 }
 
+// UpsertEnvironmentByIdWithBodyWithResponse request with arbitrary body returning *UpsertEnvironmentByIdResponse
+func (c *ClientWithResponses) UpsertEnvironmentByIdWithBodyWithResponse(ctx context.Context, workspaceId string, environmentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertEnvironmentByIdResponse, error) {
+	rsp, err := c.UpsertEnvironmentByIdWithBody(ctx, workspaceId, environmentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertEnvironmentByIdResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpsertEnvironmentByIdWithResponse(ctx context.Context, workspaceId string, environmentId string, body UpsertEnvironmentByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertEnvironmentByIdResponse, error) {
+	rsp, err := c.UpsertEnvironmentById(ctx, workspaceId, environmentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertEnvironmentByIdResponse(rsp)
+}
+
+// GetJobsWithResponse request returning *GetJobsResponse
+func (c *ClientWithResponses) GetJobsWithResponse(ctx context.Context, workspaceId string, params *GetJobsParams, reqEditors ...RequestEditorFn) (*GetJobsResponse, error) {
+	rsp, err := c.GetJobs(ctx, workspaceId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetJobsResponse(rsp)
+}
+
+// GetJobWithResponse request returning *GetJobResponse
+func (c *ClientWithResponses) GetJobWithResponse(ctx context.Context, workspaceId string, jobId string, reqEditors ...RequestEditorFn) (*GetJobResponse, error) {
+	rsp, err := c.GetJob(ctx, workspaceId, jobId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetJobResponse(rsp)
+}
+
+// GetJobWithReleaseWithResponse request returning *GetJobWithReleaseResponse
+func (c *ClientWithResponses) GetJobWithReleaseWithResponse(ctx context.Context, workspaceId string, jobId string, reqEditors ...RequestEditorFn) (*GetJobWithReleaseResponse, error) {
+	rsp, err := c.GetJobWithRelease(ctx, workspaceId, jobId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetJobWithReleaseResponse(rsp)
+}
+
 // ListPoliciesWithResponse request returning *ListPoliciesResponse
 func (c *ClientWithResponses) ListPoliciesWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*ListPoliciesResponse, error) {
 	rsp, err := c.ListPolicies(ctx, workspaceId, reqEditors...)
@@ -3128,30 +5392,108 @@ func (c *ClientWithResponses) ListPoliciesWithResponse(ctx context.Context, work
 	return ParseListPoliciesResponse(rsp)
 }
 
-// UpsertPolicyWithBodyWithResponse request with arbitrary body returning *UpsertPolicyResponse
-func (c *ClientWithResponses) UpsertPolicyWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertPolicyResponse, error) {
-	rsp, err := c.UpsertPolicyWithBody(ctx, workspaceId, contentType, body, reqEditors...)
+// CreatePolicyWithBodyWithResponse request with arbitrary body returning *CreatePolicyResponse
+func (c *ClientWithResponses) CreatePolicyWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePolicyResponse, error) {
+	rsp, err := c.CreatePolicyWithBody(ctx, workspaceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpsertPolicyResponse(rsp)
+	return ParseCreatePolicyResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpsertPolicyWithResponse(ctx context.Context, workspaceId string, body UpsertPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertPolicyResponse, error) {
-	rsp, err := c.UpsertPolicy(ctx, workspaceId, body, reqEditors...)
+func (c *ClientWithResponses) CreatePolicyWithResponse(ctx context.Context, workspaceId string, body CreatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePolicyResponse, error) {
+	rsp, err := c.CreatePolicy(ctx, workspaceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpsertPolicyResponse(rsp)
+	return ParseCreatePolicyResponse(rsp)
 }
 
-// GetAllRelationshipsWithResponse request returning *GetAllRelationshipsResponse
-func (c *ClientWithResponses) GetAllRelationshipsWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*GetAllRelationshipsResponse, error) {
-	rsp, err := c.GetAllRelationships(ctx, workspaceId, reqEditors...)
+// DeletePolicyWithResponse request returning *DeletePolicyResponse
+func (c *ClientWithResponses) DeletePolicyWithResponse(ctx context.Context, workspaceId string, policyId string, reqEditors ...RequestEditorFn) (*DeletePolicyResponse, error) {
+	rsp, err := c.DeletePolicy(ctx, workspaceId, policyId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetAllRelationshipsResponse(rsp)
+	return ParseDeletePolicyResponse(rsp)
+}
+
+// GetPolicyWithResponse request returning *GetPolicyResponse
+func (c *ClientWithResponses) GetPolicyWithResponse(ctx context.Context, workspaceId string, policyId string, reqEditors ...RequestEditorFn) (*GetPolicyResponse, error) {
+	rsp, err := c.GetPolicy(ctx, workspaceId, policyId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPolicyResponse(rsp)
+}
+
+// UpdatePolicyWithBodyWithResponse request with arbitrary body returning *UpdatePolicyResponse
+func (c *ClientWithResponses) UpdatePolicyWithBodyWithResponse(ctx context.Context, workspaceId string, policyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error) {
+	rsp, err := c.UpdatePolicyWithBody(ctx, workspaceId, policyId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdatePolicyResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdatePolicyWithResponse(ctx context.Context, workspaceId string, policyId string, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error) {
+	rsp, err := c.UpdatePolicy(ctx, workspaceId, policyId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdatePolicyResponse(rsp)
+}
+
+// CreateRelationshipRuleWithBodyWithResponse request with arbitrary body returning *CreateRelationshipRuleResponse
+func (c *ClientWithResponses) CreateRelationshipRuleWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRelationshipRuleResponse, error) {
+	rsp, err := c.CreateRelationshipRuleWithBody(ctx, workspaceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateRelationshipRuleResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateRelationshipRuleWithResponse(ctx context.Context, workspaceId string, body CreateRelationshipRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRelationshipRuleResponse, error) {
+	rsp, err := c.CreateRelationshipRule(ctx, workspaceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateRelationshipRuleResponse(rsp)
+}
+
+// DeleteRelationshipWithResponse request returning *DeleteRelationshipResponse
+func (c *ClientWithResponses) DeleteRelationshipWithResponse(ctx context.Context, workspaceId string, relationshipRuleId string, reqEditors ...RequestEditorFn) (*DeleteRelationshipResponse, error) {
+	rsp, err := c.DeleteRelationship(ctx, workspaceId, relationshipRuleId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteRelationshipResponse(rsp)
+}
+
+// GetRelationshipRuleWithResponse request returning *GetRelationshipRuleResponse
+func (c *ClientWithResponses) GetRelationshipRuleWithResponse(ctx context.Context, workspaceId string, relationshipRuleId string, reqEditors ...RequestEditorFn) (*GetRelationshipRuleResponse, error) {
+	rsp, err := c.GetRelationshipRule(ctx, workspaceId, relationshipRuleId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRelationshipRuleResponse(rsp)
+}
+
+// UpsertRelationshipByIdWithBodyWithResponse request with arbitrary body returning *UpsertRelationshipByIdResponse
+func (c *ClientWithResponses) UpsertRelationshipByIdWithBodyWithResponse(ctx context.Context, workspaceId string, relationshipRuleId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertRelationshipByIdResponse, error) {
+	rsp, err := c.UpsertRelationshipByIdWithBody(ctx, workspaceId, relationshipRuleId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertRelationshipByIdResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpsertRelationshipByIdWithResponse(ctx context.Context, workspaceId string, relationshipRuleId string, body UpsertRelationshipByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertRelationshipByIdResponse, error) {
+	rsp, err := c.UpsertRelationshipById(ctx, workspaceId, relationshipRuleId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertRelationshipByIdResponse(rsp)
 }
 
 // UpsertResourceProviderWithBodyWithResponse request with arbitrary body returning *UpsertResourceProviderResponse
@@ -3213,6 +5555,67 @@ func (c *ClientWithResponses) GetResourceByIdentifierWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseGetResourceByIdentifierResponse(rsp)
+}
+
+// ListSystemsWithResponse request returning *ListSystemsResponse
+func (c *ClientWithResponses) ListSystemsWithResponse(ctx context.Context, workspaceId string, params *ListSystemsParams, reqEditors ...RequestEditorFn) (*ListSystemsResponse, error) {
+	rsp, err := c.ListSystems(ctx, workspaceId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSystemsResponse(rsp)
+}
+
+// CreateSystemWithBodyWithResponse request with arbitrary body returning *CreateSystemResponse
+func (c *ClientWithResponses) CreateSystemWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSystemResponse, error) {
+	rsp, err := c.CreateSystemWithBody(ctx, workspaceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSystemResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateSystemWithResponse(ctx context.Context, workspaceId string, body CreateSystemJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSystemResponse, error) {
+	rsp, err := c.CreateSystem(ctx, workspaceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSystemResponse(rsp)
+}
+
+// DeleteSystemWithResponse request returning *DeleteSystemResponse
+func (c *ClientWithResponses) DeleteSystemWithResponse(ctx context.Context, workspaceId string, systemId string, reqEditors ...RequestEditorFn) (*DeleteSystemResponse, error) {
+	rsp, err := c.DeleteSystem(ctx, workspaceId, systemId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteSystemResponse(rsp)
+}
+
+// GetSystemWithResponse request returning *GetSystemResponse
+func (c *ClientWithResponses) GetSystemWithResponse(ctx context.Context, workspaceId string, systemId string, reqEditors ...RequestEditorFn) (*GetSystemResponse, error) {
+	rsp, err := c.GetSystem(ctx, workspaceId, systemId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSystemResponse(rsp)
+}
+
+// UpsertSystemByIdWithBodyWithResponse request with arbitrary body returning *UpsertSystemByIdResponse
+func (c *ClientWithResponses) UpsertSystemByIdWithBodyWithResponse(ctx context.Context, workspaceId string, systemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertSystemByIdResponse, error) {
+	rsp, err := c.UpsertSystemByIdWithBody(ctx, workspaceId, systemId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertSystemByIdResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpsertSystemByIdWithResponse(ctx context.Context, workspaceId string, systemId string, body UpsertSystemByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertSystemByIdResponse, error) {
+	rsp, err := c.UpsertSystemById(ctx, workspaceId, systemId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertSystemByIdResponse(rsp)
 }
 
 // ParseListWorkspacesResponse parses an HTTP response from a ListWorkspacesWithResponse call
@@ -3504,6 +5907,48 @@ func ParseUpdateWorkspaceResponse(rsp *http.Response) (*UpdateWorkspaceResponse,
 	return response, nil
 }
 
+// ParseCreateUserApprovalRecordResponse parses an HTTP response from a CreateUserApprovalRecordWithResponse call
+func ParseCreateUserApprovalRecordResponse(rsp *http.Response) (*CreateUserApprovalRecordResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateUserApprovalRecordResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Success *bool `json:"success,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListDeploymentsResponse parses an HTTP response from a ListDeploymentsWithResponse call
 func ParseListDeploymentsResponse(rsp *http.Response) (*ListDeploymentsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -3541,15 +5986,41 @@ func ParseListDeploymentsResponse(rsp *http.Response) (*ListDeploymentsResponse,
 	return response, nil
 }
 
-// ParseUpsertDeploymentResponse parses an HTTP response from a UpsertDeploymentWithResponse call
-func ParseUpsertDeploymentResponse(rsp *http.Response) (*UpsertDeploymentResponse, error) {
+// ParseCreateDeploymentResponse parses an HTTP response from a CreateDeploymentWithResponse call
+func ParseCreateDeploymentResponse(rsp *http.Response) (*CreateDeploymentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpsertDeploymentResponse{
+	response := &CreateDeploymentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest Deployment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteDeploymentResponse parses an HTTP response from a DeleteDeploymentWithResponse call
+func ParseDeleteDeploymentResponse(rsp *http.Response) (*DeleteDeploymentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteDeploymentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -3607,6 +6078,32 @@ func ParseGetDeploymentResponse(rsp *http.Response) (*GetDeploymentResponse, err
 	return response, nil
 }
 
+// ParseUpsertDeploymentResponse parses an HTTP response from a UpsertDeploymentWithResponse call
+func ParseUpsertDeploymentResponse(rsp *http.Response) (*UpsertDeploymentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpsertDeploymentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest Deployment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListDeploymentVersionsResponse parses an HTTP response from a ListDeploymentVersionsWithResponse call
 func ParseListDeploymentVersionsResponse(rsp *http.Response) (*ListDeploymentVersionsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -3658,15 +6155,15 @@ func ParseListDeploymentVersionsResponse(rsp *http.Response) (*ListDeploymentVer
 	return response, nil
 }
 
-// ParseUpsertDeploymentVersionResponse parses an HTTP response from a UpsertDeploymentVersionWithResponse call
-func ParseUpsertDeploymentVersionResponse(rsp *http.Response) (*UpsertDeploymentVersionResponse, error) {
+// ParseCreateDeploymentVersionResponse parses an HTTP response from a CreateDeploymentVersionWithResponse call
+func ParseCreateDeploymentVersionResponse(rsp *http.Response) (*CreateDeploymentVersionResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpsertDeploymentVersionResponse{
+	response := &CreateDeploymentVersionResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -3685,55 +6182,6 @@ func ParseUpsertDeploymentVersionResponse(rsp *http.Response) (*UpsertDeployment
 			return nil, err
 		}
 		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpsertUserApprovalRecordResponse parses an HTTP response from a UpsertUserApprovalRecordWithResponse call
-func ParseUpsertUserApprovalRecordResponse(rsp *http.Response) (*UpsertUserApprovalRecordResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpsertUserApprovalRecordResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Success *bool `json:"success,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
 
 	}
 
@@ -3777,15 +6225,41 @@ func ParseListEnvironmentsResponse(rsp *http.Response) (*ListEnvironmentsRespons
 	return response, nil
 }
 
-// ParseUpsertEnvironmentResponse parses an HTTP response from a UpsertEnvironmentWithResponse call
-func ParseUpsertEnvironmentResponse(rsp *http.Response) (*UpsertEnvironmentResponse, error) {
+// ParseCreateEnvironmentResponse parses an HTTP response from a CreateEnvironmentWithResponse call
+func ParseCreateEnvironmentResponse(rsp *http.Response) (*CreateEnvironmentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpsertEnvironmentResponse{
+	response := &CreateEnvironmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest Environment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteEnvironmentResponse parses an HTTP response from a DeleteEnvironmentWithResponse call
+func ParseDeleteEnvironmentResponse(rsp *http.Response) (*DeleteEnvironmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteEnvironmentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -3819,6 +6293,177 @@ func ParseGetEnvironmentResponse(rsp *http.Response) (*GetEnvironmentResponse, e
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Environment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpsertEnvironmentByIdResponse parses an HTTP response from a UpsertEnvironmentByIdWithResponse call
+func ParseUpsertEnvironmentByIdResponse(rsp *http.Response) (*UpsertEnvironmentByIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpsertEnvironmentByIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Environment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetJobsResponse parses an HTTP response from a GetJobsWithResponse call
+func ParseGetJobsResponse(rsp *http.Response) (*GetJobsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetJobsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Items []JobWithRelease `json:"items"`
+
+			// Limit Maximum number of items returned
+			Limit int `json:"limit"`
+
+			// Offset Number of items skipped
+			Offset int `json:"offset"`
+
+			// Total Total number of items available
+			Total int `json:"total"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetJobResponse parses an HTTP response from a GetJobWithResponse call
+func ParseGetJobResponse(rsp *http.Response) (*GetJobResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetJobResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Job
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetJobWithReleaseResponse parses an HTTP response from a GetJobWithReleaseWithResponse call
+func ParseGetJobWithReleaseResponse(rsp *http.Response) (*GetJobWithReleaseResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetJobWithReleaseResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest JobWithRelease
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -3878,27 +6523,20 @@ func ParseListPoliciesResponse(rsp *http.Response) (*ListPoliciesResponse, error
 	return response, nil
 }
 
-// ParseUpsertPolicyResponse parses an HTTP response from a UpsertPolicyWithResponse call
-func ParseUpsertPolicyResponse(rsp *http.Response) (*UpsertPolicyResponse, error) {
+// ParseCreatePolicyResponse parses an HTTP response from a CreatePolicyWithResponse call
+func ParseCreatePolicyResponse(rsp *http.Response) (*CreatePolicyResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpsertPolicyResponse{
+	response := &CreatePolicyResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Policy
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
 		var dest Policy
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -3918,37 +6556,273 @@ func ParseUpsertPolicyResponse(rsp *http.Response) (*UpsertPolicyResponse, error
 	return response, nil
 }
 
-// ParseGetAllRelationshipsResponse parses an HTTP response from a GetAllRelationshipsWithResponse call
-func ParseGetAllRelationshipsResponse(rsp *http.Response) (*GetAllRelationshipsResponse, error) {
+// ParseDeletePolicyResponse parses an HTTP response from a DeletePolicyWithResponse call
+func ParseDeletePolicyResponse(rsp *http.Response) (*DeletePolicyResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetAllRelationshipsResponse{
+	response := &DeletePolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest Policy
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetPolicyResponse parses an HTTP response from a GetPolicyWithResponse call
+func ParseGetPolicyResponse(rsp *http.Response) (*GetPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPolicyResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Items []RelationshipRule `json:"items"`
-
-			// Limit Maximum number of items returned
-			Limit int `json:"limit"`
-
-			// Offset Number of items skipped
-			Offset int `json:"offset"`
-
-			// Total Total number of items available
-			Total int `json:"total"`
-		}
+		var dest Policy
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdatePolicyResponse parses an HTTP response from a UpdatePolicyWithResponse call
+func ParseUpdatePolicyResponse(rsp *http.Response) (*UpdatePolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdatePolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest Policy
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateRelationshipRuleResponse parses an HTTP response from a CreateRelationshipRuleWithResponse call
+func ParseCreateRelationshipRuleResponse(rsp *http.Response) (*CreateRelationshipRuleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateRelationshipRuleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest RelationshipRule
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteRelationshipResponse parses an HTTP response from a DeleteRelationshipWithResponse call
+func ParseDeleteRelationshipResponse(rsp *http.Response) (*DeleteRelationshipResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteRelationshipResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest RelationshipRule
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetRelationshipRuleResponse parses an HTTP response from a GetRelationshipRuleWithResponse call
+func ParseGetRelationshipRuleResponse(rsp *http.Response) (*GetRelationshipRuleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetRelationshipRuleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RelationshipRule
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpsertRelationshipByIdResponse parses an HTTP response from a UpsertRelationshipByIdWithResponse call
+func ParseUpsertRelationshipByIdResponse(rsp *http.Response) (*UpsertRelationshipByIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpsertRelationshipByIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest RelationshipRule
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -4086,6 +6960,175 @@ func ParseGetResourceByIdentifierResponse(rsp *http.Response) (*GetResourceByIde
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Resource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListSystemsResponse parses an HTTP response from a ListSystemsWithResponse call
+func ParseListSystemsResponse(rsp *http.Response) (*ListSystemsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSystemsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Items []System `json:"items"`
+
+			// Limit Maximum number of items returned
+			Limit int `json:"limit"`
+
+			// Offset Number of items skipped
+			Offset int `json:"offset"`
+
+			// Total Total number of items available
+			Total int `json:"total"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateSystemResponse parses an HTTP response from a CreateSystemWithResponse call
+func ParseCreateSystemResponse(rsp *http.Response) (*CreateSystemResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateSystemResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest System
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteSystemResponse parses an HTTP response from a DeleteSystemWithResponse call
+func ParseDeleteSystemResponse(rsp *http.Response) (*DeleteSystemResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteSystemResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest System
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSystemResponse parses an HTTP response from a GetSystemWithResponse call
+func ParseGetSystemResponse(rsp *http.Response) (*GetSystemResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSystemResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest System
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpsertSystemByIdResponse parses an HTTP response from a UpsertSystemByIdWithResponse call
+func ParseUpsertSystemByIdResponse(rsp *http.Response) (*UpsertSystemByIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpsertSystemByIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest System
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

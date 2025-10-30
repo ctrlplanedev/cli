@@ -86,20 +86,23 @@ func NewUpsertDeploymentVersionCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to convert deployment version status: %w", err)
 			}
+			if stat == nil {
+				s := api.DeploymentVersionStatusReady
+				stat = &s
+			}
 
 			workspaceID := client.GetWorkspaceID(cmd.Context(), workspace)
 
 			config := cliutil.ConvertConfigArrayToNestedMap(configArray)
 			var response *http.Response
 			for _, id := range deploymentID {
-				resp, err := client.UpsertDeploymentVersion(cmd.Context(), workspaceID.String(), id, api.UpsertDeploymentVersionJSONRequestBody{
+				resp, err := client.CreateDeploymentVersion(cmd.Context(), workspaceID.String(), id, api.CreateDeploymentVersionJSONRequestBody{
 					Tag:          tag,
-					DeploymentId: id,
 					Metadata:     &metadata,
 					CreatedAt:    parsedTime,
 					Config:       &config,
-					Name:         &name,
-					Status:       stat,
+					Name:         name,
+					Status:       *stat,
 				})
 				if err != nil {
 					return fmt.Errorf("failed to create deployment version: %w", err)
