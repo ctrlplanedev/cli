@@ -9,11 +9,12 @@ import (
 	"github.com/ctrlplanedev/cli/internal/api"
 )
 
-func New(client *api.ClientWithResponses, workspaceId string, name string) (*ResourceProvider, error) {
-	log.Debug("Upserting resource provider", "workspaceId", workspaceId, "name", name)
+func New(client *api.ClientWithResponses, workspace string, name string) (*ResourceProvider, error) {
 	ctx := context.Background()
+	workspaceId := client.GetWorkspaceID(ctx, workspace).String()
 
 	log.Debug("Upserting resource provider", "workspaceId", workspaceId, "name", name)
+
 	resp, err := client.UpsertResourceProviderWithResponse(ctx, workspaceId, api.UpsertResourceProviderJSONRequestBody{
 		Name: name,
 	})
