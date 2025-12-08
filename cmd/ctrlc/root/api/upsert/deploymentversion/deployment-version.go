@@ -97,12 +97,12 @@ func NewUpsertDeploymentVersionCmd() *cobra.Command {
 			var response *http.Response
 			for _, id := range deploymentID {
 				resp, err := client.CreateDeploymentVersion(cmd.Context(), workspaceID.String(), id, api.CreateDeploymentVersionJSONRequestBody{
-					Tag:          tag,
-					Metadata:     &metadata,
-					CreatedAt:    parsedTime,
-					Config:       &config,
-					Name:         name,
-					Status:       *stat,
+					Tag:       tag,
+					Metadata:  &metadata,
+					CreatedAt: parsedTime,
+					Config:    &config,
+					Name:      name,
+					Status:    *stat,
 				})
 				if err != nil {
 					return fmt.Errorf("failed to create deployment version: %w", err)

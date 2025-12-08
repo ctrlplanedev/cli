@@ -42,7 +42,7 @@ func NewAPICmd() *cobra.Command {
 	}
 	cmd.PersistentFlags().String("template", "", "Template for output format. Accepts Go template format (e.g. --template='{{.status.phase}}')")
 	cmd.PersistentFlags().String("format", "json", "Output format. Accepts 'json', 'yaml', or 'github-action'")
-	
+
 	cmd.AddCommand(get.NewGetCmd())
 	cmd.AddCommand(upsert.NewUpsertCmd())
 

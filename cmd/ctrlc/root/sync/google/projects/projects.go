@@ -18,7 +18,7 @@ func NewSyncProjectsCmd() *cobra.Command {
 	var name string
 
 	cmd := &cobra.Command{
-		Use:   "projects", 
+		Use:   "projects",
 		Short: "Sync Google Cloud projects into Ctrlplane",
 		Example: heredoc.Doc(`
 			# Make sure Google Cloud credentials are configured via environment variables or application default credentials
@@ -48,18 +48,18 @@ func NewSyncProjectsCmd() *cobra.Command {
 			// Process each project
 			for _, project := range resp.Projects {
 				metadata := map[string]string{
-					"account/id":   project.ProjectId,
-					"account/name": project.Name,
-					"account/number": fmt.Sprintf("%d", project.ProjectNumber),
-					"account/state": project.LifecycleState,
-					"account/parent-id": project.Parent.Id,
+					"account/id":          project.ProjectId,
+					"account/name":        project.Name,
+					"account/number":      fmt.Sprintf("%d", project.ProjectNumber),
+					"account/state":       project.LifecycleState,
+					"account/parent-id":   project.Parent.Id,
 					"account/parent-type": project.Parent.Type,
 
-					"google/project":      project.ProjectId,
-					"google/number":       fmt.Sprintf("%d", project.ProjectNumber),
-					"google/state":        project.LifecycleState,
-					"google/parent-id":    project.Parent.Id,
-					"google/parent-type":  project.Parent.Type,
+					"google/project":     project.ProjectId,
+					"google/number":      fmt.Sprintf("%d", project.ProjectNumber),
+					"google/state":       project.LifecycleState,
+					"google/parent-id":   project.Parent.Id,
+					"google/parent-type": project.Parent.Type,
 				}
 
 				// Add labels as metadata
@@ -69,7 +69,7 @@ func NewSyncProjectsCmd() *cobra.Command {
 
 				resources = append(resources, api.ResourceProviderResource{
 					Version:    "ctrlplane.dev/cloud/account/v1",
-					Kind:       "GoogleProject", 
+					Kind:       "GoogleProject",
 					Name:       project.Name,
 					Identifier: project.ProjectId,
 					Config: map[string]any{

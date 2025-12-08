@@ -1,177 +1,145 @@
 package apply
 
-import "time"
+import "github.com/ctrlplanedev/cli/internal/api"
 
-// Config represents the structure of the YAML file
-type Config struct {
-	Systems       []System               `yaml:"systems"`
-	Providers     ResourceProvider       `yaml:"resourceProvider"`
-	Relationships []ResourceRelationship `yaml:"relationshipRules"`
-	Policies      []Policy               `yaml:"policies,omitempty"`
+// ResourceKind represents the type of resource in a YAML document
+type ResourceKind string
+
+const (
+	KindSystem           ResourceKind = "System"
+	KindDeployment       ResourceKind = "Deployment"
+	KindEnvironment      ResourceKind = "Environment"
+	KindPolicy           ResourceKind = "Policy"
+	KindRelationshipRule ResourceKind = "RelationshipRule"
+	KindResource         ResourceKind = "Resource"
+)
+
+// BaseDocument contains the common fields for all resource documents
+type BaseDocument struct {
+	Type ResourceKind `yaml:"type"`
+	Name string       `yaml:"name"`
 }
 
-type System struct {
-	Slug         string        `yaml:"slug"`
-	Name         string        `yaml:"name"`
-	Description  string        `yaml:"description"`
-	Deployments  []Deployment  `yaml:"deployments"`
-	Environments []Environment `yaml:"environments"`
+// SystemDocument represents a System resource in YAML
+type SystemDocument struct {
+	BaseDocument `yaml:",inline"`
+	Description  *string `yaml:"description,omitempty"`
 }
 
-type Environment struct {
-	Name             string             `yaml:"name"`
-	Description      *string            `yaml:"description,omitempty"`
-	ResourceSelector *map[string]any    `yaml:"resourceSelector,omitempty"`
-	Metadata         *map[string]string `yaml:"metadata,omitempty"`
+// SelectorConfig represents a resource selector in YAML
+type SelectorConfig struct {
+	Cel  *string        `yaml:"cel,omitempty"`
+	Json map[string]any `yaml:"json,omitempty"`
 }
 
-type DirectDeploymentVariableValue struct {
-	Value     any   `yaml:"value"`
-	Sensitive *bool `yaml:"sensitive,omitempty"`
-
-	IsDefault        *bool           `yaml:"isDefault,omitempty"`
-	ResourceSelector *map[string]any `yaml:"resourceSelector,omitempty"`
+// DeploymentDocument represents a Deployment resource in YAML
+type DeploymentDocument struct {
+	BaseDocument     `yaml:",inline"`
+	System           string         `yaml:"system"`
+	Slug             *string        `yaml:"slug,omitempty"`
+	Description      *string        `yaml:"description,omitempty"`
+	ResourceSelector *string        `yaml:"resourceSelector,omitempty"`
+	JobAgentId       *string        `yaml:"jobAgentId,omitempty"`
+	JobAgentConfig   map[string]any `yaml:"jobAgentConfig,omitempty"`
 }
 
-type ReferenceDeploymentVariableValue struct {
-	Reference    string   `yaml:"reference"`
-	Path         []string `yaml:"path"`
-	DefaultValue *any     `yaml:"defaultValue,omitempty"`
-
-	IsDefault        *bool           `yaml:"isDefault,omitempty"`
-	ResourceSelector *map[string]any `yaml:"resourceSelector,omitempty"`
+// EnvironmentDocument represents an Environment resource in YAML
+type EnvironmentDocument struct {
+	BaseDocument     `yaml:",inline"`
+	System           string          `yaml:"system"`
+	Description      *string         `yaml:"description,omitempty"`
+	ResourceSelector *SelectorConfig `yaml:"resourceSelector,omitempty"`
 }
 
-type DeploymentVariable struct {
-	Key             string                             `yaml:"key"`
-	Config          map[string]any                     `yaml:"config"`
-	Description     *string                            `yaml:"description"`
-	DirectValues    []DirectDeploymentVariableValue    `yaml:"directValues"`
-	ReferenceValues []ReferenceDeploymentVariableValue `yaml:"referenceValues"`
+// PolicyTargetSelectorConfig represents a policy target selector in YAML
+type PolicyTargetSelectorConfig struct {
+	DeploymentSelector  *SelectorConfig `yaml:"deploymentSelector,omitempty"`
+	EnvironmentSelector *SelectorConfig `yaml:"environmentSelector,omitempty"`
+	ResourceSelector    *SelectorConfig `yaml:"resourceSelector,omitempty"`
 }
 
-type ExitHook struct {
-	Name     string    `yaml:"name"`
-	JobAgent *JobAgent `yaml:"jobAgent"`
+// PolicyRuleConfig represents a policy rule in YAML
+type PolicyRuleConfig struct {
+	AnyApproval            *AnyApprovalRuleConfig            `yaml:"anyApproval,omitempty"`
+	EnvironmentProgression *EnvironmentProgressionRuleConfig `yaml:"environmentProgression,omitempty"`
+	GradualRollout         *GradualRolloutRuleConfig         `yaml:"gradualRollout,omitempty"`
+	DeploymentWindow       *DeploymentWindowRuleConfig       `yaml:"deploymentWindow,omitempty"`
 }
 
-type Deployment struct {
-	Slug             string                `yaml:"slug"`
-	Name             string                `yaml:"name"`
-	Description      *string               `yaml:"description"`
-	JobAgent         *JobAgent             `yaml:"jobAgent,omitempty"`
-	ResourceSelector *map[string]any       `yaml:"resourceSelector,omitempty"`
-	Metadata         *map[string]string    `yaml:"metadata,omitempty"`
-	Variables        *[]DeploymentVariable `yaml:"variables,omitempty"`
-	ExitHooks        *[]ExitHook           `yaml:"exitHooks,omitempty"`
+// DeploymentWindowRuleConfig represents a deployment window rule in YAML
+type DeploymentWindowRuleConfig struct {
+	Timezone string         `yaml:"timezone"`
+	Duration string         `yaml:"duration"`
+	RRule    string         `yaml:"rrule"`
 }
 
-type JobAgent struct {
-	Id     string         `yaml:"id"`
-	Config map[string]any `yaml:"config"`
+
+// AnyApprovalRuleConfig represents an any approval rule
+type AnyApprovalRuleConfig struct {
+	MinApprovals int32 `yaml:"minApprovals"`
 }
 
-type ResourceProvider struct {
-	Name      string     `yaml:"name"`
-	Resources []Resource `yaml:"resources"`
+// EnvironmentProgressionRuleConfig represents an environment progression rule
+type EnvironmentProgressionRuleConfig struct {
+	DependsOnEnvironmentSelector SelectorConfig   `yaml:"dependsOnEnvironmentSelector"`
+	MaximumAgeHours              *int32           `yaml:"maximumAgeHours,omitempty"`
+	MinimumSockTimeMinutes       *int32           `yaml:"minimumSockTimeMinutes,omitempty"`
+	MinimumSuccessPercentage     *float32         `yaml:"minimumSuccessPercentage,omitempty"`
+	SuccessStatuses              *[]api.JobStatus `yaml:"successStatuses,omitempty"`
 }
 
-type Variable struct {
-	DefaultValue *any      `yaml:"defaultValue,omitempty"`
-	Reference    *string   `yaml:"reference,omitempty"`
-	Path         *[]string `yaml:"path,omitempty"`
-
-	Key       string `yaml:"key"`
-	Sensitive *bool  `yaml:"sensitive,omitempty"`
-	Value     *any   `yaml:"value,omitempty"`
+// GradualRolloutRuleConfig represents a gradual rollout rule
+type GradualRolloutRuleConfig struct {
+	TimeScaleInterval int32 `yaml:"timeScaleInterval"`
 }
 
-type Resource struct {
-	Identifier string            `yaml:"identifier"`
-	Name       string            `yaml:"name"`
-	Version    string            `yaml:"version"`
-	Kind       string            `yaml:"kind"`
-	Config     map[string]any    `yaml:"config"`
-	Metadata   map[string]string `yaml:"metadata"`
-	Variables  *[]Variable       `yaml:"variables,omitempty"`
+// PolicyDocument represents a Policy resource in YAML
+type PolicyDocument struct {
+	BaseDocument `yaml:",inline"`
+	Description *string                      `yaml:"description,omitempty"`
+	Enabled     *bool                        `yaml:"enabled,omitempty"`
+	Priority    *int                         `yaml:"priority,omitempty"`
+	Metadata    map[string]string            `yaml:"metadata,omitempty"`
+	Selectors   []PolicyTargetSelectorConfig `yaml:"selectors"`
+	Rules       []PolicyRuleConfig           `yaml:"rules"`
 }
 
-type TargetResource struct {
-	Kind           string            `yaml:"kind"`
-	Version        string            `yaml:"version"`
-	MetadataEquals map[string]string `yaml:"metadataEquals"`
+// RelationshipRuleDocument represents a RelationshipRule resource in YAML
+type RelationshipRuleDocument struct {
+	Kind             ResourceKind            `yaml:"kind"`
+	Name             string                  `yaml:"name"`
+	Reference        string                  `yaml:"reference"`
+	RelationshipType string                  `yaml:"relationshipType"`
+	FromType         api.RelatableEntityType `yaml:"fromType"`
+	ToType           api.RelatableEntityType `yaml:"toType"`
+	Description      *string                 `yaml:"description,omitempty"`
+	Metadata         map[string]string       `yaml:"metadata,omitempty"`
+	FromSelector     *SelectorConfig         `yaml:"fromSelector,omitempty"`
+	ToSelector       *SelectorConfig         `yaml:"toSelector,omitempty"`
+	Matcher          *MatcherConfig          `yaml:"matcher,omitempty"`
 }
 
-type SourceResource struct {
-	Kind           string            `yaml:"kind"`
-	Version        string            `yaml:"version"`
-	MetadataEquals map[string]string `yaml:"metadataEquals"`
+// MatcherConfig represents a matcher for relationship rules
+type MatcherConfig struct {
+	Cel *string `yaml:"cel,omitempty"`
 }
 
-type MetadataKeysMatch struct {
-	Key       *string `yaml:"key,omitempty"`
-	SourceKey *string `yaml:"sourceKey,omitempty"`
-	TargetKey *string `yaml:"targetKey,omitempty"`
+// ResourceDocument represents a Resource in YAML
+type ResourceDocument struct {
+	BaseDocument `yaml:",inline"`
+	Identifier   string            `yaml:"identifier"`         // Unique identifier for the resource
+	Kind         string            `yaml:"kind"`               // The kind of resource (e.g., "Cluster", "Namespace")
+	Version      string            `yaml:"version"`            // Version string for the resource
+	Config       map[string]any    `yaml:"config,omitempty"`   // Arbitrary configuration
+	Metadata     map[string]string `yaml:"metadata,omitempty"` // Key-value metadata
+	Provider     string            `yaml:"provider,omitempty"` // Optional: Name of the resource provider
 }
 
-type ResourceRelationship struct {
-	Reference         string              `yaml:"reference"`
-	Target            *TargetResource     `yaml:"target,omitempty"`
-	Source            *SourceResource     `yaml:"source,omitempty"`
-	MetadataKeysMatch []MetadataKeysMatch `yaml:"metadataKeysMatch"`
-	DependencyType    string              `yaml:"dependencyType"`
-}
-
-// Policy structs
-type Policy struct {
-	Name                      string                     `yaml:"name"`
-	Description               *string                    `yaml:"description,omitempty"`
-	Priority                  *float32                   `yaml:"priority,omitempty"`
-	Enabled                   *bool                      `yaml:"enabled,omitempty"`
-	WorkspaceId               string                     `yaml:"workspaceId"`
-	Targets                   []PolicyTarget             `yaml:"targets"`
-	DenyWindows               []DenyWindow               `yaml:"denyWindows,omitempty"`
-	DeploymentVersionSelector *DeploymentVersionSelector `yaml:"deploymentVersionSelector,omitempty"`
-	VersionAnyApprovals       *VersionAnyApproval        `yaml:"versionAnyApprovals,omitempty"`
-	VersionUserApprovals      []VersionUserApproval      `yaml:"versionUserApprovals,omitempty"`
-	VersionRoleApprovals      []VersionRoleApproval      `yaml:"versionRoleApprovals,omitempty"`
-	Concurrency               *int                       `yaml:"concurrency,omitempty"`
-	EnvironmentVersionRollout *EnvironmentVersionRollout `yaml:"environmentVersionRollout,omitempty"`
-}
-
-type PolicyTarget struct {
-	DeploymentSelector  *map[string]any `yaml:"deploymentSelector,omitempty"`
-	EnvironmentSelector *map[string]any `yaml:"environmentSelector,omitempty"`
-	ResourceSelector    *map[string]any `yaml:"resourceSelector,omitempty"`
-}
-
-type DenyWindow struct {
-	TimeZone string         `yaml:"timeZone"`
-	Rrule    map[string]any `yaml:"rrule"`
-	Dtend    *time.Time     `yaml:"dtend,omitempty"`
-}
-
-type DeploymentVersionSelector struct {
-	Name                      string         `yaml:"name"`
-	DeploymentVersionSelector map[string]any `yaml:"deploymentVersionSelector"`
-	Description               *string        `yaml:"description,omitempty"`
-}
-
-type VersionAnyApproval struct {
-	RequiredApprovalsCount float32 `yaml:"requiredApprovalsCount"`
-}
-
-type VersionUserApproval struct {
-	UserId string `yaml:"userId"`
-}
-
-type VersionRoleApproval struct {
-	RoleId                 string  `yaml:"roleId"`
-	RequiredApprovalsCount float32 `yaml:"requiredApprovalsCount"`
-}
-
-type EnvironmentVersionRollout struct {
-	PositionGrowthFactor *float32 `yaml:"positionGrowthFactor,omitempty"`
-	TimeScaleInterval    float32  `yaml:"timeScaleInterval"`
-	RolloutType          *string  `yaml:"rolloutType,omitempty"`
+// ApplyResult represents the result of applying a resource
+type ApplyResult struct {
+	Kind   ResourceKind
+	Name   string
+	Action string // "created", "updated", "unchanged"
+	ID     string
+	Error  error
 }

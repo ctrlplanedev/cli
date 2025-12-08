@@ -97,7 +97,6 @@ func generateVclusterMetadata(vcluster find.VCluster, clusterMetadata map[string
 		}
 	}
 
-
 	maps.Copy(metadata, clusterMetadata)
 
 	return metadata, nil
@@ -251,7 +250,7 @@ func NewSyncVclusterCmd() *cobra.Command {
 			log.Infof("Upserted %d resources", len(resourcesToUpsert))
 
 			// createResourceRelationshipRule(cmd.Context(), rp, clusterResource)
-			
+
 			return nil
 		},
 	}

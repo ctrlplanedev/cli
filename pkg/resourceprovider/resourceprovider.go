@@ -89,4 +89,3 @@ func (r *ResourceProvider) UpsertResource(ctx context.Context, resources []api.R
 // 	log.Info("Successfully created resource relationship rules")
 // 	return nil
 // }
-

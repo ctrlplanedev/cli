@@ -84,30 +84,30 @@ func getInClusterName() (string, error) {
 // Helm's action package requires genericclioptions.ConfigFlags rather than rest.Config directly.
 func getConfigFlags(config *rest.Config, namespace string) *genericclioptions.ConfigFlags {
 	configFlags := genericclioptions.NewConfigFlags(true)
-	
+
 	// Set the Kubernetes API server URL
 	if config.Host != "" {
 		host := config.Host
 		configFlags.APIServer = &host
 	}
-	
+
 	// Set the target namespace (if specified)
 	if namespace != "" {
 		configFlags.Namespace = &namespace
 	}
-	
+
 	// Set authentication token (if using token-based auth)
 	if config.BearerToken != "" {
 		token := config.BearerToken
 		configFlags.BearerToken = &token
 	}
-	
+
 	// Set TLS options
 	if config.TLSClientConfig.Insecure {
 		insecure := true
 		configFlags.Insecure = &insecure
 	}
-	
+
 	if len(config.TLSClientConfig.CAData) > 0 {
 		// CA data is embedded in the config and will be used automatically
 		// We rely on the kubeconfig file being available rather than creating a temp file
@@ -127,4 +127,3 @@ func getConfigFlags(config *rest.Config, namespace string) *genericclioptions.Co
 
 	return configFlags
 }
-

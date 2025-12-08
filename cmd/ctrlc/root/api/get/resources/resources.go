@@ -42,7 +42,7 @@ func NewResourcesCmd() *cobra.Command {
 				q := url.QueryEscape(query)
 				params.Cel = &q
 			}
-			
+
 			resp, err := client.GetAllResources(cmd.Context(), workspaceID.String(), params)
 			if err != nil {
 				return fmt.Errorf("failed to get resources: %w", err)
@@ -55,7 +55,7 @@ func NewResourcesCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&query, "query", "q", "", "CEL filter")
 	cmd.Flags().IntVarP(&limit, "limit", "l", 50, "Limit the number of results")
 	cmd.Flags().IntVarP(&offset, "offset", "o", 0, "Offset the results")
-	
+
 	cmd.MarkFlagRequired("workspace")
 
 	return cmd

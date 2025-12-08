@@ -29,13 +29,13 @@ func processNamespace(_ context.Context, clusterName string, namespace corev1.Na
 	metadata["namespace/status"] = string(namespace.Status.Phase)
 
 	return api.ResourceProviderResource{
-		Version: "ctrlplane.dev/kubernetes/namespace/v1",
-		Kind: "KubernetesNamespace",
-		Name: fmt.Sprintf("%s/%s", clusterName, namespace.Name),
+		Version:    "ctrlplane.dev/kubernetes/namespace/v1",
+		Kind:       "KubernetesNamespace",
+		Name:       fmt.Sprintf("%s/%s", clusterName, namespace.Name),
 		Identifier: string(namespace.UID),
 		Config: map[string]any{
-			"id": string(namespace.UID),
-			"name": namespace.Name,
+			"id":     string(namespace.UID),
+			"name":   namespace.Name,
 			"status": namespace.Status.Phase,
 		},
 		Metadata: metadata,
@@ -53,13 +53,13 @@ func processDeployment(_ context.Context, clusterName string, deployment appsv1.
 	metadata["deployment/namespace"] = deployment.Namespace
 
 	return api.ResourceProviderResource{
-		Version: "ctrlplane.dev/kubernetes/deployment/v1",
-		Kind: "KubernetesDeployment",
-		Name: fmt.Sprintf("%s/%s/%s", clusterName, deployment.Namespace, deployment.Name),
+		Version:    "ctrlplane.dev/kubernetes/deployment/v1",
+		Kind:       "KubernetesDeployment",
+		Name:       fmt.Sprintf("%s/%s/%s", clusterName, deployment.Namespace, deployment.Name),
 		Identifier: string(deployment.UID),
 		Config: map[string]any{
-			"id": string(deployment.UID),
-			"name": deployment.Name,
+			"id":        string(deployment.UID),
+			"name":      deployment.Name,
 			"namespace": deployment.Namespace,
 		},
 		Metadata: metadata,
@@ -93,12 +93,12 @@ func NewSyncKubernetesCmd() *cobra.Command {
 			apiURL := viper.GetString("url")
 			apiKey := viper.GetString("api-key")
 			workspaceId := viper.GetString("workspace")
-		
+
 			ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
-			
+
 			ctx := context.Background()
 			clusterResource, _ := ctrlplaneClient.GetResourceByIdentifierWithResponse(ctx, workspaceId, clusterIdentifier)
 			if clusterResource.JSON200 != nil {

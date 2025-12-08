@@ -44,13 +44,11 @@ func helmReleaseToResource(release *release.Release, clusterName string) api.Res
 // buildHelmMetadata creates the metadata map for a Helm release resource
 func buildHelmMetadata(release *release.Release, clusterName string) map[string]string {
 	metadata := map[string]string{}
-	
+
 	// Copy user-defined labels from the Helm release
 	for key, value := range release.Labels {
 		metadata[fmt.Sprintf("tags/%s", key)] = value
 	}
-
-	
 
 	// Add standard Helm metadata for filtering and querying
 	// Create an insightful version string that combines chart version, app version, revision, and status
@@ -68,7 +66,7 @@ func buildHelmMetadata(release *release.Release, clusterName string) map[string]
 	metadata["helm/app-version"] = release.Chart.Metadata.AppVersion
 	metadata["helm/status"] = release.Info.Status.String()
 	metadata["helm/revision"] = fmt.Sprintf("%d", release.Version)
-	
+
 	// Add Kubernetes context - this links the release to its cluster
 	metadata["kubernetes/name"] = clusterName
 	metadata["kubernetes/namespace"] = release.Namespace
@@ -221,7 +219,7 @@ func fetchHelmReleases(kubeConfig *rest.Config, namespace string) ([]*release.Re
 
 	// Configure list operation
 	listClient := action.NewList(actionConfig)
-	listClient.All = true // Include all releases (not just deployed)
+	listClient.All = true                        // Include all releases (not just deployed)
 	listClient.AllNamespaces = (namespace == "") // Scan all namespaces if none specified
 
 	releases, err := listClient.Run()
