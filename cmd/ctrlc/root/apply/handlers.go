@@ -211,7 +211,6 @@ func ApplyDeployment(ctx context.Context, client *api.ClientWithResponses, works
 		}
 	}
 
-
 	jobAgentConfig := map[string]interface{}{}
 	if doc.JobAgentConfig != nil {
 		jobAgentConfig = doc.JobAgentConfig
@@ -587,6 +586,29 @@ func ApplyResource(ctx context.Context, client *api.ClientWithResponses, workspa
 
 	result.ID = doc.Identifier
 	result.Action = "upserted"
+
+	vars := doc.Variables
+	if vars == nil {
+		vars = map[string]any{}
+	}
+	varsResp, err := client.UpdateVariablesForResourceWithResponse(
+		ctx,
+		workspaceID,
+		doc.Identifier,
+		api.UpdateVariablesForResourceJSONRequestBody(vars),
+	)
+	if err != nil {
+		result.Error = fmt.Errorf("failed to update resource variables: %w", err)
+		return result, result.Error
+	}
+	if varsResp == nil || varsResp.StatusCode() != 204 {
+		body := ""
+		if varsResp != nil {
+			body = string(varsResp.Body)
+		}
+		result.Error = fmt.Errorf("failed to update resource variables: %s", body)
+		return result, result.Error
+	}
 
 	return result, nil
 }

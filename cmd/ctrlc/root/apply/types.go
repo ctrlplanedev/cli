@@ -68,11 +68,10 @@ type PolicyRuleConfig struct {
 
 // DeploymentWindowRuleConfig represents a deployment window rule in YAML
 type DeploymentWindowRuleConfig struct {
-	Timezone string         `yaml:"timezone"`
-	Duration string         `yaml:"duration"`
-	RRule    string         `yaml:"rrule"`
+	Timezone string `yaml:"timezone"`
+	Duration string `yaml:"duration"`
+	RRule    string `yaml:"rrule"`
 }
-
 
 // AnyApprovalRuleConfig represents an any approval rule
 type AnyApprovalRuleConfig struct {
@@ -96,12 +95,12 @@ type GradualRolloutRuleConfig struct {
 // PolicyDocument represents a Policy resource in YAML
 type PolicyDocument struct {
 	BaseDocument `yaml:",inline"`
-	Description *string                      `yaml:"description,omitempty"`
-	Enabled     *bool                        `yaml:"enabled,omitempty"`
-	Priority    *int                         `yaml:"priority,omitempty"`
-	Metadata    map[string]string            `yaml:"metadata,omitempty"`
-	Selectors   []PolicyTargetSelectorConfig `yaml:"selectors"`
-	Rules       []PolicyRuleConfig           `yaml:"rules"`
+	Description  *string                      `yaml:"description,omitempty"`
+	Enabled      *bool                        `yaml:"enabled,omitempty"`
+	Priority     *int                         `yaml:"priority,omitempty"`
+	Metadata     map[string]string            `yaml:"metadata,omitempty"`
+	Selectors    []PolicyTargetSelectorConfig `yaml:"selectors"`
+	Rules        []PolicyRuleConfig           `yaml:"rules"`
 }
 
 // RelationshipRuleDocument represents a RelationshipRule resource in YAML
@@ -127,12 +126,13 @@ type MatcherConfig struct {
 // ResourceDocument represents a Resource in YAML
 type ResourceDocument struct {
 	BaseDocument `yaml:",inline"`
-	Identifier   string            `yaml:"identifier"`         // Unique identifier for the resource
-	Kind         string            `yaml:"kind"`               // The kind of resource (e.g., "Cluster", "Namespace")
-	Version      string            `yaml:"version"`            // Version string for the resource
-	Config       map[string]any    `yaml:"config,omitempty"`   // Arbitrary configuration
-	Metadata     map[string]string `yaml:"metadata,omitempty"` // Key-value metadata
-	Provider     string            `yaml:"provider,omitempty"` // Optional: Name of the resource provider
+	Identifier   string            `yaml:"identifier"`          // Unique identifier for the resource
+	Kind         string            `yaml:"kind"`                // The kind of resource (e.g., "Cluster", "Namespace")
+	Version      string            `yaml:"version"`             // Version string for the resource
+	Config       map[string]any    `yaml:"config,omitempty"`    // Arbitrary configuration
+	Metadata     map[string]string `yaml:"metadata,omitempty"`  // Key-value metadata
+	Variables    map[string]any    `yaml:"variables,omitempty"` // Key-value variables
+	Provider     string            `yaml:"provider,omitempty"`  // Optional: Name of the resource provider
 }
 
 // ApplyResult represents the result of applying a resource

@@ -87,6 +87,21 @@ const (
 	RelatableEntityTypeResource    RelatableEntityType = "resource"
 )
 
+// Defines values for VerificationMeasurementStatus.
+const (
+	Failed       VerificationMeasurementStatus = "failed"
+	Inconclusive VerificationMeasurementStatus = "inconclusive"
+	Passed       VerificationMeasurementStatus = "passed"
+)
+
+// Defines values for VerificationRuleTriggerOn.
+const (
+	JobCreated VerificationRuleTriggerOn = "jobCreated"
+	JobFailure VerificationRuleTriggerOn = "jobFailure"
+	JobStarted VerificationRuleTriggerOn = "jobStarted"
+	JobSuccess VerificationRuleTriggerOn = "jobSuccess"
+)
+
 // AnyApprovalRule defines model for AnyApprovalRule.
 type AnyApprovalRule struct {
 	MinApprovals int32 `json:"minApprovals"`
@@ -452,6 +467,7 @@ type PolicyRule struct {
 	GradualRollout         *GradualRolloutRule         `json:"gradualRollout,omitempty"`
 	Id                     string                      `json:"id"`
 	PolicyId               string                      `json:"policyId"`
+	Verification           *VerificationRule           `json:"verification,omitempty"`
 }
 
 // PolicyTargetSelector defines model for PolicyTargetSelector.
@@ -730,14 +746,20 @@ type VerificationMeasurement struct {
 	// Message Measurement result message
 	Message *string `json:"message,omitempty"`
 
-	// Passed Whether this measurement passed
-	Passed bool `json:"passed"`
+	// Status Status of a verification measurement
+	Status VerificationMeasurementStatus `json:"status"`
 }
+
+// VerificationMeasurementStatus Status of a verification measurement
+type VerificationMeasurementStatus string
 
 // VerificationMetricSpec defines model for VerificationMetricSpec.
 type VerificationMetricSpec struct {
 	// Count Number of measurements to take
 	Count int `json:"count"`
+
+	// FailureCondition CEL expression to evaluate measurement failure (e.g., "result.statusCode == 500"), if not provided, a failure is just the opposite of the success condition
+	FailureCondition *string `json:"failureCondition,omitempty"`
 
 	// FailureLimit Stop after this many failures (0 = no limit)
 	FailureLimit *int `json:"failureLimit,omitempty"`
@@ -758,6 +780,9 @@ type VerificationMetricStatus struct {
 	// Count Number of measurements to take
 	Count int `json:"count"`
 
+	// FailureCondition CEL expression to evaluate measurement failure (e.g., "result.statusCode == 500"), if not provided, a failure is just the opposite of the success condition
+	FailureCondition *string `json:"failureCondition,omitempty"`
+
 	// FailureLimit Stop after this many failures (0 = no limit)
 	FailureLimit *int `json:"failureLimit,omitempty"`
 
@@ -774,6 +799,18 @@ type VerificationMetricStatus struct {
 	// SuccessCondition CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
 	SuccessCondition string `json:"successCondition"`
 }
+
+// VerificationRule defines model for VerificationRule.
+type VerificationRule struct {
+	// Metrics Metrics to verify
+	Metrics []VerificationMetricSpec `json:"metrics"`
+
+	// TriggerOn When to trigger verification
+	TriggerOn *VerificationRuleTriggerOn `json:"triggerOn,omitempty"`
+}
+
+// VerificationRuleTriggerOn When to trigger verification
+type VerificationRuleTriggerOn string
 
 // Workspace defines model for Workspace.
 type Workspace struct {
@@ -915,6 +952,9 @@ type GetVariablesForResourceParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// UpdateVariablesForResourceJSONBody defines parameters for UpdateVariablesForResource.
+type UpdateVariablesForResourceJSONBody map[string]interface{}
+
 // ListSystemsParams defines parameters for ListSystems.
 type ListSystemsParams struct {
 	// Limit Maximum number of items to return
@@ -983,6 +1023,9 @@ type SetResourceProvidersResourcesPatchJSONRequestBody SetResourceProvidersResou
 
 // SetResourceProvidersResourcesJSONRequestBody defines body for SetResourceProvidersResources for application/json ContentType.
 type SetResourceProvidersResourcesJSONRequestBody SetResourceProvidersResourcesJSONBody
+
+// UpdateVariablesForResourceJSONRequestBody defines body for UpdateVariablesForResource for application/json ContentType.
+type UpdateVariablesForResourceJSONRequestBody UpdateVariablesForResourceJSONBody
 
 // CreateSystemJSONRequestBody defines body for CreateSystem for application/json ContentType.
 type CreateSystemJSONRequestBody = CreateSystemRequest
@@ -1753,6 +1796,11 @@ type ClientInterface interface {
 
 	// GetVariablesForResource request
 	GetVariablesForResource(ctx context.Context, workspaceId string, identifier string, params *GetVariablesForResourceParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateVariablesForResourceWithBody request with any body
+	UpdateVariablesForResourceWithBody(ctx context.Context, workspaceId string, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateVariablesForResource(ctx context.Context, workspaceId string, identifier string, body UpdateVariablesForResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSystems request
 	ListSystems(ctx context.Context, workspaceId string, params *ListSystemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2676,6 +2724,30 @@ func (c *Client) GetResourceByIdentifier(ctx context.Context, workspaceId string
 
 func (c *Client) GetVariablesForResource(ctx context.Context, workspaceId string, identifier string, params *GetVariablesForResourceParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetVariablesForResourceRequest(c.Server, workspaceId, identifier, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateVariablesForResourceWithBody(ctx context.Context, workspaceId string, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateVariablesForResourceRequestWithBody(c.Server, workspaceId, identifier, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateVariablesForResource(ctx context.Context, workspaceId string, identifier string, body UpdateVariablesForResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateVariablesForResourceRequest(c.Server, workspaceId, identifier, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5697,6 +5769,60 @@ func NewGetVariablesForResourceRequest(server string, workspaceId string, identi
 	return req, nil
 }
 
+// NewUpdateVariablesForResourceRequest calls the generic UpdateVariablesForResource builder with application/json body
+func NewUpdateVariablesForResourceRequest(server string, workspaceId string, identifier string, body UpdateVariablesForResourceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateVariablesForResourceRequestWithBody(server, workspaceId, identifier, "application/json", bodyReader)
+}
+
+// NewUpdateVariablesForResourceRequestWithBody generates requests for UpdateVariablesForResource with any type of body
+func NewUpdateVariablesForResourceRequestWithBody(server string, workspaceId string, identifier string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "identifier", runtime.ParamLocationPath, identifier)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/resources/identifier/%s/variables", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListSystemsRequest generates requests for ListSystems
 func NewListSystemsRequest(server string, workspaceId string, params *ListSystemsParams) (*http.Request, error) {
 	var err error
@@ -6202,6 +6328,11 @@ type ClientWithResponsesInterface interface {
 
 	// GetVariablesForResourceWithResponse request
 	GetVariablesForResourceWithResponse(ctx context.Context, workspaceId string, identifier string, params *GetVariablesForResourceParams, reqEditors ...RequestEditorFn) (*GetVariablesForResourceResponse, error)
+
+	// UpdateVariablesForResourceWithBodyWithResponse request with any body
+	UpdateVariablesForResourceWithBodyWithResponse(ctx context.Context, workspaceId string, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateVariablesForResourceResponse, error)
+
+	UpdateVariablesForResourceWithResponse(ctx context.Context, workspaceId string, identifier string, body UpdateVariablesForResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateVariablesForResourceResponse, error)
 
 	// ListSystemsWithResponse request
 	ListSystemsWithResponse(ctx context.Context, workspaceId string, params *ListSystemsParams, reqEditors ...RequestEditorFn) (*ListSystemsResponse, error)
@@ -7637,6 +7768,30 @@ func (r GetVariablesForResourceResponse) StatusCode() int {
 	return 0
 }
 
+type UpdateVariablesForResourceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *map[string]interface{}
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateVariablesForResourceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateVariablesForResourceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListSystemsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -8424,6 +8579,23 @@ func (c *ClientWithResponses) GetVariablesForResourceWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseGetVariablesForResourceResponse(rsp)
+}
+
+// UpdateVariablesForResourceWithBodyWithResponse request with arbitrary body returning *UpdateVariablesForResourceResponse
+func (c *ClientWithResponses) UpdateVariablesForResourceWithBodyWithResponse(ctx context.Context, workspaceId string, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateVariablesForResourceResponse, error) {
+	rsp, err := c.UpdateVariablesForResourceWithBody(ctx, workspaceId, identifier, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateVariablesForResourceResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateVariablesForResourceWithResponse(ctx context.Context, workspaceId string, identifier string, body UpdateVariablesForResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateVariablesForResourceResponse, error) {
+	rsp, err := c.UpdateVariablesForResource(ctx, workspaceId, identifier, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateVariablesForResourceResponse(rsp)
 }
 
 // ListSystemsWithResponse request returning *ListSystemsResponse
@@ -10513,6 +10685,46 @@ func ParseGetVariablesForResourceResponse(rsp *http.Response) (*GetVariablesForR
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateVariablesForResourceResponse parses an HTTP response from a UpdateVariablesForResourceWithResponse call
+func ParseUpdateVariablesForResourceResponse(rsp *http.Response) (*UpdateVariablesForResourceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateVariablesForResourceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest ErrorResponse
