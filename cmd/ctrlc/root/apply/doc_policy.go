@@ -223,15 +223,23 @@ func (d *PolicyDocument) Apply(ctx *DocContext) (ApplyResult, error) {
 				TriggerOn: rule.Verification.TriggerOn,
 			}
 			for _, metric := range rule.Verification.Metrics {
-
 				provider := api.MetricProvider{}
-				if metric.Provider.Type == "datadog" {
-					// provider.FromDatadogMetricProvider(api.DatadogMetricProvider{
-					// 	Query: metric.Provider.Query,
-					// 	ApiKey: metric.Provider.ApiKey,
-					// 	AppKey: metric.Provider.AppKey,
-					// 	Site: metric.Provider.Site,
-					// })
+				switch metric.Provider.Type {
+				case "datadog":
+					site := metric.Provider.Site
+					if site == "" {
+						site = "datadoghq.com"
+					}
+					_ = provider.FromDatadogMetricProvider(api.DatadogMetricProvider{
+						Type:   api.Datadog,
+						Query:  metric.Provider.Query,
+						ApiKey: metric.Provider.ApiKey,
+						AppKey: metric.Provider.AppKey,
+						Site:   &site,
+					})
+				default:
+					result.Error = fmt.Errorf("unsupported metric provider type: %s", metric.Provider.Type)
+					return result, result.Error
 				}
 
 				metricSpec := api.VerificationMetricSpec{

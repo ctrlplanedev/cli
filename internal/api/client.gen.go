@@ -30,6 +30,11 @@ const (
 	ApprovalStatusRejected ApprovalStatus = "rejected"
 )
 
+// Defines values for DatadogMetricProviderType.
+const (
+	Datadog DatadogMetricProviderType = "datadog"
+)
+
 // Defines values for DeploymentVersionStatus.
 const (
 	DeploymentVersionStatusBuilding    DeploymentVersionStatus = "building"
@@ -91,6 +96,16 @@ const (
 const (
 	RetryRuleBackoffStrategyExponential RetryRuleBackoffStrategy = "exponential"
 	RetryRuleBackoffStrategyLinear      RetryRuleBackoffStrategy = "linear"
+)
+
+// Defines values for SleepMetricProviderType.
+const (
+	Sleep SleepMetricProviderType = "sleep"
+)
+
+// Defines values for TerraformCloudRunMetricProviderType.
+const (
+	TerraformCloudRun TerraformCloudRunMetricProviderType = "terraformCloudRun"
 )
 
 // Defines values for VerificationMeasurementStatus.
@@ -205,6 +220,27 @@ type CreateWorkspaceRequest struct {
 	// Slug URL-friendly unique identifier (lowercase, no spaces)
 	Slug string `json:"slug"`
 }
+
+// DatadogMetricProvider defines model for DatadogMetricProvider.
+type DatadogMetricProvider struct {
+	// ApiKey Datadog API key (supports Go templates for variable references)
+	ApiKey string `json:"apiKey"`
+
+	// AppKey Datadog Application key (supports Go templates for variable references)
+	AppKey string `json:"appKey"`
+
+	// Query Datadog metrics query (supports Go templates)
+	Query string `json:"query"`
+
+	// Site Datadog site URL (e.g., datadoghq.com, datadoghq.eu, us3.datadoghq.com)
+	Site *string `json:"site,omitempty"`
+
+	// Type Provider type
+	Type DatadogMetricProviderType `json:"type"`
+}
+
+// DatadogMetricProviderType Provider type
+type DatadogMetricProviderType string
 
 // Deployment defines model for Deployment.
 type Deployment struct {
@@ -621,6 +657,17 @@ type SensitiveValue struct {
 	ValueHash string `json:"valueHash"`
 }
 
+// SleepMetricProvider defines model for SleepMetricProvider.
+type SleepMetricProvider struct {
+	Duration int `json:"duration"`
+
+	// Type Provider type
+	Type SleepMetricProviderType `json:"type"`
+}
+
+// SleepMetricProviderType Provider type
+type SleepMetricProviderType string
+
 // StringValue defines model for StringValue.
 type StringValue = string
 
@@ -632,6 +679,27 @@ type System struct {
 	Slug        string  `json:"slug"`
 	WorkspaceId string  `json:"workspaceId"`
 }
+
+// TerraformCloudRunMetricProvider defines model for TerraformCloudRunMetricProvider.
+type TerraformCloudRunMetricProvider struct {
+	// Address Terraform Cloud address
+	Address string `json:"address"`
+
+	// Organization Terraform Cloud organization name
+	Organization string `json:"organization"`
+
+	// RunId Terraform Cloud run ID
+	RunId string `json:"runId"`
+
+	// Token Terraform Cloud token
+	Token string `json:"token"`
+
+	// Type Provider type
+	Type TerraformCloudRunMetricProviderType `json:"type"`
+}
+
+// TerraformCloudRunMetricProviderType Provider type
+type TerraformCloudRunMetricProviderType string
 
 // UpdateDeploymentVersionRequest defines model for UpdateDeploymentVersionRequest.
 type UpdateDeploymentVersionRequest struct {
@@ -1299,6 +1367,90 @@ func (t *MetricProvider) MergeHTTPMetricProvider(v HTTPMetricProvider) error {
 	return err
 }
 
+// AsSleepMetricProvider returns the union data inside the MetricProvider as a SleepMetricProvider
+func (t MetricProvider) AsSleepMetricProvider() (SleepMetricProvider, error) {
+	var body SleepMetricProvider
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSleepMetricProvider overwrites any union data inside the MetricProvider as the provided SleepMetricProvider
+func (t *MetricProvider) FromSleepMetricProvider(v SleepMetricProvider) error {
+	v.Type = "sleep"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSleepMetricProvider performs a merge with any union data inside the MetricProvider, using the provided SleepMetricProvider
+func (t *MetricProvider) MergeSleepMetricProvider(v SleepMetricProvider) error {
+	v.Type = "sleep"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDatadogMetricProvider returns the union data inside the MetricProvider as a DatadogMetricProvider
+func (t MetricProvider) AsDatadogMetricProvider() (DatadogMetricProvider, error) {
+	var body DatadogMetricProvider
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDatadogMetricProvider overwrites any union data inside the MetricProvider as the provided DatadogMetricProvider
+func (t *MetricProvider) FromDatadogMetricProvider(v DatadogMetricProvider) error {
+	v.Type = "datadog"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDatadogMetricProvider performs a merge with any union data inside the MetricProvider, using the provided DatadogMetricProvider
+func (t *MetricProvider) MergeDatadogMetricProvider(v DatadogMetricProvider) error {
+	v.Type = "datadog"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsTerraformCloudRunMetricProvider returns the union data inside the MetricProvider as a TerraformCloudRunMetricProvider
+func (t MetricProvider) AsTerraformCloudRunMetricProvider() (TerraformCloudRunMetricProvider, error) {
+	var body TerraformCloudRunMetricProvider
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTerraformCloudRunMetricProvider overwrites any union data inside the MetricProvider as the provided TerraformCloudRunMetricProvider
+func (t *MetricProvider) FromTerraformCloudRunMetricProvider(v TerraformCloudRunMetricProvider) error {
+	v.Type = "terraformCloudRun"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTerraformCloudRunMetricProvider performs a merge with any union data inside the MetricProvider, using the provided TerraformCloudRunMetricProvider
+func (t *MetricProvider) MergeTerraformCloudRunMetricProvider(v TerraformCloudRunMetricProvider) error {
+	v.Type = "terraformCloudRun"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t MetricProvider) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"type"`
@@ -1313,8 +1465,14 @@ func (t MetricProvider) ValueByDiscriminator() (interface{}, error) {
 		return nil, err
 	}
 	switch discriminator {
+	case "datadog":
+		return t.AsDatadogMetricProvider()
 	case "http":
 		return t.AsHTTPMetricProvider()
+	case "sleep":
+		return t.AsSleepMetricProvider()
+	case "terraformCloudRun":
+		return t.AsTerraformCloudRunMetricProvider()
 	default:
 		return nil, errors.New("unknown discriminator value: " + discriminator)
 	}

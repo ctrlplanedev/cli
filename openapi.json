@@ -235,6 +235,37 @@
         "required": ["name", "slug"],
         "type": "object"
       },
+      "DatadogMetricProvider": {
+        "properties": {
+          "apiKey": {
+            "description": "Datadog API key (supports Go templates for variable references)",
+            "example": "{{.variables.dd_api_key}}",
+            "type": "string"
+          },
+          "appKey": {
+            "description": "Datadog Application key (supports Go templates for variable references)",
+            "example": "{{.variables.dd_app_key}}",
+            "type": "string"
+          },
+          "query": {
+            "description": "Datadog metrics query (supports Go templates)",
+            "example": "sum:requests.error.rate{service:{{.resource.name}}}",
+            "type": "string"
+          },
+          "site": {
+            "default": "datadoghq.com",
+            "description": "Datadog site URL (e.g., datadoghq.com, datadoghq.eu, us3.datadoghq.com)",
+            "type": "string"
+          },
+          "type": {
+            "description": "Provider type",
+            "enum": ["datadog"],
+            "type": "string"
+          }
+        },
+        "required": ["type", "query", "apiKey", "appKey"],
+        "type": "object"
+      },
       "Deployment": {
         "properties": {
           "description": {
@@ -790,13 +821,25 @@
       "MetricProvider": {
         "discriminator": {
           "mapping": {
-            "http": "#/components/schemas/HTTPMetricProvider"
+            "datadog": "#/components/schemas/DatadogMetricProvider",
+            "http": "#/components/schemas/HTTPMetricProvider",
+            "sleep": "#/components/schemas/SleepMetricProvider",
+            "terraformCloudRun": "#/components/schemas/TerraformCloudRunMetricProvider"
           },
           "propertyName": "type"
         },
         "oneOf": [
           {
             "$ref": "#/components/schemas/HTTPMetricProvider"
+          },
+          {
+            "$ref": "#/components/schemas/SleepMetricProvider"
+          },
+          {
+            "$ref": "#/components/schemas/DatadogMetricProvider"
+          },
+          {
+            "$ref": "#/components/schemas/TerraformCloudRunMetricProvider"
           }
         ]
       },
@@ -1339,6 +1382,24 @@
         "required": ["valueHash"],
         "type": "object"
       },
+      "SleepMetricProvider": {
+        "properties": {
+          "duration": {
+            "example": 30,
+            "format": "int",
+            "maximum": 3600,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "type": {
+            "description": "Provider type",
+            "enum": ["sleep"],
+            "type": "string"
+          }
+        },
+        "required": ["type", "duration"],
+        "type": "object"
+      },
       "StringValue": {
         "type": "string"
       },
@@ -1361,6 +1422,37 @@
           }
         },
         "required": ["id", "workspaceId", "name", "slug"],
+        "type": "object"
+      },
+      "TerraformCloudRunMetricProvider": {
+        "properties": {
+          "address": {
+            "description": "Terraform Cloud address",
+            "example": "https://app.terraform.io",
+            "type": "string"
+          },
+          "organization": {
+            "description": "Terraform Cloud organization name",
+            "example": "my-org",
+            "type": "string"
+          },
+          "runId": {
+            "description": "Terraform Cloud run ID",
+            "example": "run-1234567890",
+            "type": "string"
+          },
+          "token": {
+            "description": "Terraform Cloud token",
+            "example": "{{.variables.terraform_cloud_token}}",
+            "type": "string"
+          },
+          "type": {
+            "description": "Provider type",
+            "enum": ["terraformCloudRun"],
+            "type": "string"
+          }
+        },
+        "required": ["type", "organization", "address", "token", "runId"],
         "type": "object"
       },
       "UpdateDeploymentVersionRequest": {
