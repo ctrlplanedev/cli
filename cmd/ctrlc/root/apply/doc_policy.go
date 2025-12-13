@@ -26,7 +26,7 @@ type PolicyRuleConfig struct {
 	EnvironmentProgression *EnvironmentProgressionRuleConfig `yaml:"environmentProgression,omitempty"`
 	GradualRollout         *GradualRolloutRuleConfig         `yaml:"gradualRollout,omitempty"`
 	DeploymentWindow       *DeploymentWindowRuleConfig       `yaml:"deploymentWindow,omitempty"`
-	VersionDebounce        *VersionDebounceRuleConfig        `yaml:"versionDebounce,omitempty"`
+	VersionCooldown        *VersionCooldownRuleConfig        `yaml:"versionCooldown,omitempty"`
 	Retry                  *RetryRuleConfig                  `yaml:"retry,omitempty"`
 	Verification           *VerificationRuleConfig           `yaml:"verification,omitempty"`
 }
@@ -36,8 +36,8 @@ type RetryRuleConfig struct {
 	MaxRetries int32 `yaml:"maxRetries"`
 }
 
-// VersionDebounceRuleConfig represents a version debounce rule in YAML
-type VersionDebounceRuleConfig struct {
+// VersionCooldownRuleConfig represents a version cooldown rule in YAML
+type VersionCooldownRuleConfig struct {
 	Duration time.Duration `yaml:"duration"`
 }
 
@@ -205,9 +205,9 @@ func (d *PolicyDocument) Apply(ctx *DocContext) (ApplyResult, error) {
 				DurationMinutes: int32(rule.DeploymentWindow.Duration.Minutes()),
 			}
 		}
-		if rule.VersionDebounce != nil {
-			apiRule.VersionDebounce = &api.VersionDebounceRule{
-				IntervalSeconds: int32(rule.VersionDebounce.Duration.Seconds()),
+		if rule.VersionCooldown != nil {
+			apiRule.VersionCooldown = &api.VersionCooldownRule{
+				IntervalSeconds: int32(rule.VersionCooldown.Duration.Seconds()),
 			}
 		}
 
