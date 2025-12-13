@@ -3,17 +3,19 @@ package apply
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-// DeleteResult represents the result of deleting a resource
+// DeleteResult represents the result of deleting a document
 type DeleteResult struct {
-	Kind   ResourceKind
+	Type   DocumentType
 	Name   string
 	Action string // "deleted", "not_found"
 	ID     string
@@ -62,7 +64,7 @@ func runDelete(ctx context.Context, filePath string) error {
 		return fmt.Errorf("invalid workspace: %s", workspace)
 	}
 
-	// Parse the YAML file
+	// Parse the YAML file into Document interfaces
 	documents, err := ParseFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to parse file: %w", err)
@@ -75,51 +77,24 @@ func runDelete(ctx context.Context, filePath string) error {
 
 	log.Info("Deleting resources", "count", len(documents), "file", filePath)
 
-	// Create resolver for name-to-ID lookups
-	resolver := NewResourceResolver(client, workspaceID.String())
+	// Create document context
+	docCtx := NewDocContext(workspaceID.String(), client)
+	docCtx.Context = ctx
 
-	// Process documents in reverse order of dependencies
-	// Delete in order: RelationshipRules, Policies, Environments, Deployments, Systems
-	var results []*DeleteResult
+	// Sort documents by reverse Order (higher number = processed first for deletion)
+	// This ensures dependencies are deleted in reverse order
+	sort.Slice(documents, func(i, j int) bool {
+		return documents[i].Order() > documents[j].Order()
+	})
 
-	// Delete RelationshipRules first
+	// Delete all documents
+	var results []DeleteResult
 	for _, doc := range documents {
-		if doc.Kind == KindRelationshipRule {
-			result := deleteDocument(ctx, client, workspaceID.String(), resolver, doc)
-			results = append(results, result)
+		result, err := doc.Delete(docCtx)
+		if err != nil {
+			log.Error("Failed to delete document", "error", err)
 		}
-	}
-
-	// Delete Policies
-	for _, doc := range documents {
-		if doc.Kind == KindPolicy {
-			result := deleteDocument(ctx, client, workspaceID.String(), resolver, doc)
-			results = append(results, result)
-		}
-	}
-
-	// Delete Environments
-	for _, doc := range documents {
-		if doc.Kind == KindEnvironment {
-			result := deleteDocument(ctx, client, workspaceID.String(), resolver, doc)
-			results = append(results, result)
-		}
-	}
-
-	// Delete Deployments
-	for _, doc := range documents {
-		if doc.Kind == KindDeployment {
-			result := deleteDocument(ctx, client, workspaceID.String(), resolver, doc)
-			results = append(results, result)
-		}
-	}
-
-	// Delete Systems last
-	for _, doc := range documents {
-		if doc.Kind == KindSystem {
-			result := deleteDocument(ctx, client, workspaceID.String(), resolver, doc)
-			results = append(results, result)
-		}
+		results = append(results, result)
 	}
 
 	// Print summary
@@ -135,275 +110,35 @@ func runDelete(ctx context.Context, filePath string) error {
 	return nil
 }
 
-func deleteDocument(ctx context.Context, client *api.ClientWithResponses, workspaceID string, resolver *ResourceResolver, doc ParsedDocument) *DeleteResult {
-	switch doc.Kind {
-	case KindSystem:
-		sysDoc, err := ParseSystem(doc.Raw)
-		if err != nil {
-			return &DeleteResult{Kind: doc.Kind, Error: err}
-		}
-		return DeleteSystem(ctx, client, workspaceID, sysDoc)
-
-	case KindDeployment:
-		depDoc, err := ParseDeployment(doc.Raw)
-		if err != nil {
-			return &DeleteResult{Kind: doc.Kind, Error: err}
-		}
-		return DeleteDeployment(ctx, client, workspaceID, resolver, depDoc)
-
-	case KindEnvironment:
-		envDoc, err := ParseEnvironment(doc.Raw)
-		if err != nil {
-			return &DeleteResult{Kind: doc.Kind, Error: err}
-		}
-		return DeleteEnvironment(ctx, client, workspaceID, resolver, envDoc)
-
-	case KindPolicy:
-		polDoc, err := ParsePolicy(doc.Raw)
-		if err != nil {
-			return &DeleteResult{Kind: doc.Kind, Error: err}
-		}
-		return DeletePolicy(ctx, client, workspaceID, polDoc)
-
-	case KindRelationshipRule:
-		relDoc, err := ParseRelationshipRule(doc.Raw)
-		if err != nil {
-			return &DeleteResult{Kind: doc.Kind, Error: err}
-		}
-		return DeleteRelationshipRule(ctx, client, workspaceID, relDoc)
-
-	default:
-		return &DeleteResult{Kind: doc.Kind, Error: fmt.Errorf("unknown resource kind: %s", doc.Kind)}
-	}
-}
-
-// DeleteSystem deletes a system by name
-func DeleteSystem(ctx context.Context, client *api.ClientWithResponses, workspaceID string, doc *SystemDocument) *DeleteResult {
-	result := &DeleteResult{
-		Kind: KindSystem,
-		Name: doc.Name,
-	}
-
-	// Find system by name
-	listResp, err := client.ListSystemsWithResponse(ctx, workspaceID, nil)
-	if err != nil {
-		result.Error = fmt.Errorf("failed to list systems: %w", err)
-		return result
-	}
-
-	var systemID string
-	if listResp.JSON200 != nil {
-		for _, sys := range listResp.JSON200.Items {
-			if sys.Name == doc.Name {
-				systemID = sys.Id
-				break
-			}
-		}
-	}
-
-	if systemID == "" {
-		result.Action = "not_found"
-		return result
-	}
-
-	// Delete the system
-	resp, err := client.DeleteSystemWithResponse(ctx, workspaceID, systemID)
-	if err != nil {
-		result.Error = fmt.Errorf("failed to delete system: %w", err)
-		return result
-	}
-
-	if resp.StatusCode() >= 400 {
-		result.Error = fmt.Errorf("failed to delete system: %s", string(resp.Body))
-		return result
-	}
-
-	result.ID = systemID
-	result.Action = "deleted"
-	return result
-}
-
-// DeleteDeployment deletes a deployment by name
-func DeleteDeployment(ctx context.Context, client *api.ClientWithResponses, workspaceID string, resolver *ResourceResolver, doc *DeploymentDocument) *DeleteResult {
-	result := &DeleteResult{
-		Kind: KindDeployment,
-		Name: doc.Name,
-	}
-
-	// Resolve system ID
-	systemID, err := resolver.ResolveSystemID(ctx, doc.System)
-	if err != nil {
-		result.Error = err
-		return result
-	}
-
-	// Find deployment by name
-	listResp, err := client.ListDeploymentsWithResponse(ctx, workspaceID, nil)
-	if err != nil {
-		result.Error = fmt.Errorf("failed to list deployments: %w", err)
-		return result
-	}
-
-	targetSlug := getSlug(doc.Slug, doc.Name)
-
-	var deploymentID string
-	if listResp.JSON200 != nil {
-		for _, dep := range listResp.JSON200.Items {
-			if dep.Deployment.Slug == targetSlug && dep.Deployment.SystemId == systemID {
-				deploymentID = dep.Deployment.Id
-				break
-			}
-		}
-	}
-
-	if deploymentID == "" {
-		result.Action = "not_found"
-		return result
-	}
-
-	// Delete the deployment
-	resp, err := client.DeleteDeploymentWithResponse(ctx, workspaceID, deploymentID)
-	if err != nil {
-		result.Error = fmt.Errorf("failed to delete deployment: %w", err)
-		return result
-	}
-
-	if resp.StatusCode() >= 400 {
-		result.Error = fmt.Errorf("failed to delete deployment: %s", string(resp.Body))
-		return result
-	}
-
-	result.ID = deploymentID
-	result.Action = "deleted"
-	return result
-}
-
-// DeleteEnvironment deletes an environment by name
-func DeleteEnvironment(ctx context.Context, client *api.ClientWithResponses, workspaceID string, resolver *ResourceResolver, doc *EnvironmentDocument) *DeleteResult {
-	result := &DeleteResult{
-		Kind: KindEnvironment,
-		Name: doc.Name,
-	}
-
-	// Resolve system ID
-	systemID, err := resolver.ResolveSystemID(ctx, doc.System)
-	if err != nil {
-		result.Error = err
-		return result
-	}
-
-	// Find environment by name
-	listResp, err := client.ListEnvironmentsWithResponse(ctx, workspaceID, nil)
-	if err != nil {
-		result.Error = fmt.Errorf("failed to list environments: %w", err)
-		return result
-	}
-
-	var environmentID string
-	if listResp.JSON200 != nil {
-		for _, env := range listResp.JSON200.Items {
-			if env.Environment.Name == doc.Name && env.Environment.SystemId == systemID {
-				environmentID = env.Environment.Id
-				break
-			}
-		}
-	}
-
-	if environmentID == "" {
-		result.Action = "not_found"
-		return result
-	}
-
-	// Delete the environment
-	resp, err := client.DeleteEnvironmentWithResponse(ctx, workspaceID, environmentID)
-	if err != nil {
-		result.Error = fmt.Errorf("failed to delete environment: %w", err)
-		return result
-	}
-
-	if resp.StatusCode() >= 400 {
-		result.Error = fmt.Errorf("failed to delete environment: %s", string(resp.Body))
-		return result
-	}
-
-	result.ID = environmentID
-	result.Action = "deleted"
-	return result
-}
-
-// DeletePolicy deletes a policy by name
-func DeletePolicy(ctx context.Context, client *api.ClientWithResponses, workspaceID string, doc *PolicyDocument) *DeleteResult {
-	result := &DeleteResult{
-		Kind: KindPolicy,
-		Name: doc.Name,
-	}
-
-	// Find policy by name
-	listResp, err := client.ListPoliciesWithResponse(ctx, workspaceID, nil)
-	if err != nil {
-		result.Error = fmt.Errorf("failed to list policies: %w", err)
-		return result
-	}
-
-	var policyID string
-	if listResp.JSON200 != nil {
-		for _, pol := range listResp.JSON200.Items {
-			if pol.Name == doc.Name {
-				policyID = pol.Id
-				break
-			}
-		}
-	}
-
-	if policyID == "" {
-		result.Action = "not_found"
-		return result
-	}
-
-	// Delete the policy
-	resp, err := client.DeletePolicyWithResponse(ctx, workspaceID, policyID)
-	if err != nil {
-		result.Error = fmt.Errorf("failed to delete policy: %w", err)
-		return result
-	}
-
-	if resp.StatusCode() >= 400 {
-		result.Error = fmt.Errorf("failed to delete policy: %s", string(resp.Body))
-		return result
-	}
-
-	result.ID = policyID
-	result.Action = "deleted"
-	return result
-}
-
-// DeleteRelationshipRule deletes a relationship rule by reference
-func DeleteRelationshipRule(ctx context.Context, client *api.ClientWithResponses, workspaceID string, doc *RelationshipRuleDocument) *DeleteResult {
-	result := &DeleteResult{
-		Kind: KindRelationshipRule,
-		Name: doc.Name,
-	}
-
-	// Note: There's no list endpoint for relationship rules in the API,
-	// so we need the ID. For now, we'll return not_found if we don't have the ID.
-	// In practice, users would need to track the ID separately or we'd need to
-	// add support for storing IDs after creation.
-	result.Action = "not_found"
-	result.Error = fmt.Errorf("relationship rule deletion requires the resource ID; consider storing IDs after creation")
-	return result
-}
-
-func printDeleteResults(results []*DeleteResult) {
+func printDeleteResults(results []DeleteResult) {
 	fmt.Println()
+
+	// Color definitions
+	green := color.New(color.FgGreen, color.Bold)
+	red := color.New(color.FgRed, color.Bold)
+	cyan := color.New(color.FgCyan)
+	yellow := color.New(color.FgYellow)
+	dim := color.New(color.Faint)
+
 	for _, r := range results {
 		if r.Error != nil {
-			fmt.Printf("✗ %s/%s: %v\n", r.Kind, r.Name, r.Error)
+			red.Print("✗ ")
+			fmt.Printf("%s/%s: ", r.Type, r.Name)
+			red.Printf("%v\n", r.Error)
 		} else if r.Action == "not_found" {
-			fmt.Printf("- %s/%s not found (skipped)\n", r.Kind, r.Name)
+			yellow.Print("- ")
+			fmt.Printf("%s/", r.Type)
+			cyan.Printf("%s ", r.Name)
+			dim.Println("not found (skipped)")
 		} else {
-			fmt.Printf("✓ %s/%s %s (id: %s)\n", r.Kind, r.Name, r.Action, r.ID)
+			green.Print("✓ ")
+			fmt.Printf("%s/", r.Type)
+			cyan.Printf("%s ", r.Name)
+			yellow.Printf("%s ", r.Action)
+			dim.Printf("(id: %s)\n", r.ID)
 		}
 	}
+
 	fmt.Println()
 
 	// Count successes and failures
@@ -417,5 +152,15 @@ func printDeleteResults(results []*DeleteResult) {
 			success++
 		}
 	}
-	fmt.Printf("Deleted %d resources: %d succeeded, %d not found, %d failed\n", len(results), success, notFound, failed)
+
+	fmt.Printf("Deleted %d resources: ", len(results))
+	green.Printf("%d succeeded", success)
+	fmt.Print(", ")
+	yellow.Printf("%d not found", notFound)
+	fmt.Print(", ")
+	if failed > 0 {
+		red.Printf("%d failed\n", failed)
+	} else {
+		fmt.Printf("%d failed\n", failed)
+	}
 }

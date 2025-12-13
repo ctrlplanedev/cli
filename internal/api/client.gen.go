@@ -41,8 +41,8 @@ const (
 
 // Defines values for GradualRolloutRuleRolloutType.
 const (
-	Linear           GradualRolloutRuleRolloutType = "linear"
-	LinearNormalized GradualRolloutRuleRolloutType = "linear-normalized"
+	GradualRolloutRuleRolloutTypeLinear           GradualRolloutRuleRolloutType = "linear"
+	GradualRolloutRuleRolloutTypeLinearNormalized GradualRolloutRuleRolloutType = "linear-normalized"
 )
 
 // Defines values for HTTPMetricProviderMethod.
@@ -85,6 +85,12 @@ const (
 	RelatableEntityTypeDeployment  RelatableEntityType = "deployment"
 	RelatableEntityTypeEnvironment RelatableEntityType = "environment"
 	RelatableEntityTypeResource    RelatableEntityType = "resource"
+)
+
+// Defines values for RetryRuleBackoffStrategy.
+const (
+	RetryRuleBackoffStrategyExponential RetryRuleBackoffStrategy = "exponential"
+	RetryRuleBackoffStrategyLinear      RetryRuleBackoffStrategy = "linear"
 )
 
 // Defines values for VerificationMeasurementStatus.
@@ -151,13 +157,6 @@ type CreateEnvironmentRequest struct {
 	Name             string    `json:"name"`
 	ResourceSelector *Selector `json:"resourceSelector,omitempty"`
 	SystemId         string    `json:"systemId"`
-}
-
-// CreateJobAgentRequest defines model for CreateJobAgentRequest.
-type CreateJobAgentRequest struct {
-	Config map[string]interface{} `json:"config"`
-	Name   string                 `json:"name"`
-	Type   string                 `json:"type"`
 }
 
 // CreatePolicyRequest defines model for CreatePolicyRequest.
@@ -274,7 +273,7 @@ type DeploymentVersionStatus string
 // DeploymentWindowRule defines model for DeploymentWindowRule.
 type DeploymentWindowRule struct {
 	// AllowWindow If true, deployments are only allowed during the window. If false, deployments are blocked during the window (deny window)
-	AllowWindow *bool `json:"allowWindow,omitempty"`
+	AllowWindow bool `json:"allowWindow"`
 
 	// DurationMinutes Duration of each deployment window in minutes
 	DurationMinutes int32 `json:"durationMinutes"`
@@ -300,12 +299,6 @@ type Environment struct {
 	Name             string    `json:"name"`
 	ResourceSelector *Selector `json:"resourceSelector,omitempty"`
 	SystemId         string    `json:"systemId"`
-}
-
-// EnvironmentAndSystem defines model for EnvironmentAndSystem.
-type EnvironmentAndSystem struct {
-	Environment Environment `json:"environment"`
-	System      System      `json:"system"`
 }
 
 // EnvironmentProgressionRule defines model for EnvironmentProgressionRule.
@@ -397,10 +390,11 @@ type Job struct {
 
 // JobAgent defines model for JobAgent.
 type JobAgent struct {
-	Config map[string]interface{} `json:"config"`
-	Id     string                 `json:"id"`
-	Name   string                 `json:"name"`
-	Type   string                 `json:"type"`
+	Config   map[string]interface{} `json:"config"`
+	Id       string                 `json:"id"`
+	Metadata map[string]string      `json:"metadata"`
+	Name     string                 `json:"name"`
+	Type     string                 `json:"type"`
 }
 
 // JobStatus defines model for JobStatus.
@@ -467,7 +461,9 @@ type PolicyRule struct {
 	GradualRollout         *GradualRolloutRule         `json:"gradualRollout,omitempty"`
 	Id                     string                      `json:"id"`
 	PolicyId               string                      `json:"policyId"`
+	Retry                  *RetryRule                  `json:"retry,omitempty"`
 	Verification           *VerificationRule           `json:"verification,omitempty"`
+	VersionDebounce        *VersionDebounceRule        `json:"versionDebounce,omitempty"`
 }
 
 // PolicyTargetSelector defines model for PolicyTargetSelector.
@@ -594,6 +590,27 @@ type ResourceVariable struct {
 	Value      Value  `json:"value"`
 }
 
+// RetryRule defines model for RetryRule.
+type RetryRule struct {
+	// BackoffSeconds Minimum seconds to wait between retry attempts. If null, retries are allowed immediately after job completion.
+	BackoffSeconds *int32 `json:"backoffSeconds,omitempty"`
+
+	// BackoffStrategy Backoff strategy: "linear" uses constant backoffSeconds delay, "exponential" doubles the delay with each retry (backoffSeconds * 2^(attempt-1)).
+	BackoffStrategy *RetryRuleBackoffStrategy `json:"backoffStrategy,omitempty"`
+
+	// MaxBackoffSeconds Maximum backoff time in seconds (cap for exponential backoff). If null, no maximum is enforced.
+	MaxBackoffSeconds *int32 `json:"maxBackoffSeconds,omitempty"`
+
+	// MaxRetries Maximum number of retries allowed. 0 means no retries (1 attempt total), 3 means up to 4 attempts (1 initial + 3 retries).
+	MaxRetries int32 `json:"maxRetries"`
+
+	// RetryOnStatuses Job statuses that count toward the retry limit. If null or empty, defaults to ["failure", "invalidIntegration", "invalidJobAgent"] for maxRetries > 0, or ["failure", "invalidIntegration", "invalidJobAgent", "successful"] for maxRetries = 0. Cancelled and skipped jobs never count by default (allows redeployment after cancellation). Example: ["failure", "cancelled"] will only count failed/cancelled jobs.
+	RetryOnStatuses *[]JobStatus `json:"retryOnStatuses,omitempty"`
+}
+
+// RetryRuleBackoffStrategy Backoff strategy: "linear" uses constant backoffSeconds delay, "exponential" doubles the delay with each retry (backoffSeconds * 2^(attempt-1)).
+type RetryRuleBackoffStrategy string
+
 // Selector defines model for Selector.
 type Selector struct {
 	union json.RawMessage
@@ -625,13 +642,6 @@ type UpdateDeploymentVersionRequest struct {
 	Name           *string                  `json:"name,omitempty"`
 	Status         *DeploymentVersionStatus `json:"status,omitempty"`
 	Tag            *string                  `json:"tag,omitempty"`
-}
-
-// UpdateJobAgentRequest defines model for UpdateJobAgentRequest.
-type UpdateJobAgentRequest struct {
-	Config *map[string]interface{} `json:"config,omitempty"`
-	Name   *string                 `json:"name,omitempty"`
-	Type   *string                 `json:"type,omitempty"`
 }
 
 // UpdateWorkspaceRequest defines model for UpdateWorkspaceRequest.
@@ -674,6 +684,14 @@ type UpsertEnvironmentRequest struct {
 	Name             string    `json:"name"`
 	ResourceSelector *Selector `json:"resourceSelector,omitempty"`
 	SystemId         string    `json:"systemId"`
+}
+
+// UpsertJobAgentRequest defines model for UpsertJobAgentRequest.
+type UpsertJobAgentRequest struct {
+	Config   *map[string]interface{} `json:"config,omitempty"`
+	Metadata *map[string]string      `json:"metadata,omitempty"`
+	Name     string                  `json:"name"`
+	Type     string                  `json:"type"`
 }
 
 // UpsertPolicyRequest defines model for UpsertPolicyRequest.
@@ -761,11 +779,11 @@ type VerificationMetricSpec struct {
 	// FailureCondition CEL expression to evaluate measurement failure (e.g., "result.statusCode == 500"), if not provided, a failure is just the opposite of the success condition
 	FailureCondition *string `json:"failureCondition,omitempty"`
 
-	// FailureLimit Stop after this many failures (0 = no limit)
-	FailureLimit *int `json:"failureLimit,omitempty"`
+	// FailureThreshold Stop after this many consecutive failures (0 = no limit)
+	FailureThreshold *int `json:"failureThreshold,omitempty"`
 
-	// Interval Interval between measurements (duration string, e.g., "30s", "5m")
-	Interval string `json:"interval"`
+	// IntervalSeconds Interval between measurements in seconds
+	IntervalSeconds int32 `json:"intervalSeconds"`
 
 	// Name Name of the verification metric
 	Name     string         `json:"name"`
@@ -773,6 +791,9 @@ type VerificationMetricSpec struct {
 
 	// SuccessCondition CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
 	SuccessCondition string `json:"successCondition"`
+
+	// SuccessThreshold Minimum number of consecutive successful measurements required to consider the metric successful
+	SuccessThreshold *int `json:"successThreshold,omitempty"`
 }
 
 // VerificationMetricStatus defines model for VerificationMetricStatus.
@@ -783,11 +804,11 @@ type VerificationMetricStatus struct {
 	// FailureCondition CEL expression to evaluate measurement failure (e.g., "result.statusCode == 500"), if not provided, a failure is just the opposite of the success condition
 	FailureCondition *string `json:"failureCondition,omitempty"`
 
-	// FailureLimit Stop after this many failures (0 = no limit)
-	FailureLimit *int `json:"failureLimit,omitempty"`
+	// FailureThreshold Stop after this many consecutive failures (0 = no limit)
+	FailureThreshold *int `json:"failureThreshold,omitempty"`
 
-	// Interval Interval between measurements (duration string, e.g., "30s", "5m")
-	Interval string `json:"interval"`
+	// IntervalSeconds Interval between measurements in seconds
+	IntervalSeconds int32 `json:"intervalSeconds"`
 
 	// Measurements Individual verification measurements taken for this metric
 	Measurements []VerificationMeasurement `json:"measurements"`
@@ -798,6 +819,9 @@ type VerificationMetricStatus struct {
 
 	// SuccessCondition CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
 	SuccessCondition string `json:"successCondition"`
+
+	// SuccessThreshold Minimum number of consecutive successful measurements required to consider the metric successful
+	SuccessThreshold *int `json:"successThreshold,omitempty"`
 }
 
 // VerificationRule defines model for VerificationRule.
@@ -811,6 +835,12 @@ type VerificationRule struct {
 
 // VerificationRuleTriggerOn When to trigger verification
 type VerificationRuleTriggerOn string
+
+// VersionDebounceRule defines model for VersionDebounceRule.
+type VersionDebounceRule struct {
+	// IntervalSeconds Minimum time difference in seconds between the creation times of deployed versions. Only versions created at least this long after the currently deployed version will be allowed. This enables batching of frequent upstream releases into periodic deployments.
+	IntervalSeconds int32 `json:"intervalSeconds"`
+}
 
 // Workspace defines model for Workspace.
 type Workspace struct {
@@ -878,6 +908,15 @@ type ListDeploymentVersionsParams struct {
 
 // ListEnvironmentsParams defines parameters for ListEnvironments.
 type ListEnvironmentsParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListJobAgentsParams defines parameters for ListJobAgents.
+type ListJobAgentsParams struct {
 	// Limit Maximum number of items to return
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
@@ -997,17 +1036,14 @@ type CreateEnvironmentJSONRequestBody = CreateEnvironmentRequest
 // UpsertEnvironmentByIdJSONRequestBody defines body for UpsertEnvironmentById for application/json ContentType.
 type UpsertEnvironmentByIdJSONRequestBody = UpsertEnvironmentRequest
 
-// CreateJobAgentJSONRequestBody defines body for CreateJobAgent for application/json ContentType.
-type CreateJobAgentJSONRequestBody = CreateJobAgentRequest
-
-// UpdateJobAgentJSONRequestBody defines body for UpdateJobAgent for application/json ContentType.
-type UpdateJobAgentJSONRequestBody = UpdateJobAgentRequest
+// UpsertJobAgentJSONRequestBody defines body for UpsertJobAgent for application/json ContentType.
+type UpsertJobAgentJSONRequestBody = UpsertJobAgentRequest
 
 // CreatePolicyJSONRequestBody defines body for CreatePolicy for application/json ContentType.
 type CreatePolicyJSONRequestBody = CreatePolicyRequest
 
-// UpdatePolicyJSONRequestBody defines body for UpdatePolicy for application/json ContentType.
-type UpdatePolicyJSONRequestBody = UpsertPolicyRequest
+// UpsertPolicyJSONRequestBody defines body for UpsertPolicy for application/json ContentType.
+type UpsertPolicyJSONRequestBody = UpsertPolicyRequest
 
 // CreateRelationshipRuleJSONRequestBody defines body for CreateRelationshipRule for application/json ContentType.
 type CreateRelationshipRuleJSONRequestBody = CreateRelationshipRuleRequest
@@ -1695,10 +1731,8 @@ type ClientInterface interface {
 
 	UpsertEnvironmentById(ctx context.Context, workspaceId string, environmentId string, body UpsertEnvironmentByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateJobAgentWithBody request with any body
-	CreateJobAgentWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateJobAgent(ctx context.Context, workspaceId string, body CreateJobAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListJobAgents request
+	ListJobAgents(ctx context.Context, workspaceId string, params *ListJobAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteJobAgent request
 	DeleteJobAgent(ctx context.Context, workspaceId string, jobAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1706,10 +1740,10 @@ type ClientInterface interface {
 	// GetJobAgent request
 	GetJobAgent(ctx context.Context, workspaceId string, jobAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateJobAgentWithBody request with any body
-	UpdateJobAgentWithBody(ctx context.Context, workspaceId string, jobAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpsertJobAgentWithBody request with any body
+	UpsertJobAgentWithBody(ctx context.Context, workspaceId string, jobAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpdateJobAgent(ctx context.Context, workspaceId string, jobAgentId string, body UpdateJobAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpsertJobAgent(ctx context.Context, workspaceId string, jobAgentId string, body UpsertJobAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetJobs request
 	GetJobs(ctx context.Context, workspaceId string, params *GetJobsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1734,10 +1768,10 @@ type ClientInterface interface {
 	// GetPolicy request
 	GetPolicy(ctx context.Context, workspaceId string, policyId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdatePolicyWithBody request with any body
-	UpdatePolicyWithBody(ctx context.Context, workspaceId string, policyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpsertPolicyWithBody request with any body
+	UpsertPolicyWithBody(ctx context.Context, workspaceId string, policyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpdatePolicy(ctx context.Context, workspaceId string, policyId string, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpsertPolicy(ctx context.Context, workspaceId string, policyId string, body UpsertPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateRelationshipRuleWithBody request with any body
 	CreateRelationshipRuleWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1801,6 +1835,9 @@ type ClientInterface interface {
 	UpdateVariablesForResourceWithBody(ctx context.Context, workspaceId string, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateVariablesForResource(ctx context.Context, workspaceId string, identifier string, body UpdateVariablesForResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetReleaseTargetForResourceInDeployment request
+	GetReleaseTargetForResourceInDeployment(ctx context.Context, workspaceId string, resourceIdentifier string, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSystems request
 	ListSystems(ctx context.Context, workspaceId string, params *ListSystemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2290,20 +2327,8 @@ func (c *Client) UpsertEnvironmentById(ctx context.Context, workspaceId string, 
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateJobAgentWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateJobAgentRequestWithBody(c.Server, workspaceId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateJobAgent(ctx context.Context, workspaceId string, body CreateJobAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateJobAgentRequest(c.Server, workspaceId, body)
+func (c *Client) ListJobAgents(ctx context.Context, workspaceId string, params *ListJobAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListJobAgentsRequest(c.Server, workspaceId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2338,8 +2363,8 @@ func (c *Client) GetJobAgent(ctx context.Context, workspaceId string, jobAgentId
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateJobAgentWithBody(ctx context.Context, workspaceId string, jobAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateJobAgentRequestWithBody(c.Server, workspaceId, jobAgentId, contentType, body)
+func (c *Client) UpsertJobAgentWithBody(ctx context.Context, workspaceId string, jobAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertJobAgentRequestWithBody(c.Server, workspaceId, jobAgentId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2350,8 +2375,8 @@ func (c *Client) UpdateJobAgentWithBody(ctx context.Context, workspaceId string,
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateJobAgent(ctx context.Context, workspaceId string, jobAgentId string, body UpdateJobAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateJobAgentRequest(c.Server, workspaceId, jobAgentId, body)
+func (c *Client) UpsertJobAgent(ctx context.Context, workspaceId string, jobAgentId string, body UpsertJobAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertJobAgentRequest(c.Server, workspaceId, jobAgentId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2458,8 +2483,8 @@ func (c *Client) GetPolicy(ctx context.Context, workspaceId string, policyId str
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdatePolicyWithBody(ctx context.Context, workspaceId string, policyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdatePolicyRequestWithBody(c.Server, workspaceId, policyId, contentType, body)
+func (c *Client) UpsertPolicyWithBody(ctx context.Context, workspaceId string, policyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertPolicyRequestWithBody(c.Server, workspaceId, policyId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2470,8 +2495,8 @@ func (c *Client) UpdatePolicyWithBody(ctx context.Context, workspaceId string, p
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdatePolicy(ctx context.Context, workspaceId string, policyId string, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdatePolicyRequest(c.Server, workspaceId, policyId, body)
+func (c *Client) UpsertPolicy(ctx context.Context, workspaceId string, policyId string, body UpsertPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertPolicyRequest(c.Server, workspaceId, policyId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2748,6 +2773,18 @@ func (c *Client) UpdateVariablesForResourceWithBody(ctx context.Context, workspa
 
 func (c *Client) UpdateVariablesForResource(ctx context.Context, workspaceId string, identifier string, body UpdateVariablesForResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateVariablesForResourceRequest(c.Server, workspaceId, identifier, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetReleaseTargetForResourceInDeployment(ctx context.Context, workspaceId string, resourceIdentifier string, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetReleaseTargetForResourceInDeploymentRequest(c.Server, workspaceId, resourceIdentifier, deploymentId)
 	if err != nil {
 		return nil, err
 	}
@@ -4309,19 +4346,8 @@ func NewUpsertEnvironmentByIdRequestWithBody(server string, workspaceId string, 
 	return req, nil
 }
 
-// NewCreateJobAgentRequest calls the generic CreateJobAgent builder with application/json body
-func NewCreateJobAgentRequest(server string, workspaceId string, body CreateJobAgentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateJobAgentRequestWithBody(server, workspaceId, "application/json", bodyReader)
-}
-
-// NewCreateJobAgentRequestWithBody generates requests for CreateJobAgent with any type of body
-func NewCreateJobAgentRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewListJobAgentsRequest generates requests for ListJobAgents
+func NewListJobAgentsRequest(server string, workspaceId string, params *ListJobAgentsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -4346,12 +4372,48 @@ func NewCreateJobAgentRequestWithBody(server string, workspaceId string, content
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
-
-	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -4438,19 +4500,19 @@ func NewGetJobAgentRequest(server string, workspaceId string, jobAgentId string)
 	return req, nil
 }
 
-// NewUpdateJobAgentRequest calls the generic UpdateJobAgent builder with application/json body
-func NewUpdateJobAgentRequest(server string, workspaceId string, jobAgentId string, body UpdateJobAgentJSONRequestBody) (*http.Request, error) {
+// NewUpsertJobAgentRequest calls the generic UpsertJobAgent builder with application/json body
+func NewUpsertJobAgentRequest(server string, workspaceId string, jobAgentId string, body UpsertJobAgentJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateJobAgentRequestWithBody(server, workspaceId, jobAgentId, "application/json", bodyReader)
+	return NewUpsertJobAgentRequestWithBody(server, workspaceId, jobAgentId, "application/json", bodyReader)
 }
 
-// NewUpdateJobAgentRequestWithBody generates requests for UpdateJobAgent with any type of body
-func NewUpdateJobAgentRequestWithBody(server string, workspaceId string, jobAgentId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewUpsertJobAgentRequestWithBody generates requests for UpsertJobAgent with any type of body
+func NewUpsertJobAgentRequestWithBody(server string, workspaceId string, jobAgentId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -4847,19 +4909,19 @@ func NewGetPolicyRequest(server string, workspaceId string, policyId string) (*h
 	return req, nil
 }
 
-// NewUpdatePolicyRequest calls the generic UpdatePolicy builder with application/json body
-func NewUpdatePolicyRequest(server string, workspaceId string, policyId string, body UpdatePolicyJSONRequestBody) (*http.Request, error) {
+// NewUpsertPolicyRequest calls the generic UpsertPolicy builder with application/json body
+func NewUpsertPolicyRequest(server string, workspaceId string, policyId string, body UpsertPolicyJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdatePolicyRequestWithBody(server, workspaceId, policyId, "application/json", bodyReader)
+	return NewUpsertPolicyRequestWithBody(server, workspaceId, policyId, "application/json", bodyReader)
 }
 
-// NewUpdatePolicyRequestWithBody generates requests for UpdatePolicy with any type of body
-func NewUpdatePolicyRequestWithBody(server string, workspaceId string, policyId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewUpsertPolicyRequestWithBody generates requests for UpsertPolicy with any type of body
+func NewUpsertPolicyRequestWithBody(server string, workspaceId string, policyId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -5823,6 +5885,54 @@ func NewUpdateVariablesForResourceRequestWithBody(server string, workspaceId str
 	return req, nil
 }
 
+// NewGetReleaseTargetForResourceInDeploymentRequest generates requests for GetReleaseTargetForResourceInDeployment
+func NewGetReleaseTargetForResourceInDeploymentRequest(server string, workspaceId string, resourceIdentifier string, deploymentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "resourceIdentifier", runtime.ParamLocationPath, resourceIdentifier)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/resources/%s/release-targets/deployment/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListSystemsRequest generates requests for ListSystems
 func NewListSystemsRequest(server string, workspaceId string, params *ListSystemsParams) (*http.Request, error) {
 	var err error
@@ -6227,10 +6337,8 @@ type ClientWithResponsesInterface interface {
 
 	UpsertEnvironmentByIdWithResponse(ctx context.Context, workspaceId string, environmentId string, body UpsertEnvironmentByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertEnvironmentByIdResponse, error)
 
-	// CreateJobAgentWithBodyWithResponse request with any body
-	CreateJobAgentWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateJobAgentResponse, error)
-
-	CreateJobAgentWithResponse(ctx context.Context, workspaceId string, body CreateJobAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateJobAgentResponse, error)
+	// ListJobAgentsWithResponse request
+	ListJobAgentsWithResponse(ctx context.Context, workspaceId string, params *ListJobAgentsParams, reqEditors ...RequestEditorFn) (*ListJobAgentsResponse, error)
 
 	// DeleteJobAgentWithResponse request
 	DeleteJobAgentWithResponse(ctx context.Context, workspaceId string, jobAgentId string, reqEditors ...RequestEditorFn) (*DeleteJobAgentResponse, error)
@@ -6238,10 +6346,10 @@ type ClientWithResponsesInterface interface {
 	// GetJobAgentWithResponse request
 	GetJobAgentWithResponse(ctx context.Context, workspaceId string, jobAgentId string, reqEditors ...RequestEditorFn) (*GetJobAgentResponse, error)
 
-	// UpdateJobAgentWithBodyWithResponse request with any body
-	UpdateJobAgentWithBodyWithResponse(ctx context.Context, workspaceId string, jobAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateJobAgentResponse, error)
+	// UpsertJobAgentWithBodyWithResponse request with any body
+	UpsertJobAgentWithBodyWithResponse(ctx context.Context, workspaceId string, jobAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertJobAgentResponse, error)
 
-	UpdateJobAgentWithResponse(ctx context.Context, workspaceId string, jobAgentId string, body UpdateJobAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateJobAgentResponse, error)
+	UpsertJobAgentWithResponse(ctx context.Context, workspaceId string, jobAgentId string, body UpsertJobAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertJobAgentResponse, error)
 
 	// GetJobsWithResponse request
 	GetJobsWithResponse(ctx context.Context, workspaceId string, params *GetJobsParams, reqEditors ...RequestEditorFn) (*GetJobsResponse, error)
@@ -6266,10 +6374,10 @@ type ClientWithResponsesInterface interface {
 	// GetPolicyWithResponse request
 	GetPolicyWithResponse(ctx context.Context, workspaceId string, policyId string, reqEditors ...RequestEditorFn) (*GetPolicyResponse, error)
 
-	// UpdatePolicyWithBodyWithResponse request with any body
-	UpdatePolicyWithBodyWithResponse(ctx context.Context, workspaceId string, policyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error)
+	// UpsertPolicyWithBodyWithResponse request with any body
+	UpsertPolicyWithBodyWithResponse(ctx context.Context, workspaceId string, policyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertPolicyResponse, error)
 
-	UpdatePolicyWithResponse(ctx context.Context, workspaceId string, policyId string, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error)
+	UpsertPolicyWithResponse(ctx context.Context, workspaceId string, policyId string, body UpsertPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertPolicyResponse, error)
 
 	// CreateRelationshipRuleWithBodyWithResponse request with any body
 	CreateRelationshipRuleWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRelationshipRuleResponse, error)
@@ -6333,6 +6441,9 @@ type ClientWithResponsesInterface interface {
 	UpdateVariablesForResourceWithBodyWithResponse(ctx context.Context, workspaceId string, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateVariablesForResourceResponse, error)
 
 	UpdateVariablesForResourceWithResponse(ctx context.Context, workspaceId string, identifier string, body UpdateVariablesForResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateVariablesForResourceResponse, error)
+
+	// GetReleaseTargetForResourceInDeploymentWithResponse request
+	GetReleaseTargetForResourceInDeploymentWithResponse(ctx context.Context, workspaceId string, resourceIdentifier string, deploymentId string, reqEditors ...RequestEditorFn) (*GetReleaseTargetForResourceInDeploymentResponse, error)
 
 	// ListSystemsWithResponse request
 	ListSystemsWithResponse(ctx context.Context, workspaceId string, params *ListSystemsParams, reqEditors ...RequestEditorFn) (*ListSystemsResponse, error)
@@ -6941,7 +7052,7 @@ type ListEnvironmentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Items []EnvironmentAndSystem `json:"items"`
+		Items []Environment `json:"items"`
 
 		// Limit Maximum number of items returned
 		Limit int `json:"limit"`
@@ -7062,14 +7173,26 @@ func (r UpsertEnvironmentByIdResponse) StatusCode() int {
 	return 0
 }
 
-type CreateJobAgentResponse struct {
+type ListJobAgentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON202      *JobAgent
+	JSON200      *struct {
+		Items []JobAgent `json:"items"`
+
+		// Limit Maximum number of items returned
+		Limit int `json:"limit"`
+
+		// Offset Number of items skipped
+		Offset int `json:"offset"`
+
+		// Total Total number of items available
+		Total int `json:"total"`
+	}
+	JSON400 *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r CreateJobAgentResponse) Status() string {
+func (r ListJobAgentsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -7077,7 +7200,7 @@ func (r CreateJobAgentResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r CreateJobAgentResponse) StatusCode() int {
+func (r ListJobAgentsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -7130,14 +7253,14 @@ func (r GetJobAgentResponse) StatusCode() int {
 	return 0
 }
 
-type UpdateJobAgentResponse struct {
+type UpsertJobAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *JobAgent
+	JSON202      *JobAgent
 }
 
 // Status returns HTTPResponse.Status
-func (r UpdateJobAgentResponse) Status() string {
+func (r UpsertJobAgentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -7145,7 +7268,7 @@ func (r UpdateJobAgentResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpdateJobAgentResponse) StatusCode() int {
+func (r UpsertJobAgentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -7339,7 +7462,7 @@ func (r GetPolicyResponse) StatusCode() int {
 	return 0
 }
 
-type UpdatePolicyResponse struct {
+type UpsertPolicyResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON202      *Policy
@@ -7348,7 +7471,7 @@ type UpdatePolicyResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r UpdatePolicyResponse) Status() string {
+func (r UpsertPolicyResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -7356,7 +7479,7 @@ func (r UpdatePolicyResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpdatePolicyResponse) StatusCode() int {
+func (r UpsertPolicyResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -7786,6 +7909,30 @@ func (r UpdateVariablesForResourceResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UpdateVariablesForResourceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetReleaseTargetForResourceInDeploymentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ReleaseTarget
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetReleaseTargetForResourceInDeploymentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetReleaseTargetForResourceInDeploymentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -8257,21 +8404,13 @@ func (c *ClientWithResponses) UpsertEnvironmentByIdWithResponse(ctx context.Cont
 	return ParseUpsertEnvironmentByIdResponse(rsp)
 }
 
-// CreateJobAgentWithBodyWithResponse request with arbitrary body returning *CreateJobAgentResponse
-func (c *ClientWithResponses) CreateJobAgentWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateJobAgentResponse, error) {
-	rsp, err := c.CreateJobAgentWithBody(ctx, workspaceId, contentType, body, reqEditors...)
+// ListJobAgentsWithResponse request returning *ListJobAgentsResponse
+func (c *ClientWithResponses) ListJobAgentsWithResponse(ctx context.Context, workspaceId string, params *ListJobAgentsParams, reqEditors ...RequestEditorFn) (*ListJobAgentsResponse, error) {
+	rsp, err := c.ListJobAgents(ctx, workspaceId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateJobAgentResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateJobAgentWithResponse(ctx context.Context, workspaceId string, body CreateJobAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateJobAgentResponse, error) {
-	rsp, err := c.CreateJobAgent(ctx, workspaceId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateJobAgentResponse(rsp)
+	return ParseListJobAgentsResponse(rsp)
 }
 
 // DeleteJobAgentWithResponse request returning *DeleteJobAgentResponse
@@ -8292,21 +8431,21 @@ func (c *ClientWithResponses) GetJobAgentWithResponse(ctx context.Context, works
 	return ParseGetJobAgentResponse(rsp)
 }
 
-// UpdateJobAgentWithBodyWithResponse request with arbitrary body returning *UpdateJobAgentResponse
-func (c *ClientWithResponses) UpdateJobAgentWithBodyWithResponse(ctx context.Context, workspaceId string, jobAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateJobAgentResponse, error) {
-	rsp, err := c.UpdateJobAgentWithBody(ctx, workspaceId, jobAgentId, contentType, body, reqEditors...)
+// UpsertJobAgentWithBodyWithResponse request with arbitrary body returning *UpsertJobAgentResponse
+func (c *ClientWithResponses) UpsertJobAgentWithBodyWithResponse(ctx context.Context, workspaceId string, jobAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertJobAgentResponse, error) {
+	rsp, err := c.UpsertJobAgentWithBody(ctx, workspaceId, jobAgentId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateJobAgentResponse(rsp)
+	return ParseUpsertJobAgentResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdateJobAgentWithResponse(ctx context.Context, workspaceId string, jobAgentId string, body UpdateJobAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateJobAgentResponse, error) {
-	rsp, err := c.UpdateJobAgent(ctx, workspaceId, jobAgentId, body, reqEditors...)
+func (c *ClientWithResponses) UpsertJobAgentWithResponse(ctx context.Context, workspaceId string, jobAgentId string, body UpsertJobAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertJobAgentResponse, error) {
+	rsp, err := c.UpsertJobAgent(ctx, workspaceId, jobAgentId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateJobAgentResponse(rsp)
+	return ParseUpsertJobAgentResponse(rsp)
 }
 
 // GetJobsWithResponse request returning *GetJobsResponse
@@ -8380,21 +8519,21 @@ func (c *ClientWithResponses) GetPolicyWithResponse(ctx context.Context, workspa
 	return ParseGetPolicyResponse(rsp)
 }
 
-// UpdatePolicyWithBodyWithResponse request with arbitrary body returning *UpdatePolicyResponse
-func (c *ClientWithResponses) UpdatePolicyWithBodyWithResponse(ctx context.Context, workspaceId string, policyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error) {
-	rsp, err := c.UpdatePolicyWithBody(ctx, workspaceId, policyId, contentType, body, reqEditors...)
+// UpsertPolicyWithBodyWithResponse request with arbitrary body returning *UpsertPolicyResponse
+func (c *ClientWithResponses) UpsertPolicyWithBodyWithResponse(ctx context.Context, workspaceId string, policyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertPolicyResponse, error) {
+	rsp, err := c.UpsertPolicyWithBody(ctx, workspaceId, policyId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdatePolicyResponse(rsp)
+	return ParseUpsertPolicyResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdatePolicyWithResponse(ctx context.Context, workspaceId string, policyId string, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error) {
-	rsp, err := c.UpdatePolicy(ctx, workspaceId, policyId, body, reqEditors...)
+func (c *ClientWithResponses) UpsertPolicyWithResponse(ctx context.Context, workspaceId string, policyId string, body UpsertPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertPolicyResponse, error) {
+	rsp, err := c.UpsertPolicy(ctx, workspaceId, policyId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdatePolicyResponse(rsp)
+	return ParseUpsertPolicyResponse(rsp)
 }
 
 // CreateRelationshipRuleWithBodyWithResponse request with arbitrary body returning *CreateRelationshipRuleResponse
@@ -8596,6 +8735,15 @@ func (c *ClientWithResponses) UpdateVariablesForResourceWithResponse(ctx context
 		return nil, err
 	}
 	return ParseUpdateVariablesForResourceResponse(rsp)
+}
+
+// GetReleaseTargetForResourceInDeploymentWithResponse request returning *GetReleaseTargetForResourceInDeploymentResponse
+func (c *ClientWithResponses) GetReleaseTargetForResourceInDeploymentWithResponse(ctx context.Context, workspaceId string, resourceIdentifier string, deploymentId string, reqEditors ...RequestEditorFn) (*GetReleaseTargetForResourceInDeploymentResponse, error) {
+	rsp, err := c.GetReleaseTargetForResourceInDeployment(ctx, workspaceId, resourceIdentifier, deploymentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetReleaseTargetForResourceInDeploymentResponse(rsp)
 }
 
 // ListSystemsWithResponse request returning *ListSystemsResponse
@@ -9536,7 +9684,7 @@ func ParseListEnvironmentsResponse(rsp *http.Response) (*ListEnvironmentsRespons
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Items []EnvironmentAndSystem `json:"items"`
+			Items []Environment `json:"items"`
 
 			// Limit Maximum number of items returned
 			Limit int `json:"limit"`
@@ -9689,26 +9837,44 @@ func ParseUpsertEnvironmentByIdResponse(rsp *http.Response) (*UpsertEnvironmentB
 	return response, nil
 }
 
-// ParseCreateJobAgentResponse parses an HTTP response from a CreateJobAgentWithResponse call
-func ParseCreateJobAgentResponse(rsp *http.Response) (*CreateJobAgentResponse, error) {
+// ParseListJobAgentsResponse parses an HTTP response from a ListJobAgentsWithResponse call
+func ParseListJobAgentsResponse(rsp *http.Response) (*ListJobAgentsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &CreateJobAgentResponse{
+	response := &ListJobAgentsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest JobAgent
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Items []JobAgent `json:"items"`
+
+			// Limit Maximum number of items returned
+			Limit int `json:"limit"`
+
+			// Offset Number of items skipped
+			Offset int `json:"offset"`
+
+			// Total Total number of items available
+			Total int `json:"total"`
+		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON202 = &dest
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	}
 
@@ -9781,26 +9947,26 @@ func ParseGetJobAgentResponse(rsp *http.Response) (*GetJobAgentResponse, error) 
 	return response, nil
 }
 
-// ParseUpdateJobAgentResponse parses an HTTP response from a UpdateJobAgentWithResponse call
-func ParseUpdateJobAgentResponse(rsp *http.Response) (*UpdateJobAgentResponse, error) {
+// ParseUpsertJobAgentResponse parses an HTTP response from a UpsertJobAgentWithResponse call
+func ParseUpsertJobAgentResponse(rsp *http.Response) (*UpsertJobAgentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpdateJobAgentResponse{
+	response := &UpsertJobAgentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
 		var dest JobAgent
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON200 = &dest
+		response.JSON202 = &dest
 
 	}
 
@@ -10088,15 +10254,15 @@ func ParseGetPolicyResponse(rsp *http.Response) (*GetPolicyResponse, error) {
 	return response, nil
 }
 
-// ParseUpdatePolicyResponse parses an HTTP response from a UpdatePolicyWithResponse call
-func ParseUpdatePolicyResponse(rsp *http.Response) (*UpdatePolicyResponse, error) {
+// ParseUpsertPolicyResponse parses an HTTP response from a UpsertPolicyWithResponse call
+func ParseUpsertPolicyResponse(rsp *http.Response) (*UpsertPolicyResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpdatePolicyResponse{
+	response := &UpsertPolicyResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -10725,6 +10891,46 @@ func ParseUpdateVariablesForResourceResponse(rsp *http.Response) (*UpdateVariabl
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetReleaseTargetForResourceInDeploymentResponse parses an HTTP response from a GetReleaseTargetForResourceInDeploymentWithResponse call
+func ParseGetReleaseTargetForResourceInDeploymentResponse(rsp *http.Response) (*GetReleaseTargetForResourceInDeploymentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetReleaseTargetForResourceInDeploymentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ReleaseTarget
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest ErrorResponse
