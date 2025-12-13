@@ -3,7 +3,10 @@ package apply
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
+	"github.com/avast/retry-go"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/google/uuid"
 	"github.com/gosimple/slug"
@@ -591,17 +594,36 @@ func ApplyResource(ctx context.Context, client *api.ClientWithResponses, workspa
 	if vars == nil {
 		vars = map[string]any{}
 	}
-	varsResp, err := client.UpdateVariablesForResourceWithResponse(
-		ctx,
-		workspaceID,
-		doc.Identifier,
-		api.UpdateVariablesForResourceJSONRequestBody(vars),
+
+	// Retry updating variables with backoff since resource upsert is async (202)
+	var varsResp *api.UpdateVariablesForResourceResponse
+	err = retry.Do(
+		func() error {
+			var retryErr error
+			varsResp, retryErr = client.UpdateVariablesForResourceWithResponse(
+				ctx,
+				workspaceID,
+				doc.Identifier,
+				api.UpdateVariablesForResourceJSONRequestBody(vars),
+			)
+			if retryErr != nil {
+				return retry.Unrecoverable(retryErr)
+			}
+			if varsResp != nil && varsResp.StatusCode() == 204 {
+				return nil
+			}
+			// If resource not found (404 or 500 with "not found"), retry since upsert may still be processing
+			if varsResp != nil && (varsResp.StatusCode() == 404 || (varsResp.StatusCode() == 500 && strings.Contains(string(varsResp.Body), "not found"))) {
+				return fmt.Errorf("resource not found, retrying")
+			}
+			// Other errors are not retryable
+			return retry.Unrecoverable(fmt.Errorf("unexpected status code: %d", varsResp.StatusCode()))
+		},
+		retry.Attempts(5),
+		retry.Delay(200*time.Millisecond),
+		retry.MaxDelay(2*time.Second),
 	)
 	if err != nil {
-		result.Error = fmt.Errorf("failed to update resource variables: %w", err)
-		return result, result.Error
-	}
-	if varsResp == nil || varsResp.StatusCode() != 204 {
 		body := ""
 		if varsResp != nil {
 			body = string(varsResp.Body)
