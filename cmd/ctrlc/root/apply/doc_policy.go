@@ -75,27 +75,39 @@ type VerificationRuleConfig struct {
 	Metrics   []VerificationMetricConfig     `yaml:"metrics"`
 }
 
+type VerificationMetricConditionConfig struct {
+	Condition string `yaml:"condition"`
+	Threshold int32  `yaml:"threshold"`
+}
+
 // VerificationMetricConfig represents a verification metric in YAML
 type VerificationMetricConfig struct {
 	Name             string        `yaml:"name"`
 	Interval         time.Duration `yaml:"interval"`
 	Count            int32         `yaml:"count"`
-	SuccessCondition string        `yaml:"successCondition"`
-	SuccessThreshold int32         `yaml:"successThreshold,omitempty"`
 
-	FailureCondition *string `yaml:"failureCondition,omitempty"`
-	FailureThreshold int32   `yaml:"failureThreshold"`
+	Failure VerificationMetricConditionConfig `yaml:"failure,omitempty"`
+	Success VerificationMetricConditionConfig `yaml:"success,omitempty"`
 
-	Provider VerificationMetricDatadogConfig `yaml:"provider"`
+	Provider MetricProviderConfig `yaml:"provider"`
 }
 
-// VerificationMetricDatadogConfig represents the configuration for a Datadog provider
-type VerificationMetricDatadogConfig struct {
-	Type   string `yaml:"type"`
-	Query  string `yaml:"query"`
-	ApiKey string `yaml:"apiKey"`
-	AppKey string `yaml:"appKey"`
-	Site   string `yaml:"site"`
+// MetricProviderConfig represents configuration for any metric provider type
+// Only fields relevant to the specified type need to be provided
+type MetricProviderConfig struct {
+	Type string `yaml:"type"` // "datadog", "sleep"
+
+	// Datadog fields
+	Aggregator *string           `yaml:"aggregator,omitempty"`
+	Queries    map[string]string `yaml:"queries,omitempty"`
+	ApiKey     string            `yaml:"apiKey,omitempty"`
+	AppKey     string            `yaml:"appKey,omitempty"`
+	Site       string            `yaml:"site,omitempty"`
+	Formula    *string           `yaml:"formula,omitempty"`
+	Interval   *time.Duration    `yaml:"interval,omitempty"`
+
+	// Sleep fields
+	Duration time.Duration `yaml:"duration,omitempty"`
 }
 
 // PolicyDocument represents a Policy in YAML
@@ -164,12 +176,12 @@ func (d *PolicyDocument) Apply(ctx *DocContext) (ApplyResult, error) {
 	for idx, sel := range d.Selectors {
 		id := uuid.NewSHA1(uuid.MustParse(policyId), []byte(fmt.Sprintf("selector-%d", idx))).String()
 		apiSel := api.PolicyTargetSelector{
-			Id: id,
-			DeploymentSelector: fromCelSelector("true"),
+			Id:                  id,
+			DeploymentSelector:  fromCelSelector("true"),
 			EnvironmentSelector: fromCelSelector("true"),
-			ResourceSelector: fromCelSelector("true"),
+			ResourceSelector:    fromCelSelector("true"),
 		}
-	
+
 		if sel.DeploymentSelector != nil {
 			apiSel.DeploymentSelector = fromCelSelector(*sel.DeploymentSelector)
 		}
@@ -223,6 +235,11 @@ func (d *PolicyDocument) Apply(ctx *DocContext) (ApplyResult, error) {
 				TriggerOn: rule.Verification.TriggerOn,
 			}
 			for _, metric := range rule.Verification.Metrics {
+				if metric.Success.Condition == "" {
+					result.Error = fmt.Errorf("verification metric '%s' missing required 'success.condition' field", metric.Name)
+					return result, result.Error
+				}
+
 				provider := api.MetricProvider{}
 				switch metric.Provider.Type {
 				case "datadog":
@@ -230,12 +247,27 @@ func (d *PolicyDocument) Apply(ctx *DocContext) (ApplyResult, error) {
 					if site == "" {
 						site = "datadoghq.com"
 					}
-					_ = provider.FromDatadogMetricProvider(api.DatadogMetricProvider{
-						Type:   api.Datadog,
-						Query:  metric.Provider.Query,
-						ApiKey: metric.Provider.ApiKey,
-						AppKey: metric.Provider.AppKey,
-						Site:   &site,
+					cfg := api.DatadogMetricProvider{
+						Type:    api.Datadog,
+						ApiKey:  &metric.Provider.ApiKey,
+						AppKey:  &metric.Provider.AppKey,
+						Queries: metric.Provider.Queries,
+						Formula: metric.Provider.Formula,
+						Site:    &site,
+					}
+					if metric.Provider.Aggregator != nil {
+						ag := api.DatadogMetricProviderAggregator(*metric.Provider.Aggregator)
+						cfg.Aggregator = &ag
+					}
+					if metric.Provider.Interval != nil {
+						interval := int64(metric.Provider.Interval.Seconds())
+						cfg.IntervalSeconds = &interval
+					}
+					_ = provider.FromDatadogMetricProvider(cfg)
+				case "sleep":
+					_ = provider.FromSleepMetricProvider(api.SleepMetricProvider{
+						Type:            api.Sleep,
+						DurationSeconds: int32(metric.Provider.Duration.Seconds()),
 					})
 				default:
 					result.Error = fmt.Errorf("unsupported metric provider type: %s", metric.Provider.Type)
@@ -246,22 +278,22 @@ func (d *PolicyDocument) Apply(ctx *DocContext) (ApplyResult, error) {
 					Name:             metric.Name,
 					IntervalSeconds:  int32(metric.Interval.Seconds()),
 					Count:            int(metric.Count),
-					SuccessCondition: metric.SuccessCondition,
+					SuccessCondition: metric.Success.Condition,
 					Provider:         provider,
 				}
 
-				if metric.SuccessThreshold != 0 {
-					successThreshold := int(metric.SuccessThreshold)
+				if metric.Success.Threshold != 0 {
+					successThreshold := int(metric.Success.Threshold)
 					metricSpec.SuccessThreshold = &successThreshold
 				}
 
-				if metric.FailureThreshold != 0 {
-					failureThreshold := int(metric.FailureThreshold)
+				if metric.Failure.Threshold != 0 {
+					failureThreshold := int(metric.Failure.Threshold)
 					metricSpec.FailureThreshold = &failureThreshold
 				}
 
-				if metric.FailureCondition != nil {
-					metricSpec.FailureCondition = metric.FailureCondition
+				if metric.Failure.Condition != "" {
+					metricSpec.FailureCondition = &metric.Failure.Condition
 				}
 
 				apiRule.Verification.Metrics = append(apiRule.Verification.Metrics, metricSpec)
