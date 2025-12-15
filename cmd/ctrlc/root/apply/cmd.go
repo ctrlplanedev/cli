@@ -3,9 +3,11 @@ package apply
 import (
 	"context"
 	"fmt"
+	"os"
 	"sort"
 
 	"github.com/MakeNowJust/heredoc/v2"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/fatih/color"
@@ -15,7 +17,7 @@ import (
 
 // NewApplyCmd creates a new apply command
 func NewApplyCmd() *cobra.Command {
-	var filePath string
+	var filePatterns []string
 
 	cmd := &cobra.Command{
 		Use:   "apply",
@@ -27,20 +29,72 @@ func NewApplyCmd() *cobra.Command {
 
 			# Apply a multi-document file with systems, deployments, and environments
 			$ ctrlc apply -f config.yaml
+
+			# Apply all YAML files matching a glob pattern
+			$ ctrlc apply -f "**/*.ctrlc.yaml"
+
+			# Apply multiple patterns
+			$ ctrlc apply -f infra/*.yaml -f apps/*.yaml
 		`),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runApply(cmd.Context(), filePath)
+			return runApply(cmd.Context(), filePatterns)
 		},
 	}
 
-	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to the YAML configuration file (required)")
+	cmd.Flags().StringArrayVarP(&filePatterns, "file", "f", nil, "Path or glob pattern to YAML files (can be specified multiple times)")
 	cmd.MarkFlagRequired("file")
 
 	return cmd
 }
 
-func runApply(ctx context.Context, filePath string) error {
+// expandGlob expands glob patterns to file paths, supporting ** for recursive matching
+func expandGlob(patterns []string) ([]string, error) {
+	seen := make(map[string]bool)
+	var files []string
+
+	for _, pattern := range patterns {
+		// Use doublestar for glob expansion (supports **)
+		matches, err := doublestar.FilepathGlob(pattern)
+		if err != nil {
+			return nil, fmt.Errorf("invalid glob pattern '%s': %w", pattern, err)
+		}
+
+		if len(matches) == 0 {
+			// Check if it's a literal file path that exists
+			if _, err := os.Stat(pattern); err == nil {
+				if !seen[pattern] {
+					seen[pattern] = true
+					files = append(files, pattern)
+				}
+			} else {
+				return nil, fmt.Errorf("no files matched pattern: %s", pattern)
+			}
+			continue
+		}
+
+		for _, match := range matches {
+			if !seen[match] {
+				seen[match] = true
+				files = append(files, match)
+			}
+		}
+	}
+
+	return files, nil
+}
+
+func runApply(ctx context.Context, filePatterns []string) error {
+	// Expand glob patterns to file paths
+	files, err := expandGlob(filePatterns)
+	if err != nil {
+		return err
+	}
+
+	if len(files) == 0 {
+		return fmt.Errorf("no files to apply")
+	}
+
 	// Create API client
 	apiURL := viper.GetString("url")
 	apiKey := viper.GetString("api-key")
@@ -53,18 +107,22 @@ func runApply(ctx context.Context, filePath string) error {
 
 	workspaceID := client.GetWorkspaceID(ctx, workspace)
 
-	// Parse the YAML file into Document interfaces
-	documents, err := ParseFile(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to parse file: %w", err)
+	// Parse all files and collect documents
+	var documents []Document
+	for _, filePath := range files {
+		docs, err := ParseFile(filePath)
+		if err != nil {
+			return fmt.Errorf("failed to parse file %s: %w", filePath, err)
+		}
+		documents = append(documents, docs...)
 	}
 
 	if len(documents) == 0 {
-		log.Warn("No resources found in file")
+		log.Warn("No resources found in files")
 		return nil
 	}
 
-	log.Info("Applying resources", "count", len(documents), "file", filePath)
+	log.Info("Applying resources", "count", len(documents), "files", len(files))
 
 	// Create document context
 	docCtx := NewDocContext(workspaceID.String(), client)

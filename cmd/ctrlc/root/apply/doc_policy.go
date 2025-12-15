@@ -249,8 +249,8 @@ func (d *PolicyDocument) Apply(ctx *DocContext) (ApplyResult, error) {
 					}
 					cfg := api.DatadogMetricProvider{
 						Type:    api.Datadog,
-						ApiKey:  &metric.Provider.ApiKey,
-						AppKey:  &metric.Provider.AppKey,
+						ApiKey:  metric.Provider.ApiKey,
+						AppKey:  metric.Provider.AppKey,
 						Queries: metric.Provider.Queries,
 						Formula: metric.Provider.Formula,
 						Site:    &site,

@@ -240,10 +240,10 @@ type DatadogMetricProvider struct {
 	Aggregator *DatadogMetricProviderAggregator `json:"aggregator,omitempty"`
 
 	// ApiKey Datadog API key (supports Go templates for variable references)
-	ApiKey *string `json:"apiKey,omitempty"`
+	ApiKey string `json:"apiKey"`
 
 	// AppKey Datadog Application key (supports Go templates for variable references)
-	AppKey *string `json:"appKey,omitempty"`
+	AppKey string `json:"appKey"`
 
 	// Formula Datadog formula (supports Go templates)
 	Formula         *string `json:"formula,omitempty"`
@@ -707,9 +707,6 @@ type System struct {
 type TerraformCloudRunMetricProvider struct {
 	// Address Terraform Cloud address
 	Address string `json:"address"`
-
-	// Organization Terraform Cloud organization name
-	Organization string `json:"organization"`
 
 	// RunId Terraform Cloud run ID
 	RunId string `json:"runId"`
