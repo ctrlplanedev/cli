@@ -82,9 +82,9 @@ type VerificationMetricConditionConfig struct {
 
 // VerificationMetricConfig represents a verification metric in YAML
 type VerificationMetricConfig struct {
-	Name             string        `yaml:"name"`
-	Interval         time.Duration `yaml:"interval"`
-	Count            int32         `yaml:"count"`
+	Name     string        `yaml:"name"`
+	Interval time.Duration `yaml:"interval"`
+	Count    int32         `yaml:"count"`
 
 	Failure VerificationMetricConditionConfig `yaml:"failure,omitempty"`
 	Success VerificationMetricConditionConfig `yaml:"success,omitempty"`
@@ -226,6 +226,36 @@ func (d *PolicyDocument) Apply(ctx *DocContext) (ApplyResult, error) {
 		if rule.Retry != nil {
 			apiRule.Retry = &api.RetryRule{
 				MaxRetries: rule.Retry.MaxRetries,
+			}
+		}
+
+		if rule.GradualRollout != nil {
+			rolloutType := api.GradualRolloutRuleRolloutTypeLinear
+			if rule.GradualRollout.RolloutType != nil {
+				rolloutType = *rule.GradualRollout.RolloutType
+			}
+			apiRule.GradualRollout = &api.GradualRolloutRule{
+				RolloutType:       rolloutType,
+				TimeScaleInterval: int32(rule.GradualRollout.TimeScaleInterval.Seconds()),
+			}
+		}
+
+		if rule.EnvironmentProgression != nil {
+			selector, err := buildSelector(&rule.EnvironmentProgression.DependsOnEnvironmentSelector)
+			if err != nil {
+				result.Error = fmt.Errorf("failed to build environment progression selector: %w", err)
+				return result, result.Error
+			}
+			if selector == nil {
+				result.Error = fmt.Errorf("environment progression rule requires a dependsOnEnvironmentSelector")
+				return result, result.Error
+			}
+			apiRule.EnvironmentProgression = &api.EnvironmentProgressionRule{
+				DependsOnEnvironmentSelector: *selector,
+				MaximumAgeHours:              rule.EnvironmentProgression.MaximumAgeHours,
+				MinimumSockTimeMinutes:       rule.EnvironmentProgression.MinimumSockTimeMinutes,
+				MinimumSuccessPercentage:     rule.EnvironmentProgression.MinimumSuccessPercentage,
+				SuccessStatuses:              rule.EnvironmentProgression.SuccessStatuses,
 			}
 		}
 
