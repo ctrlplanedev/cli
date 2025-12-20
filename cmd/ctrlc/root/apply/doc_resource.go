@@ -2,7 +2,9 @@ package apply
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/avast/retry-go"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"gopkg.in/yaml.v3"
 )
@@ -49,52 +51,81 @@ func (d *ResourceDocument) Order() int {
 	return 300 // Lower priority - resources are processed later
 }
 
+func (d *ResourceDocument) getProviderID(ctx *DocContext) (string, error) {
+	providerName := d.Provider
+	if providerName == "" {
+		providerName = "ctrlc-apply"
+	}
+
+	providerResp, err := ctx.Client.GetResourceProviderByNameWithResponse(ctx.Context, ctx.WorkspaceID, providerName)
+	if err != nil {
+		return "", fmt.Errorf("failed to get resource provider: %w", err)
+	}
+
+	if providerResp.JSON200 != nil {
+		return providerResp.JSON200.Id, nil
+	}
+
+	createResp, err := ctx.Client.UpsertResourceProviderWithResponse(ctx.Context, ctx.WorkspaceID, api.UpsertResourceProviderJSONRequestBody{
+		Name: providerName,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to create resource provider: %w", err)
+	}
+	if createResp.JSON200 == nil {
+		return "", fmt.Errorf("failed to create resource provider: %s", string(createResp.Body))
+	}
+	return createResp.JSON200.Id, nil
+}
+
+func (d *ResourceDocument) syncVariables(ctx *DocContext) error {
+	vars := d.Variables
+	if vars == nil {
+		vars = make(map[string]any)
+	}
+
+	err := retry.Do(
+		func() error {
+			varsResp, err := ctx.Client.UpdateVariablesForResourceWithResponse(ctx.Context, ctx.WorkspaceID, d.Identifier, api.UpdateVariablesForResourceJSONRequestBody(vars))
+			if err != nil {
+				return retry.Unrecoverable(fmt.Errorf("failed to update resource variables: %w", err))
+			}
+			if varsResp == nil {
+				return retry.Unrecoverable(fmt.Errorf("failed to update resource variables: empty response"))
+			}
+			if varsResp.StatusCode() == 404 {
+				return fmt.Errorf("resource not found yet, retrying")
+			}
+			if varsResp.StatusCode() != 204 {
+				return retry.Unrecoverable(fmt.Errorf("failed to update resource variables: %s", string(varsResp.Body)))
+			}
+			return nil
+		},
+		retry.Attempts(10),
+		retry.Delay(100*time.Millisecond),
+		retry.MaxDelay(15*time.Second),
+		retry.DelayType(retry.BackOffDelay),
+	)
+	return err
+}
+
 func (d *ResourceDocument) Apply(ctx *DocContext) (ApplyResult, error) {
 	result := ApplyResult{
 		Type: TypeResource,
 		Name: d.Name,
 	}
 
-	// Use default provider name if not specified
-	providerName := d.Provider
-	if providerName == "" {
-		providerName = "ctrlc-apply"
-	}
-
-	// First, try to find the resource provider by name
-	providerResp, err := ctx.Client.GetResourceProviderByNameWithResponse(ctx.Context, ctx.WorkspaceID, providerName)
+	providerID, err := d.getProviderID(ctx)
 	if err != nil {
 		result.Error = fmt.Errorf("failed to get resource provider: %w", err)
 		return result, result.Error
 	}
 
-	var providerID string
-	if providerResp.JSON200 != nil {
-		providerID = providerResp.JSON200.Id
-	} else {
-		// Provider doesn't exist, create it
-		createResp, err := ctx.Client.UpsertResourceProviderWithResponse(ctx.Context, ctx.WorkspaceID, api.UpsertResourceProviderJSONRequestBody{
-			Id:   providerName,
-			Name: providerName,
-		})
-		if err != nil {
-			result.Error = fmt.Errorf("failed to create resource provider: %w", err)
-			return result, result.Error
-		}
-		if createResp.JSON200 == nil {
-			result.Error = fmt.Errorf("failed to create resource provider: %s", string(createResp.Body))
-			return result, result.Error
-		}
-		providerID = createResp.JSON200.Id
-	}
-
-	// Initialize metadata if nil
 	metadata := d.Metadata
 	if metadata == nil {
 		metadata = make(map[string]string)
 	}
 
-	// Initialize config if nil
 	config := d.Config
 	if config == nil {
 		config = make(map[string]any)
@@ -129,26 +160,8 @@ func (d *ResourceDocument) Apply(ctx *DocContext) (ApplyResult, error) {
 	result.Action = "upserted"
 
 	// Update variables if provided
-	vars := d.Variables
-	if vars == nil {
-		vars = map[string]any{}
-	}
-	varsResp, err := ctx.Client.UpdateVariablesForResourceWithResponse(
-		ctx.Context,
-		ctx.WorkspaceID,
-		d.Identifier,
-		api.UpdateVariablesForResourceJSONRequestBody(vars),
-	)
-	if err != nil {
-		result.Error = fmt.Errorf("failed to update resource variables: %w", err)
-		return result, result.Error
-	}
-	if varsResp == nil || varsResp.StatusCode() != 204 {
-		body := ""
-		if varsResp != nil {
-			body = string(varsResp.Body)
-		}
-		result.Error = fmt.Errorf("failed to update resource variables: %s", body)
+	if err := d.syncVariables(ctx); err != nil {
+		result.Error = fmt.Errorf("failed to sync resource variables: %w", err)
 		return result, result.Error
 	}
 
