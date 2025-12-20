@@ -174,3 +174,112 @@ func (d *ResourceDocument) Delete(ctx *DocContext) (DeleteResult, error) {
 		Name: d.Name,
 	}, fmt.Errorf("delete not implemented for resources")
 }
+
+func applyResourcesBatch(ctx *DocContext, docs []*ResourceDocument) ([]ApplyResult, error) {
+	providerGroups := make(map[string][]*ResourceDocument)
+	for _, doc := range docs {
+		providerName := doc.Provider
+		if providerName == "" {
+			providerName = "ctrlc-apply"
+		}
+		providerGroups[providerName] = append(providerGroups[providerName], doc)
+	}
+
+	var results []ApplyResult
+
+	for providerName, groupDocs := range providerGroups {
+		groupResults, err := applyProviderResources(ctx, providerName, groupDocs)
+		if err != nil {
+			for _, doc := range groupDocs {
+				results = append(results, ApplyResult{
+					Type:  TypeResource,
+					Name:  doc.Name,
+					Error: err,
+				})
+			}
+			continue
+		}
+		results = append(results, groupResults...)
+	}
+
+	return results, nil
+}
+
+func applyProviderResources(ctx *DocContext, providerName string, docs []*ResourceDocument) ([]ApplyResult, error) {
+	providerID, err := getProviderIDByName(ctx, providerName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get resource provider: %w", err)
+	}
+
+	resources := make([]api.ResourceProviderResource, 0, len(docs))
+	for _, doc := range docs {
+		metadata := doc.Metadata
+		if metadata == nil {
+			metadata = make(map[string]string)
+		}
+		config := doc.Config
+		if config == nil {
+			config = make(map[string]any)
+		}
+
+		resources = append(resources, api.ResourceProviderResource{
+			Identifier: doc.Identifier,
+			Name:       doc.Name,
+			Kind:       doc.Kind,
+			Version:    doc.Version,
+			Config:     config,
+			Metadata:   metadata,
+		})
+	}
+
+	resp, err := ctx.Client.SetResourceProvidersResourcesPatchWithResponse(ctx.Context, ctx.WorkspaceID, providerID, api.SetResourceProvidersResourcesPatchJSONRequestBody{
+		Resources: resources,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to upsert resources: %w", err)
+	}
+
+	if resp.JSON202 == nil {
+		return nil, fmt.Errorf("failed to upsert resources: %s", string(resp.Body))
+	}
+
+	var results []ApplyResult
+	for _, doc := range docs {
+		result := ApplyResult{
+			Type:   TypeResource,
+			Name:   doc.Name,
+			ID:     doc.Identifier,
+			Action: "upserted",
+		}
+
+		if err := doc.syncVariables(ctx); err != nil {
+			result.Error = fmt.Errorf("failed to sync resource variables: %w", err)
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+func getProviderIDByName(ctx *DocContext, providerName string) (string, error) {
+	providerResp, err := ctx.Client.GetResourceProviderByNameWithResponse(ctx.Context, ctx.WorkspaceID, providerName)
+	if err != nil {
+		return "", fmt.Errorf("failed to get resource provider: %w", err)
+	}
+
+	if providerResp.JSON200 != nil {
+		return providerResp.JSON200.Id, nil
+	}
+
+	createResp, err := ctx.Client.UpsertResourceProviderWithResponse(ctx.Context, ctx.WorkspaceID, api.UpsertResourceProviderJSONRequestBody{
+		Name: providerName,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to create resource provider: %w", err)
+	}
+	if createResp.JSON200 == nil {
+		return "", fmt.Errorf("failed to create resource provider: %s", string(createResp.Body))
+	}
+	return createResp.JSON200.Id, nil
+}

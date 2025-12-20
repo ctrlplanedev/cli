@@ -61,23 +61,23 @@ func expandGlob(patterns []string) ([]string, error) {
 		}
 
 		if len(matches) == 0 {
-			// Check if it's a literal file path that exists
-			if _, err := os.Stat(pattern); err == nil {
-				if !seen[pattern] {
-					seen[pattern] = true
-					files = append(files, pattern)
-				}
-			} else {
-				return nil, fmt.Errorf("no files matched pattern: %s", pattern)
-			}
-			continue
+			return nil, fmt.Errorf("no files matched pattern: %s", pattern)
 		}
 
+		added := 0
 		for _, match := range matches {
+			info, err := os.Stat(match)
+			if err != nil || info.IsDir() {
+				continue
+			}
 			if !seen[match] {
 				seen[match] = true
 				files = append(files, match)
+				added++
 			}
+		}
+		if added == 0 {
+			return nil, fmt.Errorf("no files matched pattern: %s", pattern)
 		}
 	}
 
@@ -85,7 +85,6 @@ func expandGlob(patterns []string) ([]string, error) {
 }
 
 func runApply(ctx context.Context, filePatterns []string) error {
-	// Expand glob patterns to file paths
 	files, err := expandGlob(filePatterns)
 	if err != nil {
 		return err
@@ -95,7 +94,6 @@ func runApply(ctx context.Context, filePatterns []string) error {
 		return fmt.Errorf("no files to apply")
 	}
 
-	// Create API client
 	apiURL := viper.GetString("url")
 	apiKey := viper.GetString("api-key")
 	workspace := viper.GetString("workspace")
@@ -107,7 +105,6 @@ func runApply(ctx context.Context, filePatterns []string) error {
 
 	workspaceID := client.GetWorkspaceID(ctx, workspace)
 
-	// Parse all files and collect documents
 	var documents []Document
 	for _, filePath := range files {
 		docs, err := ParseFile(filePath)
@@ -124,19 +121,25 @@ func runApply(ctx context.Context, filePatterns []string) error {
 
 	log.Info("Applying resources", "count", len(documents), "files", len(files))
 
-	// Create document context
 	docCtx := NewDocContext(workspaceID.String(), client)
 	docCtx.Context = ctx
 
-	// Sort documents by Order (lower number = processed first)
-	// Sort documents by Order (higher number = higher priority = processed first)
-	sort.Slice(documents, func(i, j int) bool {
-		return documents[i].Order() > documents[j].Order()
+	var resourceDocs []*ResourceDocument
+	var otherDocs []Document
+	for _, doc := range documents {
+		if rd, ok := doc.(*ResourceDocument); ok {
+			resourceDocs = append(resourceDocs, rd)
+		} else {
+			otherDocs = append(otherDocs, doc)
+		}
+	}
+
+	sort.Slice(otherDocs, func(i, j int) bool {
+		return otherDocs[i].Order() > otherDocs[j].Order()
 	})
 
-	// Apply all documents
 	var results []ApplyResult
-	for _, doc := range documents {
+	for _, doc := range otherDocs {
 		result, err := doc.Apply(docCtx)
 		if err != nil {
 			log.Error("Failed to apply document", "error", err)
@@ -144,10 +147,16 @@ func runApply(ctx context.Context, filePatterns []string) error {
 		results = append(results, result)
 	}
 
-	// Print summary
+	if len(resourceDocs) > 0 {
+		resourceResults, err := applyResourcesBatch(docCtx, resourceDocs)
+		if err != nil {
+			log.Error("Failed to apply resources batch", "error", err)
+		}
+		results = append(results, resourceResults...)
+	}
+
 	printResults(results)
 
-	// Check for errors
 	for _, r := range results {
 		if r.Error != nil {
 			return fmt.Errorf("one or more resources failed to apply")
