@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -42,6 +43,7 @@ func NewUpsertDeploymentVersionCmd() *cobra.Command {
 	var name string
 	var status string
 	var message string
+	var jobAgentConfigFile string
 
 	cmd := &cobra.Command{
 		Use:   "version [flags]",
@@ -94,15 +96,30 @@ func NewUpsertDeploymentVersionCmd() *cobra.Command {
 			workspaceID := client.GetWorkspaceID(cmd.Context(), workspace)
 
 			config := cliutil.ConvertConfigArrayToNestedMap(configArray)
+
+			var jobAgentConfig *map[string]interface{}
+			if jobAgentConfigFile != "" {
+				data, err := os.ReadFile(jobAgentConfigFile)
+				if err != nil {
+					return fmt.Errorf("failed to read job agent config file: %w", err)
+				}
+				var cfg map[string]interface{}
+				if err := json.Unmarshal(data, &cfg); err != nil {
+					return fmt.Errorf("failed to parse job agent config file: %w", err)
+				}
+				jobAgentConfig = &cfg
+			}
+
 			var response *http.Response
 			for _, id := range deploymentID {
 				resp, err := client.CreateDeploymentVersion(cmd.Context(), workspaceID.String(), id, api.CreateDeploymentVersionJSONRequestBody{
-					Tag:       tag,
-					Metadata:  &metadata,
-					CreatedAt: parsedTime,
-					Config:    &config,
-					Name:      name,
-					Status:    *stat,
+					Tag:            tag,
+					Metadata:       &metadata,
+					CreatedAt:      parsedTime,
+					Config:         &config,
+					Name:           name,
+					Status:         *stat,
+					JobAgentConfig: jobAgentConfig,
 				})
 				if err != nil {
 					return fmt.Errorf("failed to create deployment version: %w", err)
@@ -125,6 +142,7 @@ func NewUpsertDeploymentVersionCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&name, "name", "n", "", "Name of the deployment version")
 	cmd.Flags().StringVarP(&status, "status", "s", string(api.DeploymentVersionStatusReady), "Status of the deployment version (one of: ready, building, failed)")
 	cmd.Flags().StringVar(&message, "message", "", "Message of the deployment version")
+	cmd.Flags().StringVar(&jobAgentConfigFile, "job-agent-config-file", "", "Path to JSON file containing job agent configuration")
 
 	cmd.MarkFlagRequired("tag")
 	cmd.MarkFlagRequired("workspace")
