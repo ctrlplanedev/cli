@@ -223,13 +223,6 @@ func processCluster(_ context.Context, cluster *armcontainerservice.ManagedClust
 	certificateAuthorityData := ""
 	// The Azure SDK may not expose KubeConfig directly, we'll handle this gracefully
 
-	endpoint := ""
-	if cluster.Properties.PrivateFQDN != nil {
-		endpoint = *cluster.Properties.PrivateFQDN
-	} else if cluster.Properties.Fqdn != nil {
-		endpoint = *cluster.Properties.Fqdn
-	}
-
 	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/kubernetes/cluster/v1",
 		Kind:       "AzureKubernetesService",
@@ -239,7 +232,7 @@ func processCluster(_ context.Context, cluster *armcontainerservice.ManagedClust
 			"name":    *cluster.Name,
 			"version": *cluster.Properties.KubernetesVersion,
 			"server": map[string]any{
-				"endpoint":                 endpoint,
+				"endpoint":                 getEndpoint(cluster),
 				"certificateAuthorityData": certificateAuthorityData,
 			},
 
@@ -389,13 +382,27 @@ func initClusterMetadata(cluster *armcontainerservice.ManagedCluster, subscripti
 }
 
 func getEndpoint(cluster *armcontainerservice.ManagedCluster) string {
+	endpoint := ""
 	if cluster.Properties.PrivateFQDN != nil {
-		return *cluster.Properties.PrivateFQDN
+		endpoint = *cluster.Properties.PrivateFQDN
+	} else if cluster.Properties.Fqdn != nil {
+		endpoint = *cluster.Properties.Fqdn
 	}
-	if cluster.Properties.Fqdn != nil {
-		return *cluster.Properties.Fqdn
+
+	if endpoint == "" {
+		return ""
 	}
-	return ""
+
+	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+		endpoint = fmt.Sprintf("https://%s", endpoint)
+	}
+
+	// AKS kubeconfig includes :443, and ArgoCD uses the exact server URL as identifier
+	if !strings.Contains(endpoint, ":443") {
+		endpoint = fmt.Sprintf("%s:443", endpoint)
+	}
+
+	return endpoint
 }
 
 func extractResourceGroupFromID(id string) string {
