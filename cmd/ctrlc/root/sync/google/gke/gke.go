@@ -138,6 +138,7 @@ func processCluster(_ context.Context, cluster *container.Cluster, project strin
 	if cluster.MasterAuth != nil && cluster.MasterAuth.ClusterCaCertificate != "" {
 		certificateAuthorityData = cluster.MasterAuth.ClusterCaCertificate
 	}
+
 	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/kubernetes/cluster/v1",
 		Kind:       "GoogleKubernetesEngine",
@@ -181,6 +182,10 @@ func initClusterMetadata(cluster *container.Cluster, project string) map[string]
 	version, err := semver.NewVersion(cluster.CurrentMasterVersion)
 	if err != nil {
 		log.Error("Failed to parse Kubernetes version", "version", cluster.CurrentMasterVersion, "error", err)
+	}
+
+	if !strings.HasPrefix(cluster.Endpoint, "http://") && !strings.HasPrefix(cluster.Endpoint, "https://") {
+		cluster.Endpoint = fmt.Sprintf("https://%s", cluster.Endpoint)
 	}
 
 	noramlizedStatus := "unknown"
