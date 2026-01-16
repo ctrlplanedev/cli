@@ -30,5 +30,5 @@ func getUserShell(username string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("user %s not found in /etc/passwd", username)
+	return "", fmt.Errorf("user %s not found in /etc/passwd: %w", username, err)
 }
