@@ -30,6 +30,16 @@ const (
 	ApprovalStatusRejected ApprovalStatus = "rejected"
 )
 
+// Defines values for ArgoCDJobAgentConfigType.
+const (
+	ArgoCDJobAgentConfigTypeArgoCd ArgoCDJobAgentConfigType = "argo-cd"
+)
+
+// Defines values for CustomJobAgentConfigType.
+const (
+	Custom CustomJobAgentConfigType = "custom"
+)
+
 // Defines values for DatadogMetricProviderAggregator.
 const (
 	Area       DatadogMetricProviderAggregator = "area"
@@ -48,6 +58,21 @@ const (
 	Datadog DatadogMetricProviderType = "datadog"
 )
 
+// Defines values for DeploymentArgoCDJobAgentConfigType.
+const (
+	DeploymentArgoCDJobAgentConfigTypeArgoCd DeploymentArgoCDJobAgentConfigType = "argo-cd"
+)
+
+// Defines values for DeploymentGithubJobAgentConfigType.
+const (
+	DeploymentGithubJobAgentConfigTypeGithubApp DeploymentGithubJobAgentConfigType = "github-app"
+)
+
+// Defines values for DeploymentTerraformCloudJobAgentConfigType.
+const (
+	DeploymentTerraformCloudJobAgentConfigTypeTfe DeploymentTerraformCloudJobAgentConfigType = "tfe"
+)
+
 // Defines values for DeploymentVersionStatus.
 const (
 	DeploymentVersionStatusBuilding    DeploymentVersionStatus = "building"
@@ -55,6 +80,26 @@ const (
 	DeploymentVersionStatusReady       DeploymentVersionStatus = "ready"
 	DeploymentVersionStatusRejected    DeploymentVersionStatus = "rejected"
 	DeploymentVersionStatusUnspecified DeploymentVersionStatus = "unspecified"
+)
+
+// Defines values for FullArgoCDJobAgentConfigType.
+const (
+	ArgoCd FullArgoCDJobAgentConfigType = "argo-cd"
+)
+
+// Defines values for FullGithubJobAgentConfigType.
+const (
+	FullGithubJobAgentConfigTypeGithubApp FullGithubJobAgentConfigType = "github-app"
+)
+
+// Defines values for FullTerraformCloudJobAgentConfigType.
+const (
+	FullTerraformCloudJobAgentConfigTypeTfe FullTerraformCloudJobAgentConfigType = "tfe"
+)
+
+// Defines values for GithubJobAgentConfigType.
+const (
+	GithubApp GithubJobAgentConfigType = "github-app"
 )
 
 // Defines values for GradualRolloutRuleRolloutType.
@@ -81,16 +126,16 @@ const (
 
 // Defines values for JobStatus.
 const (
-	ActionRequired      JobStatus = "actionRequired"
-	Cancelled           JobStatus = "cancelled"
-	ExternalRunNotFound JobStatus = "externalRunNotFound"
-	Failure             JobStatus = "failure"
-	InProgress          JobStatus = "inProgress"
-	InvalidIntegration  JobStatus = "invalidIntegration"
-	InvalidJobAgent     JobStatus = "invalidJobAgent"
-	Pending             JobStatus = "pending"
-	Skipped             JobStatus = "skipped"
-	Successful          JobStatus = "successful"
+	JobStatusActionRequired      JobStatus = "actionRequired"
+	JobStatusCancelled           JobStatus = "cancelled"
+	JobStatusExternalRunNotFound JobStatus = "externalRunNotFound"
+	JobStatusFailure             JobStatus = "failure"
+	JobStatusInProgress          JobStatus = "inProgress"
+	JobStatusInvalidIntegration  JobStatus = "invalidIntegration"
+	JobStatusInvalidJobAgent     JobStatus = "invalidJobAgent"
+	JobStatusPending             JobStatus = "pending"
+	JobStatusSkipped             JobStatus = "skipped"
+	JobStatusSuccessful          JobStatus = "successful"
 )
 
 // Defines values for NullValue.
@@ -116,9 +161,25 @@ const (
 	Sleep SleepMetricProviderType = "sleep"
 )
 
+// Defines values for TerraformCloudJobAgentConfigType.
+const (
+	Tfe TerraformCloudJobAgentConfigType = "tfe"
+)
+
 // Defines values for TerraformCloudRunMetricProviderType.
 const (
 	TerraformCloudRun TerraformCloudRunMetricProviderType = "terraformCloudRun"
+)
+
+// Defines values for TestRunnerJobAgentConfigStatus.
+const (
+	TestRunnerJobAgentConfigStatusCompleted TestRunnerJobAgentConfigStatus = "completed"
+	TestRunnerJobAgentConfigStatusFailure   TestRunnerJobAgentConfigStatus = "failure"
+)
+
+// Defines values for TestRunnerJobAgentConfigType.
+const (
+	TestRunner TestRunnerJobAgentConfigType = "test-runner"
 )
 
 // Defines values for VerificationMeasurementStatus.
@@ -144,6 +205,21 @@ type AnyApprovalRule struct {
 // ApprovalStatus defines model for ApprovalStatus.
 type ApprovalStatus string
 
+// ArgoCDJobAgentConfig defines model for ArgoCDJobAgentConfig.
+type ArgoCDJobAgentConfig struct {
+	// ApiKey ArgoCD API token.
+	ApiKey string `json:"apiKey"`
+
+	// ServerUrl ArgoCD server address (host[:port] or URL).
+	ServerUrl string `json:"serverUrl"`
+
+	// Type Job agent type discriminator.
+	Type ArgoCDJobAgentConfigType `json:"type"`
+}
+
+// ArgoCDJobAgentConfigType Job agent type discriminator.
+type ArgoCDJobAgentConfigType string
+
 // BooleanValue defines model for BooleanValue.
 type BooleanValue = bool
 
@@ -159,13 +235,15 @@ type CelSelector struct {
 
 // CreateDeploymentRequest defines model for CreateDeploymentRequest.
 type CreateDeploymentRequest struct {
-	Description      *string                 `json:"description,omitempty"`
-	JobAgentConfig   *map[string]interface{} `json:"jobAgentConfig,omitempty"`
-	JobAgentId       *string                 `json:"jobAgentId,omitempty"`
-	Name             string                  `json:"name"`
-	ResourceSelector *Selector               `json:"resourceSelector,omitempty"`
-	Slug             string                  `json:"slug"`
-	SystemId         string                  `json:"systemId"`
+	Description *string `json:"description,omitempty"`
+
+	// JobAgentConfig Arbitrary object (record<string, any>) for the deployment job agent config.
+	JobAgentConfig   *DeploymentJobAgentConfig `json:"jobAgentConfig,omitempty"`
+	JobAgentId       *string                   `json:"jobAgentId,omitempty"`
+	Name             string                    `json:"name"`
+	ResourceSelector *Selector                 `json:"resourceSelector,omitempty"`
+	Slug             string                    `json:"slug"`
+	SystemId         string                    `json:"systemId"`
 }
 
 // CreateDeploymentVersionRequest defines model for CreateDeploymentVersionRequest.
@@ -234,6 +312,16 @@ type CreateWorkspaceRequest struct {
 	Slug string `json:"slug"`
 }
 
+// CustomJobAgentConfig defines model for CustomJobAgentConfig.
+type CustomJobAgentConfig struct {
+	// Type Job agent type discriminator.
+	Type                 CustomJobAgentConfigType `json:"type"`
+	AdditionalProperties map[string]interface{}   `json:"-"`
+}
+
+// CustomJobAgentConfigType Job agent type discriminator.
+type CustomJobAgentConfigType string
+
 // DatadogMetricProvider defines model for DatadogMetricProvider.
 type DatadogMetricProvider struct {
 	// Aggregator Datadog aggregator
@@ -267,14 +355,16 @@ type DatadogMetricProviderType string
 
 // Deployment defines model for Deployment.
 type Deployment struct {
-	Description      *string                `json:"description,omitempty"`
-	Id               string                 `json:"id"`
-	JobAgentConfig   map[string]interface{} `json:"jobAgentConfig"`
-	JobAgentId       *string                `json:"jobAgentId,omitempty"`
-	Name             string                 `json:"name"`
-	ResourceSelector *Selector              `json:"resourceSelector,omitempty"`
-	Slug             string                 `json:"slug"`
-	SystemId         string                 `json:"systemId"`
+	Description *string `json:"description,omitempty"`
+	Id          string  `json:"id"`
+
+	// JobAgentConfig Arbitrary object (record<string, any>) for the deployment job agent config.
+	JobAgentConfig   DeploymentJobAgentConfig `json:"jobAgentConfig"`
+	JobAgentId       *string                  `json:"jobAgentId,omitempty"`
+	Name             string                   `json:"name"`
+	ResourceSelector *Selector                `json:"resourceSelector,omitempty"`
+	Slug             string                   `json:"slug"`
+	SystemId         string                   `json:"systemId"`
 }
 
 // DeploymentAndSystem defines model for DeploymentAndSystem.
@@ -283,10 +373,55 @@ type DeploymentAndSystem struct {
 	System     System     `json:"system"`
 }
 
+// DeploymentArgoCDJobAgentConfig defines model for DeploymentArgoCDJobAgentConfig.
+type DeploymentArgoCDJobAgentConfig struct {
+	// Template ArgoCD Application YAML/JSON template (supports Go templates).
+	Template string `json:"template"`
+
+	// Type Deployment job agent type discriminator.
+	Type DeploymentArgoCDJobAgentConfigType `json:"type"`
+}
+
+// DeploymentArgoCDJobAgentConfigType Deployment job agent type discriminator.
+type DeploymentArgoCDJobAgentConfigType string
+
 // DeploymentDependencyRule defines model for DeploymentDependencyRule.
 type DeploymentDependencyRule struct {
 	DependsOnDeploymentSelector Selector `json:"dependsOnDeploymentSelector"`
 }
+
+// DeploymentGithubJobAgentConfig defines model for DeploymentGithubJobAgentConfig.
+type DeploymentGithubJobAgentConfig struct {
+	// Ref Git ref to run the workflow on (defaults to "main" if omitted).
+	Ref *string `json:"ref,omitempty"`
+
+	// Repo GitHub repository name.
+	Repo string `json:"repo"`
+
+	// Type Deployment job agent type discriminator.
+	Type DeploymentGithubJobAgentConfigType `json:"type"`
+
+	// WorkflowId GitHub Actions workflow ID.
+	WorkflowId int64 `json:"workflowId"`
+}
+
+// DeploymentGithubJobAgentConfigType Deployment job agent type discriminator.
+type DeploymentGithubJobAgentConfigType string
+
+// DeploymentJobAgentConfig Arbitrary object (record<string, any>) for the deployment job agent config.
+type DeploymentJobAgentConfig map[string]interface{}
+
+// DeploymentTerraformCloudJobAgentConfig defines model for DeploymentTerraformCloudJobAgentConfig.
+type DeploymentTerraformCloudJobAgentConfig struct {
+	// Template Terraform Cloud workspace template (YAML/JSON; supports Go templates).
+	Template string `json:"template"`
+
+	// Type Deployment job agent type discriminator.
+	Type DeploymentTerraformCloudJobAgentConfigType `json:"type"`
+}
+
+// DeploymentTerraformCloudJobAgentConfigType Deployment job agent type discriminator.
+type DeploymentTerraformCloudJobAgentConfigType string
 
 // DeploymentVariable defines model for DeploymentVariable.
 type DeploymentVariable struct {
@@ -390,6 +525,90 @@ type ErrorResponse struct {
 	Error *string `json:"error,omitempty"`
 }
 
+// FullArgoCDJobAgentConfig defines model for FullArgoCDJobAgentConfig.
+type FullArgoCDJobAgentConfig struct {
+	// ApiKey ArgoCD API token.
+	ApiKey string `json:"apiKey"`
+
+	// ServerUrl ArgoCD server address (host[:port] or URL).
+	ServerUrl string `json:"serverUrl"`
+
+	// Template ArgoCD Application YAML/JSON template (supports Go templates).
+	Template string `json:"template"`
+
+	// Type Deployment job agent type discriminator.
+	Type FullArgoCDJobAgentConfigType `json:"type"`
+}
+
+// FullArgoCDJobAgentConfigType Deployment job agent type discriminator.
+type FullArgoCDJobAgentConfigType string
+
+// FullCustomJobAgentConfig defines model for FullCustomJobAgentConfig.
+type FullCustomJobAgentConfig = CustomJobAgentConfig
+
+// FullGithubJobAgentConfig defines model for FullGithubJobAgentConfig.
+type FullGithubJobAgentConfig struct {
+	InstallationId int    `json:"installationId"`
+	Owner          string `json:"owner"`
+
+	// Ref Git ref to run the workflow on (defaults to "main" if omitted).
+	Ref *string `json:"ref,omitempty"`
+
+	// Repo GitHub repository name.
+	Repo string `json:"repo"`
+
+	// Type Deployment job agent type discriminator.
+	Type FullGithubJobAgentConfigType `json:"type"`
+
+	// WorkflowId GitHub Actions workflow ID.
+	WorkflowId int64 `json:"workflowId"`
+}
+
+// FullGithubJobAgentConfigType Deployment job agent type discriminator.
+type FullGithubJobAgentConfigType string
+
+// FullJobAgentConfig defines model for FullJobAgentConfig.
+type FullJobAgentConfig struct {
+	union json.RawMessage
+}
+
+// FullTerraformCloudJobAgentConfig defines model for FullTerraformCloudJobAgentConfig.
+type FullTerraformCloudJobAgentConfig struct {
+	// Address Terraform Cloud address (e.g. https://app.terraform.io).
+	Address string `json:"address"`
+
+	// Organization Terraform Cloud organization name.
+	Organization string `json:"organization"`
+
+	// Template Terraform Cloud workspace template (YAML/JSON; supports Go templates).
+	Template string `json:"template"`
+
+	// Token Terraform Cloud API token.
+	Token string `json:"token"`
+
+	// Type Deployment job agent type discriminator.
+	Type                 FullTerraformCloudJobAgentConfigType `json:"type"`
+	AdditionalProperties map[string]interface{}               `json:"-"`
+}
+
+// FullTerraformCloudJobAgentConfigType Deployment job agent type discriminator.
+type FullTerraformCloudJobAgentConfigType string
+
+// FullTestRunnerJobAgentConfig defines model for FullTestRunnerJobAgentConfig.
+type FullTestRunnerJobAgentConfig = TestRunnerJobAgentConfig
+
+// GithubJobAgentConfig defines model for GithubJobAgentConfig.
+type GithubJobAgentConfig struct {
+	InstallationId int    `json:"installationId"`
+	Owner          string `json:"owner"`
+
+	// Type Job agent type discriminator.
+	Type GithubJobAgentConfigType `json:"type"`
+}
+
+// GithubJobAgentConfigType Job agent type discriminator.
+type GithubJobAgentConfigType string
+
 // GradualRolloutRule defines model for GradualRolloutRule.
 type GradualRolloutRule struct {
 	// RolloutType Strategy for scheduling deployments to release targets. "linear": Each target is deployed at a fixed interval of timeScaleInterval seconds. "linear-normalized": Deployments are spaced evenly so that the last target is scheduled at or before timeScaleInterval seconds. See rolloutType algorithm documentation for details.
@@ -434,30 +653,49 @@ type IntegerValue = int
 
 // Job defines model for Job.
 type Job struct {
-	CompletedAt    *time.Time             `json:"completedAt,omitempty"`
-	CreatedAt      time.Time              `json:"createdAt"`
-	ExternalId     *string                `json:"externalId,omitempty"`
-	Id             string                 `json:"id"`
-	JobAgentConfig map[string]interface{} `json:"jobAgentConfig"`
-	JobAgentId     string                 `json:"jobAgentId"`
-	Metadata       map[string]string      `json:"metadata"`
-	ReleaseId      string                 `json:"releaseId"`
-	StartedAt      *time.Time             `json:"startedAt,omitempty"`
-	Status         JobStatus              `json:"status"`
-	UpdatedAt      time.Time              `json:"updatedAt"`
+	CompletedAt    *time.Time         `json:"completedAt,omitempty"`
+	CreatedAt      time.Time          `json:"createdAt"`
+	ExternalId     *string            `json:"externalId,omitempty"`
+	Id             string             `json:"id"`
+	JobAgentConfig FullJobAgentConfig `json:"jobAgentConfig"`
+	JobAgentId     string             `json:"jobAgentId"`
+	Metadata       map[string]string  `json:"metadata"`
+	ReleaseId      string             `json:"releaseId"`
+	StartedAt      *time.Time         `json:"startedAt,omitempty"`
+	Status         JobStatus          `json:"status"`
+	UpdatedAt      time.Time          `json:"updatedAt"`
 }
 
 // JobAgent defines model for JobAgent.
 type JobAgent struct {
-	Config   map[string]interface{} `json:"config"`
-	Id       string                 `json:"id"`
-	Metadata map[string]string      `json:"metadata"`
-	Name     string                 `json:"name"`
-	Type     string                 `json:"type"`
+	Config   JobAgentConfig    `json:"config"`
+	Id       string            `json:"id"`
+	Metadata map[string]string `json:"metadata"`
+	Name     string            `json:"name"`
+	Type     string            `json:"type"`
+}
+
+// JobAgentConfig defines model for JobAgentConfig.
+type JobAgentConfig struct {
+	union json.RawMessage
 }
 
 // JobStatus defines model for JobStatus.
 type JobStatus string
+
+// JobVerification defines model for JobVerification.
+type JobVerification struct {
+	// CreatedAt When verification was created
+	CreatedAt time.Time `json:"createdAt"`
+	Id        string    `json:"id"`
+	JobId     string    `json:"jobId"`
+
+	// Message Summary message of verification result
+	Message *string `json:"message,omitempty"`
+
+	// Metrics Metrics associated with this verification
+	Metrics []VerificationMetricStatus `json:"metrics"`
+}
 
 // JobWithRelease defines model for JobWithRelease.
 type JobWithRelease struct {
@@ -586,21 +824,6 @@ type ReleaseTargetState struct {
 	LatestJob      *Job     `json:"latestJob,omitempty"`
 }
 
-// ReleaseVerification defines model for ReleaseVerification.
-type ReleaseVerification struct {
-	// CreatedAt When verification was created
-	CreatedAt time.Time `json:"createdAt"`
-	Id        string    `json:"id"`
-	JobId     *string   `json:"jobId,omitempty"`
-
-	// Message Summary message of verification result
-	Message *string `json:"message,omitempty"`
-
-	// Metrics Metrics associated with this verification
-	Metrics   []VerificationMetricStatus `json:"metrics"`
-	ReleaseId string                     `json:"releaseId"`
-}
-
 // Resource defines model for Resource.
 type Resource struct {
 	Config      map[string]interface{} `json:"config"`
@@ -703,6 +926,28 @@ type System struct {
 	WorkspaceId string  `json:"workspaceId"`
 }
 
+// TerraformCloudJobAgentConfig defines model for TerraformCloudJobAgentConfig.
+type TerraformCloudJobAgentConfig struct {
+	// Address Terraform Cloud address (e.g. https://app.terraform.io).
+	Address string `json:"address"`
+
+	// Organization Terraform Cloud organization name.
+	Organization string `json:"organization"`
+
+	// Template Terraform Cloud workspace template (YAML/JSON; supports Go templates).
+	Template *string `json:"template,omitempty"`
+
+	// Token Terraform Cloud API token.
+	Token string `json:"token"`
+
+	// Type Job agent type discriminator.
+	Type                 TerraformCloudJobAgentConfigType `json:"type"`
+	AdditionalProperties map[string]interface{}           `json:"-"`
+}
+
+// TerraformCloudJobAgentConfigType Job agent type discriminator.
+type TerraformCloudJobAgentConfigType string
+
 // TerraformCloudRunMetricProvider defines model for TerraformCloudRunMetricProvider.
 type TerraformCloudRunMetricProvider struct {
 	// Address Terraform Cloud address
@@ -720,6 +965,27 @@ type TerraformCloudRunMetricProvider struct {
 
 // TerraformCloudRunMetricProviderType Provider type
 type TerraformCloudRunMetricProviderType string
+
+// TestRunnerJobAgentConfig defines model for TestRunnerJobAgentConfig.
+type TestRunnerJobAgentConfig struct {
+	// DelaySeconds Delay before resolving the job.
+	DelaySeconds *int `json:"delaySeconds,omitempty"`
+
+	// Message Optional message to include in the job output.
+	Message *string `json:"message,omitempty"`
+
+	// Status Final status to set.
+	Status *TestRunnerJobAgentConfigStatus `json:"status,omitempty"`
+
+	// Type Job agent type discriminator.
+	Type TestRunnerJobAgentConfigType `json:"type"`
+}
+
+// TestRunnerJobAgentConfigStatus Final status to set.
+type TestRunnerJobAgentConfigStatus string
+
+// TestRunnerJobAgentConfigType Job agent type discriminator.
+type TestRunnerJobAgentConfigType string
 
 // UpdateDeploymentVersionRequest defines model for UpdateDeploymentVersionRequest.
 type UpdateDeploymentVersionRequest struct {
@@ -743,13 +1009,15 @@ type UpdateWorkspaceRequest struct {
 
 // UpsertDeploymentRequest defines model for UpsertDeploymentRequest.
 type UpsertDeploymentRequest struct {
-	Description      *string                 `json:"description,omitempty"`
-	JobAgentConfig   *map[string]interface{} `json:"jobAgentConfig,omitempty"`
-	JobAgentId       *string                 `json:"jobAgentId,omitempty"`
-	Name             string                  `json:"name"`
-	ResourceSelector *Selector               `json:"resourceSelector,omitempty"`
-	Slug             string                  `json:"slug"`
-	SystemId         string                  `json:"systemId"`
+	Description *string `json:"description,omitempty"`
+
+	// JobAgentConfig Arbitrary object (record<string, any>) for the deployment job agent config.
+	JobAgentConfig   *DeploymentJobAgentConfig `json:"jobAgentConfig,omitempty"`
+	JobAgentId       *string                   `json:"jobAgentId,omitempty"`
+	Name             string                    `json:"name"`
+	ResourceSelector *Selector                 `json:"resourceSelector,omitempty"`
+	Slug             string                    `json:"slug"`
+	SystemId         string                    `json:"systemId"`
 }
 
 // UpsertDeploymentVariableRequest defines model for UpsertDeploymentVariableRequest.
@@ -776,10 +1044,10 @@ type UpsertEnvironmentRequest struct {
 
 // UpsertJobAgentRequest defines model for UpsertJobAgentRequest.
 type UpsertJobAgentRequest struct {
-	Config   *map[string]interface{} `json:"config,omitempty"`
-	Metadata *map[string]string      `json:"metadata,omitempty"`
-	Name     string                  `json:"name"`
-	Type     string                  `json:"type"`
+	Config   JobAgentConfig     `json:"config"`
+	Metadata *map[string]string `json:"metadata,omitempty"`
+	Name     string             `json:"name"`
+	Type     string             `json:"type"`
 }
 
 // UpsertPolicyRequest defines model for UpsertPolicyRequest.
@@ -1157,6 +1425,310 @@ type CreateSystemJSONRequestBody = CreateSystemRequest
 // UpsertSystemByIdJSONRequestBody defines body for UpsertSystemById for application/json ContentType.
 type UpsertSystemByIdJSONRequestBody = UpsertSystemRequest
 
+// Getter for additional properties for CustomJobAgentConfig. Returns the specified
+// element and whether it was found
+func (a CustomJobAgentConfig) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CustomJobAgentConfig
+func (a *CustomJobAgentConfig) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CustomJobAgentConfig to handle AdditionalProperties
+func (a *CustomJobAgentConfig) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CustomJobAgentConfig to handle AdditionalProperties
+func (a CustomJobAgentConfig) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["type"], err = json.Marshal(a.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for FullTerraformCloudJobAgentConfig. Returns the specified
+// element and whether it was found
+func (a FullTerraformCloudJobAgentConfig) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for FullTerraformCloudJobAgentConfig
+func (a *FullTerraformCloudJobAgentConfig) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for FullTerraformCloudJobAgentConfig to handle AdditionalProperties
+func (a *FullTerraformCloudJobAgentConfig) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["address"]; found {
+		err = json.Unmarshal(raw, &a.Address)
+		if err != nil {
+			return fmt.Errorf("error reading 'address': %w", err)
+		}
+		delete(object, "address")
+	}
+
+	if raw, found := object["organization"]; found {
+		err = json.Unmarshal(raw, &a.Organization)
+		if err != nil {
+			return fmt.Errorf("error reading 'organization': %w", err)
+		}
+		delete(object, "organization")
+	}
+
+	if raw, found := object["template"]; found {
+		err = json.Unmarshal(raw, &a.Template)
+		if err != nil {
+			return fmt.Errorf("error reading 'template': %w", err)
+		}
+		delete(object, "template")
+	}
+
+	if raw, found := object["token"]; found {
+		err = json.Unmarshal(raw, &a.Token)
+		if err != nil {
+			return fmt.Errorf("error reading 'token': %w", err)
+		}
+		delete(object, "token")
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for FullTerraformCloudJobAgentConfig to handle AdditionalProperties
+func (a FullTerraformCloudJobAgentConfig) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["address"], err = json.Marshal(a.Address)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'address': %w", err)
+	}
+
+	object["organization"], err = json.Marshal(a.Organization)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'organization': %w", err)
+	}
+
+	object["template"], err = json.Marshal(a.Template)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'template': %w", err)
+	}
+
+	object["token"], err = json.Marshal(a.Token)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'token': %w", err)
+	}
+
+	object["type"], err = json.Marshal(a.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for TerraformCloudJobAgentConfig. Returns the specified
+// element and whether it was found
+func (a TerraformCloudJobAgentConfig) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for TerraformCloudJobAgentConfig
+func (a *TerraformCloudJobAgentConfig) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for TerraformCloudJobAgentConfig to handle AdditionalProperties
+func (a *TerraformCloudJobAgentConfig) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["address"]; found {
+		err = json.Unmarshal(raw, &a.Address)
+		if err != nil {
+			return fmt.Errorf("error reading 'address': %w", err)
+		}
+		delete(object, "address")
+	}
+
+	if raw, found := object["organization"]; found {
+		err = json.Unmarshal(raw, &a.Organization)
+		if err != nil {
+			return fmt.Errorf("error reading 'organization': %w", err)
+		}
+		delete(object, "organization")
+	}
+
+	if raw, found := object["template"]; found {
+		err = json.Unmarshal(raw, &a.Template)
+		if err != nil {
+			return fmt.Errorf("error reading 'template': %w", err)
+		}
+		delete(object, "template")
+	}
+
+	if raw, found := object["token"]; found {
+		err = json.Unmarshal(raw, &a.Token)
+		if err != nil {
+			return fmt.Errorf("error reading 'token': %w", err)
+		}
+		delete(object, "token")
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for TerraformCloudJobAgentConfig to handle AdditionalProperties
+func (a TerraformCloudJobAgentConfig) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["address"], err = json.Marshal(a.Address)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'address': %w", err)
+	}
+
+	object["organization"], err = json.Marshal(a.Organization)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'organization': %w", err)
+	}
+
+	if a.Template != nil {
+		object["template"], err = json.Marshal(a.Template)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'template': %w", err)
+		}
+	}
+
+	object["token"], err = json.Marshal(a.Token)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'token': %w", err)
+	}
+
+	object["type"], err = json.Marshal(a.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // AsCelMatcher returns the union data inside the CreateRelationshipRuleRequest_Matcher as a CelMatcher
 func (t CreateRelationshipRuleRequest_Matcher) AsCelMatcher() (CelMatcher, error) {
 	var body CelMatcher
@@ -1189,6 +1761,364 @@ func (t CreateRelationshipRuleRequest_Matcher) MarshalJSON() ([]byte, error) {
 }
 
 func (t *CreateRelationshipRuleRequest_Matcher) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsFullGithubJobAgentConfig returns the union data inside the FullJobAgentConfig as a FullGithubJobAgentConfig
+func (t FullJobAgentConfig) AsFullGithubJobAgentConfig() (FullGithubJobAgentConfig, error) {
+	var body FullGithubJobAgentConfig
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromFullGithubJobAgentConfig overwrites any union data inside the FullJobAgentConfig as the provided FullGithubJobAgentConfig
+func (t *FullJobAgentConfig) FromFullGithubJobAgentConfig(v FullGithubJobAgentConfig) error {
+	v.Type = "github-app"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeFullGithubJobAgentConfig performs a merge with any union data inside the FullJobAgentConfig, using the provided FullGithubJobAgentConfig
+func (t *FullJobAgentConfig) MergeFullGithubJobAgentConfig(v FullGithubJobAgentConfig) error {
+	v.Type = "github-app"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsFullArgoCDJobAgentConfig returns the union data inside the FullJobAgentConfig as a FullArgoCDJobAgentConfig
+func (t FullJobAgentConfig) AsFullArgoCDJobAgentConfig() (FullArgoCDJobAgentConfig, error) {
+	var body FullArgoCDJobAgentConfig
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromFullArgoCDJobAgentConfig overwrites any union data inside the FullJobAgentConfig as the provided FullArgoCDJobAgentConfig
+func (t *FullJobAgentConfig) FromFullArgoCDJobAgentConfig(v FullArgoCDJobAgentConfig) error {
+	v.Type = "argo-cd"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeFullArgoCDJobAgentConfig performs a merge with any union data inside the FullJobAgentConfig, using the provided FullArgoCDJobAgentConfig
+func (t *FullJobAgentConfig) MergeFullArgoCDJobAgentConfig(v FullArgoCDJobAgentConfig) error {
+	v.Type = "argo-cd"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsFullTerraformCloudJobAgentConfig returns the union data inside the FullJobAgentConfig as a FullTerraformCloudJobAgentConfig
+func (t FullJobAgentConfig) AsFullTerraformCloudJobAgentConfig() (FullTerraformCloudJobAgentConfig, error) {
+	var body FullTerraformCloudJobAgentConfig
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromFullTerraformCloudJobAgentConfig overwrites any union data inside the FullJobAgentConfig as the provided FullTerraformCloudJobAgentConfig
+func (t *FullJobAgentConfig) FromFullTerraformCloudJobAgentConfig(v FullTerraformCloudJobAgentConfig) error {
+	v.Type = "tfe"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeFullTerraformCloudJobAgentConfig performs a merge with any union data inside the FullJobAgentConfig, using the provided FullTerraformCloudJobAgentConfig
+func (t *FullJobAgentConfig) MergeFullTerraformCloudJobAgentConfig(v FullTerraformCloudJobAgentConfig) error {
+	v.Type = "tfe"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsFullTestRunnerJobAgentConfig returns the union data inside the FullJobAgentConfig as a FullTestRunnerJobAgentConfig
+func (t FullJobAgentConfig) AsFullTestRunnerJobAgentConfig() (FullTestRunnerJobAgentConfig, error) {
+	var body FullTestRunnerJobAgentConfig
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromFullTestRunnerJobAgentConfig overwrites any union data inside the FullJobAgentConfig as the provided FullTestRunnerJobAgentConfig
+func (t *FullJobAgentConfig) FromFullTestRunnerJobAgentConfig(v FullTestRunnerJobAgentConfig) error {
+	v.Type = "test-runner"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeFullTestRunnerJobAgentConfig performs a merge with any union data inside the FullJobAgentConfig, using the provided FullTestRunnerJobAgentConfig
+func (t *FullJobAgentConfig) MergeFullTestRunnerJobAgentConfig(v FullTestRunnerJobAgentConfig) error {
+	v.Type = "test-runner"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsFullCustomJobAgentConfig returns the union data inside the FullJobAgentConfig as a FullCustomJobAgentConfig
+func (t FullJobAgentConfig) AsFullCustomJobAgentConfig() (FullCustomJobAgentConfig, error) {
+	var body FullCustomJobAgentConfig
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromFullCustomJobAgentConfig overwrites any union data inside the FullJobAgentConfig as the provided FullCustomJobAgentConfig
+func (t *FullJobAgentConfig) FromFullCustomJobAgentConfig(v FullCustomJobAgentConfig) error {
+	v.Type = "custom"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeFullCustomJobAgentConfig performs a merge with any union data inside the FullJobAgentConfig, using the provided FullCustomJobAgentConfig
+func (t *FullJobAgentConfig) MergeFullCustomJobAgentConfig(v FullCustomJobAgentConfig) error {
+	v.Type = "custom"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t FullJobAgentConfig) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"type"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t FullJobAgentConfig) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "argo-cd":
+		return t.AsFullArgoCDJobAgentConfig()
+	case "custom":
+		return t.AsFullCustomJobAgentConfig()
+	case "github-app":
+		return t.AsFullGithubJobAgentConfig()
+	case "test-runner":
+		return t.AsFullTestRunnerJobAgentConfig()
+	case "tfe":
+		return t.AsFullTerraformCloudJobAgentConfig()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t FullJobAgentConfig) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *FullJobAgentConfig) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsGithubJobAgentConfig returns the union data inside the JobAgentConfig as a GithubJobAgentConfig
+func (t JobAgentConfig) AsGithubJobAgentConfig() (GithubJobAgentConfig, error) {
+	var body GithubJobAgentConfig
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromGithubJobAgentConfig overwrites any union data inside the JobAgentConfig as the provided GithubJobAgentConfig
+func (t *JobAgentConfig) FromGithubJobAgentConfig(v GithubJobAgentConfig) error {
+	v.Type = "github-app"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeGithubJobAgentConfig performs a merge with any union data inside the JobAgentConfig, using the provided GithubJobAgentConfig
+func (t *JobAgentConfig) MergeGithubJobAgentConfig(v GithubJobAgentConfig) error {
+	v.Type = "github-app"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsArgoCDJobAgentConfig returns the union data inside the JobAgentConfig as a ArgoCDJobAgentConfig
+func (t JobAgentConfig) AsArgoCDJobAgentConfig() (ArgoCDJobAgentConfig, error) {
+	var body ArgoCDJobAgentConfig
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromArgoCDJobAgentConfig overwrites any union data inside the JobAgentConfig as the provided ArgoCDJobAgentConfig
+func (t *JobAgentConfig) FromArgoCDJobAgentConfig(v ArgoCDJobAgentConfig) error {
+	v.Type = "argo-cd"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeArgoCDJobAgentConfig performs a merge with any union data inside the JobAgentConfig, using the provided ArgoCDJobAgentConfig
+func (t *JobAgentConfig) MergeArgoCDJobAgentConfig(v ArgoCDJobAgentConfig) error {
+	v.Type = "argo-cd"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsTerraformCloudJobAgentConfig returns the union data inside the JobAgentConfig as a TerraformCloudJobAgentConfig
+func (t JobAgentConfig) AsTerraformCloudJobAgentConfig() (TerraformCloudJobAgentConfig, error) {
+	var body TerraformCloudJobAgentConfig
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTerraformCloudJobAgentConfig overwrites any union data inside the JobAgentConfig as the provided TerraformCloudJobAgentConfig
+func (t *JobAgentConfig) FromTerraformCloudJobAgentConfig(v TerraformCloudJobAgentConfig) error {
+	v.Type = "tfe"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTerraformCloudJobAgentConfig performs a merge with any union data inside the JobAgentConfig, using the provided TerraformCloudJobAgentConfig
+func (t *JobAgentConfig) MergeTerraformCloudJobAgentConfig(v TerraformCloudJobAgentConfig) error {
+	v.Type = "tfe"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsTestRunnerJobAgentConfig returns the union data inside the JobAgentConfig as a TestRunnerJobAgentConfig
+func (t JobAgentConfig) AsTestRunnerJobAgentConfig() (TestRunnerJobAgentConfig, error) {
+	var body TestRunnerJobAgentConfig
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTestRunnerJobAgentConfig overwrites any union data inside the JobAgentConfig as the provided TestRunnerJobAgentConfig
+func (t *JobAgentConfig) FromTestRunnerJobAgentConfig(v TestRunnerJobAgentConfig) error {
+	v.Type = "test-runner"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTestRunnerJobAgentConfig performs a merge with any union data inside the JobAgentConfig, using the provided TestRunnerJobAgentConfig
+func (t *JobAgentConfig) MergeTestRunnerJobAgentConfig(v TestRunnerJobAgentConfig) error {
+	v.Type = "test-runner"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomJobAgentConfig returns the union data inside the JobAgentConfig as a CustomJobAgentConfig
+func (t JobAgentConfig) AsCustomJobAgentConfig() (CustomJobAgentConfig, error) {
+	var body CustomJobAgentConfig
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomJobAgentConfig overwrites any union data inside the JobAgentConfig as the provided CustomJobAgentConfig
+func (t *JobAgentConfig) FromCustomJobAgentConfig(v CustomJobAgentConfig) error {
+	v.Type = "custom"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCustomJobAgentConfig performs a merge with any union data inside the JobAgentConfig, using the provided CustomJobAgentConfig
+func (t *JobAgentConfig) MergeCustomJobAgentConfig(v CustomJobAgentConfig) error {
+	v.Type = "custom"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t JobAgentConfig) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"type"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t JobAgentConfig) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "argo-cd":
+		return t.AsArgoCDJobAgentConfig()
+	case "custom":
+		return t.AsCustomJobAgentConfig()
+	case "github-app":
+		return t.AsGithubJobAgentConfig()
+	case "test-runner":
+		return t.AsTestRunnerJobAgentConfig()
+	case "tfe":
+		return t.AsTerraformCloudJobAgentConfig()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t JobAgentConfig) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *JobAgentConfig) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -7870,7 +8800,7 @@ func (r GetReleaseResponse) StatusCode() int {
 type GetReleaseVerificationsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]ReleaseVerification
+	JSON200      *[]JobVerification
 	JSON400      *ErrorResponse
 	JSON404      *ErrorResponse
 }
@@ -10806,7 +11736,7 @@ func ParseGetReleaseVerificationsResponse(rsp *http.Response) (*GetReleaseVerifi
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []ReleaseVerification
+		var dest []JobVerification
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

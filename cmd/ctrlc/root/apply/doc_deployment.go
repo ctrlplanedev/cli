@@ -1,6 +1,7 @@
 package apply
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -112,10 +113,17 @@ func (d *DeploymentDocument) Apply(ctx *DocContext) (ApplyResult, error) {
 		deploymentID = existingDeployment.Id
 	}
 
-	// Build request body
-	jobAgentConfig := d.JobAgentConfig
-	if jobAgentConfig == nil {
-		jobAgentConfig = make(map[string]any)
+	var jobAgentConfig api.DeploymentJobAgentConfig
+	if d.JobAgentConfig != nil {
+		jobAgentConfigBytes, err := json.Marshal(d.JobAgentConfig)
+		if err != nil {
+			result.Error = fmt.Errorf("failed to marshal job agent config: %w", err)
+			return result, result.Error
+		}
+		if err := json.Unmarshal(jobAgentConfigBytes, &jobAgentConfig); err != nil {
+			result.Error = fmt.Errorf("failed to parse job agent config: %w", err)
+			return result, result.Error
+		}
 	}
 
 	upsertReq := api.UpsertDeploymentJSONRequestBody{

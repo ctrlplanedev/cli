@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/bmatcuk/doublestar/v4"
@@ -35,6 +36,15 @@ func NewApplyCmd() *cobra.Command {
 
 			# Apply multiple patterns
 			$ ctrlc apply -f infra/*.yaml -f apps/*.yaml
+
+			# Exclude test files using ! prefix (git-style: last match wins)
+			$ ctrlc apply -f "**/*.yaml" -f "!**/test*.yaml"
+
+			# Exclude multiple patterns
+			$ ctrlc apply -f "**/*.yaml" -f "!**/test*.yaml" -f "!**/staging/**"
+
+			# Re-include a previously excluded file (last pattern wins)
+			$ ctrlc apply -f "**/*.yaml" -f "!**/test*.yaml" -f "**/important-test.yaml"
 		`),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -42,43 +52,72 @@ func NewApplyCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringArrayVarP(&filePatterns, "file", "f", nil, "Path or glob pattern to YAML files (can be specified multiple times)")
+	cmd.Flags().StringArrayVarP(&filePatterns, "file", "f", nil, "Path or glob pattern to YAML files (can be specified multiple times, prefix with ! to exclude)")
 	cmd.MarkFlagRequired("file")
 
 	return cmd
 }
 
 // expandGlob expands glob patterns to file paths, supporting ** for recursive matching
+// It follows git-style pattern matching where later patterns override earlier ones
+// and ! prefix negates (excludes) a pattern
 func expandGlob(patterns []string) ([]string, error) {
 	seen := make(map[string]bool)
 	var files []string
 
-	for _, pattern := range patterns {
-		// Use doublestar for glob expansion (supports **)
-		matches, err := doublestar.FilepathGlob(pattern)
-		if err != nil {
-			return nil, fmt.Errorf("invalid glob pattern '%s': %w", pattern, err)
-		}
+	// Parse patterns into rules - ! prefix means exclude
+	type patternRule struct {
+		pattern string
+		include bool // true = include, false = exclude
+	}
 
-		if len(matches) == 0 {
-			return nil, fmt.Errorf("no files matched pattern: %s", pattern)
+	var rules []patternRule
+	for _, p := range patterns {
+		if strings.HasPrefix(p, "!") {
+			rules = append(rules, patternRule{strings.TrimPrefix(p, "!"), false})
+		} else {
+			rules = append(rules, patternRule{p, true})
 		}
+	}
 
-		added := 0
-		for _, match := range matches {
-			info, err := os.Stat(match)
-			if err != nil || info.IsDir() {
-				continue
+	// First, collect all potential files from include patterns
+	candidateFiles := make(map[string]bool)
+	for _, rule := range rules {
+		if rule.include {
+			matches, err := doublestar.FilepathGlob(rule.pattern)
+			if err != nil {
+				return nil, fmt.Errorf("invalid glob pattern '%s': %w", rule.pattern, err)
 			}
-			if !seen[match] {
-				seen[match] = true
-				files = append(files, match)
-				added++
+			for _, match := range matches {
+				info, err := os.Stat(match)
+				if err != nil || info.IsDir() {
+					continue
+				}
+				candidateFiles[match] = true
 			}
 		}
-		if added == 0 {
-			return nil, fmt.Errorf("no files matched pattern: %s", pattern)
+	}
+
+	// For each candidate file, evaluate all rules in order - last match wins
+	for filePath := range candidateFiles {
+		included := false
+		for _, rule := range rules {
+			matched, err := doublestar.PathMatch(rule.pattern, filePath)
+			if err != nil {
+				return nil, fmt.Errorf("invalid pattern '%s': %w", rule.pattern, err)
+			}
+			if matched {
+				included = rule.include // last matching rule wins
+			}
 		}
+		if included && !seen[filePath] {
+			seen[filePath] = true
+			files = append(files, filePath)
+		}
+	}
+
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no files matched patterns")
 	}
 
 	return files, nil

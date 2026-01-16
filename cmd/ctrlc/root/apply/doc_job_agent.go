@@ -1,6 +1,7 @@
 package apply
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -14,10 +15,20 @@ const (
 
 type JobAgentDocument struct {
 	BaseDocument `yaml:",inline"`
-	AgentType    string            `yaml:"agentType"` // The type of job agent (e.g., "kubernetes", "exec")
 	Description  *string           `yaml:"description,omitempty"`
 	Config       map[string]any    `yaml:"config,omitempty"`
 	Metadata     map[string]string `yaml:"metadata,omitempty"`
+}
+
+// AgentType extracts the type from the config map
+func (d *JobAgentDocument) AgentType() string {
+	if d.Config == nil {
+		return ""
+	}
+	if t, ok := d.Config["type"].(string); ok {
+		return t
+	}
+	return ""
 }
 
 func ParseJobAgent(raw []byte) (*JobAgentDocument, error) {
@@ -28,8 +39,8 @@ func ParseJobAgent(raw []byte) (*JobAgentDocument, error) {
 	if doc.Name == "" {
 		return nil, fmt.Errorf("job agent document missing required 'name' field")
 	}
-	if doc.AgentType == "" {
-		return nil, fmt.Errorf("job agent document missing required 'agentType' field")
+	if doc.AgentType() == "" {
+		return nil, fmt.Errorf("job agent document missing required 'config.type' field")
 	}
 	return &doc, nil
 }
@@ -81,13 +92,22 @@ func (d *JobAgentDocument) Apply(ctx *DocContext) (ApplyResult, error) {
 		jobAgentId = existingAgent.Id
 	}
 
-	opts := api.UpsertJobAgentJSONRequestBody{
-		Name: d.Name,
-		Type: d.AgentType,
+	// Convert config map to JobAgentConfig
+	configBytes, err := json.Marshal(config)
+	if err != nil {
+		result.Error = fmt.Errorf("failed to marshal job agent config: %w", err)
+		return result, result.Error
+	}
+	var jobAgentConfig api.JobAgentConfig
+	if err := jobAgentConfig.UnmarshalJSON(configBytes); err != nil {
+		result.Error = fmt.Errorf("failed to parse job agent config: %w", err)
+		return result, result.Error
 	}
 
-	if config != nil {
-		opts.Config = &config
+	opts := api.UpsertJobAgentJSONRequestBody{
+		Name:   d.Name,
+		Type:   d.AgentType(),
+		Config: jobAgentConfig,
 	}
 
 	if d.Metadata != nil {
