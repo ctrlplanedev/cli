@@ -16,8 +16,7 @@ func getUserShell(username string) (string, error) {
 	}
 
 	// Parse the output
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
+	for line := range strings.SplitSeq(string(output), "\n") {
 		if strings.HasPrefix(line, "UserShell:") {
 			fields := strings.Fields(line)
 			if len(fields) >= 2 {
