@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/api/get"
+	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/api/list"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/api/upsert"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -45,6 +46,7 @@ func NewAPICmd() *cobra.Command {
 
 	cmd.AddCommand(get.NewGetCmd())
 	cmd.AddCommand(upsert.NewUpsertCmd())
+	cmd.AddCommand(list.NewListCmd())
 
 	return cmd
 }
