@@ -16,7 +16,7 @@ func NewListSystemsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "systems",
 		Short: "List systems",
-		Long:  `Commands for getting resources.`,
+		Long:  `Commands for getting systems.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			apiURL := viper.GetString("url")
 			apiKey := viper.GetString("api-key")
@@ -39,7 +39,7 @@ func NewListSystemsCmd() *cobra.Command {
 			resp, err := client.ListSystems(cmd.Context(), workspaceID.String(), params)
 			if err != nil {
 
-				return fmt.Errorf("failed to get resources: %w", err)
+				return fmt.Errorf("failed to get systems: %w", err)
 			}
 
 			return cliutil.HandleResponseOutput(cmd, resp)
