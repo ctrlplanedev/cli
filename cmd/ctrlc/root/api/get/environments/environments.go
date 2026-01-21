@@ -1,4 +1,4 @@
-package systems
+package environments
 
 import (
 	"fmt"
@@ -9,14 +9,14 @@ import (
 	"github.com/spf13/viper"
 )
 
-func NewListSystemsCmd() *cobra.Command {
+func NewEnvironmentsCmd() *cobra.Command {
 	var limit int
 	var offset int
 
 	cmd := &cobra.Command{
-		Use:   "systems",
-		Short: "List systems",
-		Long:  `Commands for getting systems.`,
+		Use:   "environments",
+		Short: "List environments",
+		Long:  `Commands for getting environments.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			apiURL := viper.GetString("url")
 			apiKey := viper.GetString("api-key")
@@ -29,17 +29,17 @@ func NewListSystemsCmd() *cobra.Command {
 
 			workspaceID := client.GetWorkspaceID(cmd.Context(), workspace)
 
-			params := &api.ListSystemsParams{}
+			params := &api.ListEnvironmentsParams{}
 			if limit > 0 {
 				params.Limit = &limit
 			}
 			if offset > 0 {
 				params.Offset = &offset
 			}
-			resp, err := client.ListSystems(cmd.Context(), workspaceID.String(), params)
+			resp, err := client.ListEnvironments(cmd.Context(), workspaceID.String(), params)
 			if err != nil {
 
-				return fmt.Errorf("failed to get systems: %w", err)
+				return fmt.Errorf("failed to get environments: %w", err)
 			}
 
 			return cliutil.HandleResponseOutput(cmd, resp)

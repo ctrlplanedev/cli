@@ -1,4 +1,4 @@
-package deployments
+package systems
 
 import (
 	"fmt"
@@ -9,14 +9,14 @@ import (
 	"github.com/spf13/viper"
 )
 
-func NewListDeploymentsCmd() *cobra.Command {
+func NewSystemsCmd() *cobra.Command {
 	var limit int
 	var offset int
 
 	cmd := &cobra.Command{
-		Use:   "deployments",
-		Short: "List deployments",
-		Long:  `Commands for getting deployments.`,
+		Use:   "systems",
+		Short: "List systems",
+		Long:  `Commands for getting systems.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			apiURL := viper.GetString("url")
 			apiKey := viper.GetString("api-key")
@@ -29,17 +29,17 @@ func NewListDeploymentsCmd() *cobra.Command {
 
 			workspaceID := client.GetWorkspaceID(cmd.Context(), workspace)
 
-			params := &api.ListDeploymentsParams{}
+			params := &api.ListSystemsParams{}
 			if limit > 0 {
 				params.Limit = &limit
 			}
 			if offset > 0 {
 				params.Offset = &offset
 			}
-			resp, err := client.ListDeployments(cmd.Context(), workspaceID.String(), params)
+			resp, err := client.ListSystems(cmd.Context(), workspaceID.String(), params)
 			if err != nil {
 
-				return fmt.Errorf("failed to get deployments: %w", err)
+				return fmt.Errorf("failed to get systems: %w", err)
 			}
 
 			return cliutil.HandleResponseOutput(cmd, resp)
