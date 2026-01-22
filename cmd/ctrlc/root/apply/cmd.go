@@ -3,6 +3,7 @@ package apply
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -19,6 +20,8 @@ import (
 // NewApplyCmd creates a new apply command
 func NewApplyCmd() *cobra.Command {
 	var filePatterns []string
+	var selectors []string
+	var dryRun bool
 
 	cmd := &cobra.Command{
 		Use:   "apply",
@@ -45,14 +48,25 @@ func NewApplyCmd() *cobra.Command {
 
 			# Re-include a previously excluded file (last pattern wins)
 			$ ctrlc apply -f "**/*.yaml" -f "!**/test*.yaml" -f "**/important-test.yaml"
+
+			# Declaratively manage all resources for "platform" team
+			$ ctrlc apply -f config/ --selector team=platform
+
+			# Multiple selectors (AND logic)
+			$ ctrlc apply -f config/ --selector team=platform --selector env=staging
+
+			# Preview changes first
+			$ ctrlc apply -f config/ --selector env=staging --dry-run
 		`),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runApply(cmd.Context(), filePatterns)
+			return runApply(cmd.Context(), filePatterns, selectors, dryRun)
 		},
 	}
 
 	cmd.Flags().StringArrayVarP(&filePatterns, "file", "f", nil, "Path or glob pattern to YAML files (can be specified multiple times, prefix with ! to exclude)")
+	cmd.Flags().StringArrayVar(&selectors, "selector", nil, "Selector to match resources for declarative management (format: key=value, can be specified multiple times)")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview changes without applying them")
 	cmd.MarkFlagRequired("file")
 
 	return cmd
@@ -123,7 +137,7 @@ func expandGlob(patterns []string) ([]string, error) {
 	return files, nil
 }
 
-func runApply(ctx context.Context, filePatterns []string) error {
+func runApply(ctx context.Context, filePatterns []string, selectors []string, dryRun bool) error {
 	files, err := expandGlob(filePatterns)
 	if err != nil {
 		return err
@@ -179,22 +193,94 @@ func runApply(ctx context.Context, filePatterns []string) error {
 
 	var results []ApplyResult
 	for _, doc := range otherDocs {
-		result, err := doc.Apply(docCtx)
-		if err != nil {
-			log.Error("Failed to apply document", "error", err)
+		if dryRun {
+			var docType DocumentType
+			var docName string
+
+			// Extract type and name based on document type
+			switch d := doc.(type) {
+			case *DeploymentDocument:
+				docType = TypeDeployment
+				docName = d.Name
+			case *EnvironmentDocument:
+				docType = TypeEnvironment
+				docName = d.Name
+			case *PolicyDocument:
+				docType = TypePolicy
+				docName = d.Name
+			case *JobAgentDocument:
+				docType = TypeJobAgent
+				docName = d.Name
+			default:
+				docType = "Unknown"
+				docName = "Unknown"
+			}
+
+			log.Info("DRY RUN: Would apply document", "type", docType, "name", docName)
+			result := ApplyResult{
+				Type:   docType,
+				Name:   docName,
+				Action: "would_apply",
+				ID:     "",
+				Error:  nil,
+			}
+			results = append(results, result)
+		} else {
+			result, err := doc.Apply(docCtx)
+			if err != nil {
+				log.Error("Failed to apply document", "error", err)
+			}
+			results = append(results, result)
 		}
-		results = append(results, result)
 	}
 
 	if len(resourceDocs) > 0 {
-		resourceResults, err := applyResourcesBatch(docCtx, resourceDocs)
-		if err != nil {
-			log.Error("Failed to apply resources batch", "error", err)
+		if dryRun {
+			for _, doc := range resourceDocs {
+				log.Info("DRY RUN: Would apply resource", "name", doc.Name, "identifier", doc.Identifier)
+				result := ApplyResult{
+					Type:   TypeResource,
+					Name:   doc.Name,
+					Action: "would_upsert",
+					ID:     doc.Identifier,
+					Error:  nil,
+				}
+				results = append(results, result)
+			}
+		} else {
+			resourceResults, err := applyResourcesBatch(docCtx, resourceDocs)
+			if err != nil {
+				log.Error("Failed to apply resources batch", "error", err)
+			}
+			results = append(results, resourceResults...)
 		}
-		results = append(results, resourceResults...)
 	}
 
-	printResults(results)
+	// Handle declarative management with selectors
+	if len(selectors) > 0 {
+		log.Info("Performing declarative management with selectors", "selectors", selectors)
+		deleteResults, err := handleDeclarativeManagement(ctx, docCtx, selectors, resourceDocs, dryRun)
+		if err != nil {
+			log.Error("Failed declarative management", "error", err)
+		} else {
+			// Convert delete results to apply results for consistent display
+			for _, dr := range deleteResults {
+				results = append(results, ApplyResult{
+					Type:   dr.Type,
+					Name:   dr.Name,
+					Action: dr.Action,
+					ID:     dr.ID,
+					Error:  dr.Error,
+				})
+			}
+		}
+	}
+
+	if dryRun {
+		printDryRunResults(results)
+	} else {
+		printResults(results)
+	}
 
 	for _, r := range results {
 		if r.Error != nil {
@@ -203,6 +289,155 @@ func runApply(ctx context.Context, filePatterns []string) error {
 	}
 
 	return nil
+}
+
+// handleDeclarativeManagement performs declarative resource management based on selectors
+func handleDeclarativeManagement(ctx context.Context, docCtx *DocContext, selectors []string, declaredResources []*ResourceDocument, dryRun bool) ([]DeleteResult, error) {
+	var results []DeleteResult
+
+	// Parse selectors into key-value pairs
+	selectorMap, err := parseSelectors(selectors)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse selectors: %w", err)
+	}
+
+	// Build CEL query from selectors
+	celQuery, err := buildCELQueryFromSelectors(selectorMap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build CEL query: %w", err)
+	}
+
+	// Query resources matching the selector
+	params := &api.GetAllResourcesParams{
+		Limit: func() *int { l := 1000; return &l }(), // Get a large number of resources
+	}
+	if celQuery != "" {
+		encodedQuery := url.QueryEscape(celQuery)
+		params.Cel = &encodedQuery
+	}
+
+	allResourcesResp, err := docCtx.Client.GetAllResourcesWithResponse(ctx, docCtx.WorkspaceID, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query resources: %w", err)
+	}
+
+	if allResourcesResp.JSON200 == nil {
+		return nil, fmt.Errorf("failed to get resources: %s", string(allResourcesResp.Body))
+	}
+
+	// Create a map of declared resource identifiers for quick lookup
+	declaredMap := make(map[string]*ResourceDocument)
+	for _, doc := range declaredResources {
+		declaredMap[doc.Identifier] = doc
+	}
+
+	// Find resources that match selector but are not declared
+	for _, resource := range allResourcesResp.JSON200.Items {
+		if _, exists := declaredMap[resource.Identifier]; !exists {
+			// This resource matches the selector but is not declared - it should be deleted
+			result := DeleteResult{
+				Type:   TypeResource,
+				Name:   resource.Name,
+				ID:     resource.Identifier,
+				Action: "deleted",
+			}
+
+			if dryRun {
+				result.Action = "would_delete"
+				log.Info("DRY RUN: Would delete resource", "name", resource.Name, "identifier", resource.Identifier)
+			} else {
+				log.Info("Deleting resource matching selector but not in config", "name", resource.Name, "identifier", resource.Identifier)
+
+				// Delete the resource using the delete endpoint
+				deleteErr := deleteResource(ctx, docCtx, resource.Identifier)
+				if deleteErr != nil {
+					result.Error = fmt.Errorf("failed to delete resource: %w", deleteErr)
+				}
+			}
+
+			results = append(results, result)
+		}
+	}
+
+	return results, nil
+}
+
+// deleteResource deletes a resource by identifier
+func deleteResource(ctx context.Context, docCtx *DocContext, identifier string) error {
+	// Query for the resource to get its ID
+	celQuery := fmt.Sprintf(`resource.identifier == "%s"`, identifier)
+	encodedQuery := url.QueryEscape(celQuery)
+	params := &api.GetAllResourcesParams{
+		Cel:   &encodedQuery,
+		Limit: func() *int { l := 1; return &l }(),
+	}
+
+	resp, err := docCtx.Client.GetAllResourcesWithResponse(ctx, docCtx.WorkspaceID, params)
+	if err != nil {
+		return fmt.Errorf("failed to query resource: %w", err)
+	}
+
+	if resp.JSON200 == nil || len(resp.JSON200.Items) == 0 {
+		return fmt.Errorf("resource not found: %s", identifier)
+	}
+
+	resource := resp.JSON200.Items[0]
+
+	// If the resource has a provider ID, we can use the provider API to remove it
+	// by setting the provider's resources without this resource
+	if resource.ProviderId != nil && *resource.ProviderId != "" {
+		// For provider-managed resources, the deletion happens through the provider's
+		// SetResourceProvidersResources endpoint by not including the resource
+		// This requires re-syncing all resources for that provider, which is complex
+		// For now, we'll log a warning about this limitation
+		log.Warn("Resource is managed by a provider - deletion requires provider sync",
+			"identifier", identifier,
+			"providerId", *resource.ProviderId)
+		return fmt.Errorf("resource %s is managed by provider %s - manual deletion or provider re-sync required",
+			identifier, *resource.ProviderId)
+	}
+
+	// For resources without a provider, there's currently no direct delete API
+	// This is a limitation of the current API
+	return fmt.Errorf("no direct delete API available for resource %s - resource may need to be deleted via UI or provider re-sync", identifier)
+}
+
+// parseSelectors parses selector strings in key=value format
+func parseSelectors(selectors []string) (map[string]string, error) {
+	selectorMap := make(map[string]string)
+
+	for _, selector := range selectors {
+		parts := strings.Split(selector, "=")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid selector format: %s (expected key=value)", selector)
+		}
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+		if key == "" || value == "" {
+			return nil, fmt.Errorf("invalid selector format: %s (key and value cannot be empty)", selector)
+		}
+		selectorMap[key] = value
+	}
+
+	return selectorMap, nil
+}
+
+// buildCELQueryFromSelectors builds a CEL query string from selector map
+func buildCELQueryFromSelectors(selectors map[string]string) (string, error) {
+	if len(selectors) == 0 {
+		return "", nil
+	}
+
+	var conditions []string
+	for key, value := range selectors {
+		// Build a condition that checks if the metadata contains the key-value pair
+		// Using bracket notation for map access: resource.metadata["key"] == "value"
+		condition := fmt.Sprintf(`resource.metadata["%s"] == "%s"`, key, value)
+		conditions = append(conditions, condition)
+	}
+
+	// Join all conditions with AND
+	return strings.Join(conditions, " && "), nil
 }
 
 func printResults(results []ApplyResult) {
@@ -222,7 +457,11 @@ func printResults(results []ApplyResult) {
 			fmt.Printf("%s/%s: ", r.Type, r.Name)
 			red.Printf("%v\n", r.Error)
 		} else {
-			green.Print("✓ ")
+			if r.Action == "deleted" {
+				red.Print("✗ ")
+			} else {
+				green.Print("✓ ")
+			}
 			fmt.Printf("%s/", r.Type)
 			cyan.Printf("%s ", r.Name)
 			yellow.Printf("%s ", r.Action)
@@ -232,19 +471,85 @@ func printResults(results []ApplyResult) {
 
 	fmt.Println()
 
-	// Count successes and failures
-	var success, failed int
+	// Count successes, deletions, and failures
+	var upserted, deleted, failed int
 	for _, r := range results {
 		if r.Error != nil {
 			failed++
+		} else if r.Action == "deleted" {
+			deleted++
 		} else {
-			success++
+			upserted++
 		}
 	}
 
 	// Summary with colors
 	fmt.Printf("Applied %d resources: ", len(results))
-	green.Printf("%d succeeded", success)
+	green.Printf("%d upserted", upserted)
+	fmt.Print(", ")
+	red.Printf("%d deleted", deleted)
+	fmt.Print(", ")
+	if failed > 0 {
+		red.Printf("%d failed\n", failed)
+	} else {
+		fmt.Printf("%d failed\n", failed)
+	}
+}
+
+// printDryRunResults prints the results of a dry run with appropriate formatting
+func printDryRunResults(results []ApplyResult) {
+	fmt.Println()
+	fmt.Println("DRY RUN - No changes will be made")
+	fmt.Println()
+
+	// Color definitions
+	green := color.New(color.FgGreen, color.Bold)
+	red := color.New(color.FgRed, color.Bold)
+	cyan := color.New(color.FgCyan)
+	yellow := color.New(color.FgYellow)
+	dim := color.New(color.Faint)
+
+	// Print dry run results
+	for _, r := range results {
+		if r.Error != nil {
+			red.Print("✗ ")
+			fmt.Printf("%s/%s: ", r.Type, r.Name)
+			red.Printf("%v\n", r.Error)
+		} else {
+			if strings.HasPrefix(r.Action, "would_delete") {
+				red.Print("✗ ")
+			} else {
+				green.Print("✓ ")
+			}
+			fmt.Printf("%s/", r.Type)
+			cyan.Printf("%s ", r.Name)
+			yellow.Printf("%s ", r.Action)
+			if r.ID != "" {
+				dim.Printf("(id: %s)", r.ID)
+			}
+			fmt.Println()
+		}
+	}
+
+	fmt.Println()
+
+	// Count different action types
+	var upserted, deleted, failed int
+	for _, r := range results {
+		if r.Error != nil {
+			failed++
+		} else if strings.Contains(r.Action, "delete") {
+			deleted++
+		} else {
+			upserted++
+		}
+	}
+
+	// Summary with colors
+	fmt.Printf("Would apply %d resources: ", len(results))
+	green.Printf("%d upserted", upserted)
+	fmt.Print(", ")
+	red.Printf("%d deleted", deleted)
 	fmt.Print(", ")
 	if failed > 0 {
 		red.Printf("%d failed\n", failed)
