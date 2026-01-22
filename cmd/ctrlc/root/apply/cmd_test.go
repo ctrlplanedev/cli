@@ -440,3 +440,146 @@ func TestExpandGlob_ExcludeThenReinclude(t *testing.T) {
 		t.Error("test_app.yaml should be excluded")
 	}
 }
+
+func TestParseSelectors(t *testing.T) {
+	tests := []struct {
+		name        string
+		selectors   []string
+		want        map[string]string
+		expectError bool
+	}{
+		{
+			name:      "single selector",
+			selectors: []string{"team=platform"},
+			want:      map[string]string{"team": "platform"},
+		},
+		{
+			name:      "multiple selectors",
+			selectors: []string{"team=platform", "env=staging"},
+			want:      map[string]string{"team": "platform", "env": "staging"},
+		},
+		{
+			name:        "invalid format - no equals",
+			selectors:   []string{"team"},
+			expectError: true,
+		},
+		{
+			name:        "invalid format - multiple equals",
+			selectors:   []string{"team=platform=test"},
+			expectError: true,
+		},
+		{
+			name:        "invalid format - empty key",
+			selectors:   []string{"=platform"},
+			expectError: true,
+		},
+		{
+			name:        "invalid format - empty value",
+			selectors:   []string{"team="},
+			expectError: true,
+		},
+		{
+			name:      "selectors with spaces",
+			selectors: []string{" team = platform ", " env = staging "},
+			want:      map[string]string{"team": "platform", "env": "staging"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseSelectors(tt.selectors)
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("parseSelectors() expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("parseSelectors() unexpected error: %v", err)
+				return
+			}
+			if len(got) != len(tt.want) {
+				t.Errorf("parseSelectors() returned wrong number of selectors: got %d, want %d", len(got), len(tt.want))
+				return
+			}
+			for k, v := range tt.want {
+				if got[k] != v {
+					t.Errorf("parseSelectors() selector mismatch: got %s=%s, want %s=%s", k, got[k], k, v)
+				}
+			}
+		})
+	}
+}
+
+func TestBuildCELQueryFromSelectors(t *testing.T) {
+	tests := []struct {
+		name      string
+		selectors map[string]string
+		want      string
+	}{
+		{
+			name:      "empty selectors",
+			selectors: map[string]string{},
+			want:      "",
+		},
+		{
+			name:      "single selector",
+			selectors: map[string]string{"team": "platform"},
+			want:      `resource.metadata["team"] == "platform"`,
+		},
+		{
+			name:      "multiple selectors",
+			selectors: map[string]string{"team": "platform", "env": "staging"},
+			// Note: map iteration order is not guaranteed, so we need to check both possible orders
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := buildCELQueryFromSelectors(tt.selectors)
+			if err != nil {
+				t.Errorf("buildCELQueryFromSelectors() unexpected error: %v", err)
+				return
+			}
+
+			if tt.name == "multiple selectors" {
+				// For multiple selectors, we just check that it contains the expected parts
+				expectedParts := []string{
+					`resource.metadata["team"] == "platform"`,
+					`resource.metadata["env"] == "staging"`,
+				}
+				for _, part := range expectedParts {
+					if !contains(got, part) {
+						t.Errorf("buildCELQueryFromSelectors() missing expected part %q in result %q", part, got)
+					}
+				}
+				// Should contain " && " to join conditions
+				if len(tt.selectors) > 1 && !contains(got, " && ") {
+					t.Errorf("buildCELQueryFromSelectors() expected AND operator in result %q", got)
+				}
+			} else {
+				if got != tt.want {
+					t.Errorf("buildCELQueryFromSelectors() = %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}
+
+// Helper function for testing
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr ||
+		(len(s) > len(substr) &&
+			(s[:len(substr)] == substr ||
+				s[len(s)-len(substr):] == substr ||
+				containsSubstring(s, substr))))
+}
+
+func containsSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
