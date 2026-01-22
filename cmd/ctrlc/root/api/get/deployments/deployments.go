@@ -43,7 +43,7 @@ func NewDeploymentsCmd() *cobra.Command {
 
 			resp, err := client.ListDeployments(cmd.Context(), workspaceID.String(), params)
 			if err != nil {
-				return fmt.Errorf("failed to get resources: %w", err)
+				return fmt.Errorf("failed to get deployments: %w", err)
 			}
 
 			return cliutil.HandleResponseOutput(cmd, resp)

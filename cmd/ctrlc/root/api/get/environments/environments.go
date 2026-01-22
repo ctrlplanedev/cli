@@ -43,7 +43,7 @@ func NewEnvironmentsCmd() *cobra.Command {
 
 			resp, err := client.ListEnvironments(cmd.Context(), workspaceID.String(), params)
 			if err != nil {
-				return fmt.Errorf("failed to get resources: %w", err)
+				return fmt.Errorf("failed to get environments: %w", err)
 			}
 
 			return cliutil.HandleResponseOutput(cmd, resp)

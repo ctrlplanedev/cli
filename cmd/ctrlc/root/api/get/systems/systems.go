@@ -43,7 +43,7 @@ func NewSystemsCmd() *cobra.Command {
 
 			resp, err := client.ListSystems(cmd.Context(), workspaceID.String(), params)
 			if err != nil {
-				return fmt.Errorf("failed to get resources: %w", err)
+				return fmt.Errorf("failed to get systems: %w", err)
 			}
 
 			return cliutil.HandleResponseOutput(cmd, resp)
