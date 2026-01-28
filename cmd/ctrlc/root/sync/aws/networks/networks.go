@@ -30,7 +30,7 @@ func NewSyncNetworksCmd() *cobra.Command {
 		Short: "Sync AWS VPC networks and subnets into Ctrlplane",
 		Example: heredoc.Doc(`
 			# Make sure AWS credentials are configured via environment variables or application default credentials
-			
+
 			# Sync all VPC networks and subnets from a region
 			$ ctrlc sync aws networks --region my-region
 		`),
@@ -205,7 +205,7 @@ func processNetworks(
 		nextToken = output.NextToken
 	}
 
-	log.Info("Found vpcOutput", "count", len(vpcs))
+	log.Info("Found vpcOutput", "count", len(vpcs), "region", region)
 
 	resources := make([]api.ResourceProviderResource, 0)
 	for _, vpc := range vpcs {
@@ -329,7 +329,7 @@ func processSubnets(_ context.Context, subnets []types.Subnet, region string) ([
 		subnetCount++
 	}
 
-	log.Info("Processed subnets", "count", subnetCount)
+	log.Info("Processed subnets", "count", subnetCount, "region", region)
 	return resources, nil
 }
 
