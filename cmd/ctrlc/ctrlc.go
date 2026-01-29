@@ -32,6 +32,9 @@ func init() {
 	viper.BindPFlag("workspace", cmd.PersistentFlags().Lookup("workspace"))
 	viper.BindEnv("workspace", "CTRLPLANE_WORKSPACE")
 
+	viper.BindPFlag("log-level", cmd.PersistentFlags().Lookup("log-level"))
+	viper.BindEnv("log-level", "CTRLPLANE_LOG_LEVEL")
+
 	viper.BindEnv("cluster-identifier", "CTRLPLANE_CLUSTER_IDENTIFIER")
 }
 
