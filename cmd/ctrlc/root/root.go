@@ -1,6 +1,8 @@
 package root
 
 import (
+	"os"
+
 	"github.com/MakeNowJust/heredoc/v2"
 
 	"github.com/charmbracelet/log"
@@ -43,7 +45,7 @@ func NewRootCmd() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "Set the logging level (debug, info, warn, error)")
+	cmd.PersistentFlags().StringVar(&logLevel, "log-level", defaultOrEnv("info", "CTRLC_LOG_LEVEL"), "Set the logging level (debug, info, warn, error)")
 
 	cmd.AddCommand(agent.NewAgentCmd())
 	cmd.AddCommand(api.NewAPICmd())
@@ -55,4 +57,15 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(version.NewVersionCmd())
 
 	return cmd
+}
+
+func defaultOrEnv(defaultValue string, envVarName string) string {
+	if envVarName == "" {
+		return defaultValue
+	}
+	value, set := os.LookupEnv(envVarName)
+	if !set {
+		value = defaultValue
+	}
+	return value
 }

@@ -234,6 +234,7 @@ func processNetwork(
 	consoleUrl := getVpcConsoleUrl(vpc, region)
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"AWS Console\": \"%s\" }", consoleUrl)
 
+	log.Debug("Processed Network", "region", region, "name", vpcName, "id", *vpc.VpcId, "subnetCount", len(subnets))
 	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/network/v1",
 		Kind:       "AmazonNetwork",
