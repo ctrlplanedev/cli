@@ -24,8 +24,8 @@ docker run ctrlplane/cli ctrlc [your-command]
 
 ### Required environment variables
 
-- `CTRLPLANE_API_KEY`: Your Ctrlplane API key.
-- `CTRLPLANE_URL`: The URL of your Ctrlplane instance (e.g. `https://app.ctrlplane.dev`).
+- `CTRLC_API_KEY`: Your Ctrlplane API key.
+- `CTRLC_URL`: The URL of your Ctrlplane instance (e.g. `https://app.ctrlplane.dev`).
 
 ### Terraform sync
 
@@ -35,6 +35,6 @@ In order to sync Terraform resources into Ctrlplane, you need to set the followi
 - `TFE_ADDRESS` (optional): The URL of your Terraform Cloud instance (e.g. `https://app.terraform.io`). If not set, the default address (`https://app.terraform.io`) is used.
 
 ```sh
-docker run -e TFE_TOKEN=my-token -e CTRLPLANE_API_KEY=my-api-key -e CTRLPLANE_URL=https://app.ctrlplane.dev \
+docker run -e TFE_TOKEN=my-token -e CTRLC_API_KEY=my-api-key -e CTRLC_URL=https://app.ctrlplane.dev \
   ctrlplane/cli ctrlc sync terraform --organization my-org --workspace 2a7c5560-75c9-4dbe-be74-04ee33bf8188
 ```

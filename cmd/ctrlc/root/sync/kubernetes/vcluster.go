@@ -198,7 +198,7 @@ func NewSyncVclusterCmd() *cobra.Command {
 			}
 
 			if clusterIdentifier == "" {
-				return fmt.Errorf("cluster identifier is required, please set the CTRLPLANE_CLUSTER_IDENTIFIER environment variable or use the --cluster-identifier flag")
+				return fmt.Errorf("cluster identifier is required, please set the CTRLC_CLUSTER_IDENTIFIER environment variable or use the --cluster-identifier flag")
 			}
 
 			ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
@@ -255,7 +255,7 @@ func NewSyncVclusterCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&clusterIdentifier, "cluster-identifier", "c", "", "The identifier of the parent cluster in ctrlplane (if not provided, will use the CLUSTER_IDENTIFIER environment variable)")
+	cmd.Flags().StringVarP(&clusterIdentifier, "cluster-identifier", "c", "", "The identifier of the parent cluster in ctrlplane (if not provided, will use the CTRLC_CLUSTER_IDENTIFIER environment variable)")
 	cmd.Flags().StringVarP(&providerName, "provider", "p", "", "The name of the resource provider (optional)")
 
 	return cmd

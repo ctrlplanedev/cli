@@ -1,8 +1,6 @@
 package root
 
 import (
-	"os"
-
 	"github.com/MakeNowJust/heredoc/v2"
 
 	"github.com/charmbracelet/log"
@@ -14,11 +12,10 @@ import (
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/version"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func NewRootCmd() *cobra.Command {
-	var logLevel string
-
 	cmd := &cobra.Command{
 		Use:   "ctrlc <command> <subcommand> [subcommand] [flags]",
 		Short: "Ctrlplane CLI",
@@ -28,6 +25,11 @@ func NewRootCmd() *cobra.Command {
 			$ ctrlc connect <agent-name>
 		`),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			logLevel := viper.GetString("log-level")
+			if logLevel == "" {
+				logLevel = "info"
+			}
+
 			switch logLevel {
 			case "debug":
 				log.SetLevel(log.DebugLevel)
@@ -45,7 +47,8 @@ func NewRootCmd() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().StringVar(&logLevel, "log-level", defaultOrEnv("info", "CTRLC_LOG_LEVEL"), "Set the logging level (debug, info, warn, error)")
+	cmd.PersistentFlags().String("log-level", "info", "Set the logging level (debug, info, warn, error)")
+	viper.BindPFlag("log-level", cmd.PersistentFlags().Lookup("log-level"))
 
 	cmd.AddCommand(agent.NewAgentCmd())
 	cmd.AddCommand(api.NewAPICmd())
@@ -57,15 +60,4 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(version.NewVersionCmd())
 
 	return cmd
-}
-
-func defaultOrEnv(defaultValue string, envVarName string) string {
-	if envVarName == "" {
-		return defaultValue
-	}
-	value, set := os.LookupEnv(envVarName)
-	if !set {
-		value = defaultValue
-	}
-	return value
 }

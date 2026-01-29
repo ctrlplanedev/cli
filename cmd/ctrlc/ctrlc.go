@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root"
@@ -16,23 +17,28 @@ var (
 )
 
 func init() {
+	viper.SetEnvPrefix("CTRLC")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
+	viper.AutomaticEnv()
+
 	cobra.OnInitialize(initConfig)
 	cmd.PersistentFlags().StringVar(&cfgFile, "config", "", "Config file (default is $HOME/.ctrlc.yaml)")
-	viper.BindEnv("config", "CTRLPLANE_CONFIG")
+	viper.BindPFlag("config", cmd.PersistentFlags().Lookup("config"))
+	viper.BindEnv("config", "CTRLC_CONFIG", "CTRLPLANE_CONFIG")
 
 	cmd.PersistentFlags().String("url", "https://app.ctrlplane.dev", "API URL")
 	viper.BindPFlag("url", cmd.PersistentFlags().Lookup("url"))
-	viper.BindEnv("url", "CTRLPLANE_URL")
+	viper.BindEnv("url", "CTRLC_URL", "CTRLPLANE_URL")
 
 	cmd.PersistentFlags().String("api-key", "", "API key for authentication")
 	viper.BindPFlag("api-key", cmd.PersistentFlags().Lookup("api-key"))
-	viper.BindEnv("api-key", "CTRLPLANE_API_KEY")
+	viper.BindEnv("api-key", "CTRLC_API_KEY", "CTRLPLANE_API_KEY")
 
 	cmd.PersistentFlags().String("workspace", "", "Ctrlplane Workspace ID")
 	viper.BindPFlag("workspace", cmd.PersistentFlags().Lookup("workspace"))
-	viper.BindEnv("workspace", "CTRLPLANE_WORKSPACE")
+	viper.BindEnv("workspace", "CTRLC_WORKSPACE", "CTRLPLANE_WORKSPACE")
 
-	viper.BindEnv("cluster-identifier", "CTRLPLANE_CLUSTER_IDENTIFIER")
+	viper.BindEnv("cluster-identifier", "CTRLC_CLUSTER_IDENTIFIER", "CTRLPLANE_CLUSTER_IDENTIFIER")
 }
 
 func main() {
@@ -42,8 +48,13 @@ func main() {
 }
 
 func initConfig() {
-	if cfgFile != "" {
-		viper.SetConfigFile(cfgFile)
+	configFile := cfgFile
+	if configFile == "" {
+		configFile = viper.GetString("config")
+	}
+
+	if configFile != "" {
+		viper.SetConfigFile(configFile)
 	} else {
 		// Find home directory.
 		home, err := homedir.Dir()
