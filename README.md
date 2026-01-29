@@ -58,11 +58,13 @@ workspace: your-workspace-id
 ### Environment Variables
 
 ```bash
-export CTRLPLANE_URL="https://app.ctrlplane.dev"
-export CTRLPLANE_API_KEY="your-api-key-here"
-export CTRLPLANE_WORKSPACE="your-workspace-id"
-export CTRLPLANE_CLUSTER_IDENTIFIER="my-cluster"
+export CTRLC_URL="https://app.ctrlplane.dev"
+export CTRLC_API_KEY="your-api-key-here"
+export CTRLC_WORKSPACE="your-workspace-id"
+export CTRLC_CLUSTER_IDENTIFIER="my-cluster"
 ```
+
+Any flag or config key can also be set by prefixing it with `CTRLC_` and replacing `-` or `.` with `_`.
 
 ### Command-Line Flags
 
@@ -407,7 +409,7 @@ The CLI includes GitHub Actions for CI/CD workflows. See the `actions/` director
 - uses: ctrlplanedev/cli/actions/get-resource@main
   with:
     resource-id: ${{ env.RESOURCE_ID }}
-    api-key: ${{ secrets.CTRLPLANE_API_KEY }}
+    api-key: ${{ secrets.CTRLC_API_KEY }}
 ```
 
 ## Docker

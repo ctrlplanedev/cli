@@ -29,20 +29,18 @@ func NewSalesforceCmd() *cobra.Command {
 		`),
 	}
 
-	cmd.PersistentFlags().String("salesforce-domain", "", "Salesforce domain (e.g., https://my-domain.my.salesforce.com) (can also be set via SALESFORCE_DOMAIN env var)")
-	cmd.PersistentFlags().String("salesforce-consumer-key", "", "Salesforce consumer key (can also be set via SALESFORCE_CONSUMER_KEY env var)")
-	cmd.PersistentFlags().String("salesforce-consumer-secret", "", "Salesforce consumer secret (can also be set via SALESFORCE_CONSUMER_SECRET env var)")
+	cmd.PersistentFlags().String("salesforce-domain", "", "Salesforce domain (e.g., https://my-domain.my.salesforce.com) (can also be set via CTRLC_SALESFORCE_DOMAIN env var)")
+	cmd.PersistentFlags().String("salesforce-consumer-key", "", "Salesforce consumer key (can also be set via CTRLC_SALESFORCE_CONSUMER_KEY env var)")
+	cmd.PersistentFlags().String("salesforce-consumer-secret", "", "Salesforce consumer secret (can also be set via CTRLC_SALESFORCE_CONSUMER_SECRET env var)")
 
-	viper.AutomaticEnv()
-
-	if err := viper.BindEnv("salesforce-domain", "SALESFORCE_DOMAIN"); err != nil {
-		panic(fmt.Errorf("failed to bind SALESFORCE_DOMAIN env var: %w", err))
+	if err := viper.BindEnv("salesforce-domain", "CTRLC_SALESFORCE_DOMAIN", "SALESFORCE_DOMAIN"); err != nil {
+		panic(fmt.Errorf("failed to bind CTRLC_SALESFORCE_DOMAIN env var: %w", err))
 	}
-	if err := viper.BindEnv("salesforce-consumer-key", "SALESFORCE_CONSUMER_KEY"); err != nil {
-		panic(fmt.Errorf("failed to bind SALESFORCE_CONSUMER_KEY env var: %w", err))
+	if err := viper.BindEnv("salesforce-consumer-key", "CTRLC_SALESFORCE_CONSUMER_KEY", "SALESFORCE_CONSUMER_KEY"); err != nil {
+		panic(fmt.Errorf("failed to bind CTRLC_SALESFORCE_CONSUMER_KEY env var: %w", err))
 	}
-	if err := viper.BindEnv("salesforce-consumer-secret", "SALESFORCE_CONSUMER_SECRET"); err != nil {
-		panic(fmt.Errorf("failed to bind SALESFORCE_CONSUMER_SECRET env var: %w", err))
+	if err := viper.BindEnv("salesforce-consumer-secret", "CTRLC_SALESFORCE_CONSUMER_SECRET", "SALESFORCE_CONSUMER_SECRET"); err != nil {
+		panic(fmt.Errorf("failed to bind CTRLC_SALESFORCE_CONSUMER_SECRET env var: %w", err))
 	}
 
 	if err := viper.BindPFlag("salesforce-domain", cmd.PersistentFlags().Lookup("salesforce-domain")); err != nil {

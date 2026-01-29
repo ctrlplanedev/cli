@@ -153,7 +153,7 @@ func NewSyncKubernetesCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&providerName, "provider", "p", "", "Name of the resource provider")
-	cmd.Flags().StringVarP(&clusterIdentifier, "cluster-identifier", "c", "", "The identifier of the parent cluster in ctrlplane (if not provided, will use the CLUSTER_IDENTIFIER environment variable)")
+	cmd.Flags().StringVarP(&clusterIdentifier, "cluster-identifier", "c", "", "The identifier of the parent cluster in ctrlplane (if not provided, will use the CTRLC_CLUSTER_IDENTIFIER environment variable)")
 	cmd.Flags().StringVarP(&clusterName, "cluster-name", "n", "", "The name of the cluster")
 
 	return cmd

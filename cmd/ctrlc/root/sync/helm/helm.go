@@ -139,7 +139,7 @@ func NewSyncHelmCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&providerName, "provider", "p", "", "Name of the resource provider")
-	cmd.Flags().StringVarP(&clusterIdentifier, "cluster-identifier", "c", "", "The identifier of the parent cluster in ctrlplane (if not provided, will use the CLUSTER_IDENTIFIER environment variable)")
+	cmd.Flags().StringVarP(&clusterIdentifier, "cluster-identifier", "c", "", "The identifier of the parent cluster in ctrlplane (if not provided, will use the CTRLC_CLUSTER_IDENTIFIER environment variable)")
 	cmd.Flags().StringVarP(&clusterName, "cluster-name", "n", "", "The name of the cluster")
 	cmd.Flags().StringVar(&namespace, "namespace", "", "Kubernetes namespace to sync Helm releases from (if not provided, syncs from all namespaces)")
 
@@ -165,7 +165,7 @@ func initializeCtrlplaneClient() (*api.ClientWithResponses, string, error) {
 
 // resolveClusterConfig determines the cluster name and identifier from multiple sources:
 // 1. Explicit --cluster-identifier flag (takes precedence)
-// 2. Environment variable CLUSTER_IDENTIFIER
+// 2. Environment variable CTRLC_CLUSTER_IDENTIFIER
 // 3. Kubeconfig current-context (fallback)
 //
 // If a cluster identifier is provided, we try to fetch the cluster resource from Ctrlplane

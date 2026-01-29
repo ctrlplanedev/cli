@@ -6,9 +6,9 @@ Sync Salesforce CRM data (Accounts, Opportunities) into Ctrlplane as resources.
 
 ```bash
 # Set credentials (via environment or flags)
-export SALESFORCE_DOMAIN="https://mycompany.my.salesforce.com"
-export SALESFORCE_CONSUMER_KEY="your-key"
-export SALESFORCE_CONSUMER_SECRET="your-secret"
+export CTRLC_SALESFORCE_DOMAIN="https://mycompany.my.salesforce.com"
+export CTRLC_SALESFORCE_CONSUMER_KEY="your-key"
+export CTRLC_SALESFORCE_CONSUMER_SECRET="your-secret"
 
 # Sync all accounts
 ctrlc sync salesforce accounts
@@ -27,7 +27,7 @@ ctrlc sync salesforce accounts \
 Requires Salesforce OAuth2 credentials from a Connected App with `api` and `refresh_token` scopes.
 
 Credentials can be provided via:
-- Environment variables: `SALESFORCE_DOMAIN`, `SALESFORCE_CONSUMER_KEY`, `SALESFORCE_CONSUMER_SECRET`
+- Environment variables: `CTRLC_SALESFORCE_DOMAIN`, `CTRLC_SALESFORCE_CONSUMER_KEY`, `CTRLC_SALESFORCE_CONSUMER_SECRET`
 - Command flags: `--salesforce-domain`, `--salesforce-consumer-key`, `--salesforce-consumer-secret`
 
 ## Common Flags
