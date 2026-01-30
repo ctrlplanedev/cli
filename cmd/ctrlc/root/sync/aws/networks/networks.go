@@ -92,7 +92,7 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 					return
 				}
 
-				awsSubnets, err := getAwsSubnets(ctx, ec2Client, regionName)
+				awsSubnets, err := getAwsSubnets(ctx, ec2Client, regionName, accountId)
 				if err != nil {
 					log.Error("Failed to get subnets", "region", regionName, "error", err)
 					mu.Lock()
@@ -193,6 +193,7 @@ func processNetworks(
 	for {
 		output, err := ec2Client.DescribeVpcs(ctx, &ec2.DescribeVpcsInput{
 			NextToken: nextToken,
+			Filters: getOwnerFilter(accountId),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to list VPCs: %w", err)
@@ -289,13 +290,13 @@ func initNetworkMetadata(vpc types.Vpc, region string, subnetCount int) map[stri
 
 // getSubnetsForVpc retrieves subnets as AWS SDK objects
 // these objects are processed differently for VPC and subnet resources
-func getAwsSubnets(ctx context.Context, ec2Client *ec2.Client, region string) ([]types.Subnet, error) {
+func getAwsSubnets(ctx context.Context, ec2Client *ec2.Client, region string, accountId string) ([]types.Subnet, error) {
 	var subnets []types.Subnet
 	var nextToken *string
 
 	for {
 		subnetInput := &ec2.DescribeSubnetsInput{
-			Filters:   []types.Filter{},
+			Filters:   getOwnerFilter(accountId),
 			NextToken: nextToken,
 		}
 
@@ -404,6 +405,16 @@ func getVpcName(vpc types.Vpc) string {
 		}
 	}
 	return vpcName
+}
+
+func getOwnerFilter(accountId string) []types.Filter {
+	ownerId := "owner-id"
+	return []types.Filter{
+		{
+			Name: &ownerId,
+			Values: []string{accountId},
+		},
+	}
 }
 
 func getSubnetConsoleUrl(subnet types.Subnet, region string) string {
