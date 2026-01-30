@@ -9,7 +9,6 @@ import (
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/charmbracelet/log"
@@ -144,7 +143,7 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 
 // initComputeClient creates a new Compute Engine client
 func initComputeClient(ctx context.Context, region string) (*ec2.Client, aws.Config, error) {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+	cfg, err := common.InitAWSConfig(ctx, region)
 	if err != nil {
 		return nil, cfg, fmt.Errorf("failed to load AWS config: %w", err)
 	}
