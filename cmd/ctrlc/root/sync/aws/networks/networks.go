@@ -206,7 +206,7 @@ func processNetworks(
 		nextToken = output.NextToken
 	}
 
-	log.Info("Found vpcOutput", "count", len(vpcs), "region", region)
+	log.Info("Found vpcOutput", "count", len(vpcs), "region", region, "accountId", accountId)
 
 	resources := make([]api.ResourceProviderResource, 0)
 	for _, vpc := range vpcs {
@@ -235,7 +235,7 @@ func processNetwork(
 	consoleUrl := getVpcConsoleUrl(vpc, region)
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"AWS Console\": \"%s\" }", consoleUrl)
 
-	log.Debug("Processed Network", "region", region, "name", vpcName, "id", *vpc.VpcId, "subnetCount", len(subnets))
+	log.Debug("Processed Network", "accountId", accountId, "region", region, "name", vpcName, "id", *vpc.VpcId, "subnetCount", len(subnets))
 	return api.ResourceProviderResource{
 		Version:    "ctrlplane.dev/network/v1",
 		Kind:       "AmazonNetwork",
