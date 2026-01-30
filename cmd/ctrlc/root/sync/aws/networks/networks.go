@@ -144,7 +144,7 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 
 // initComputeClient creates a new Compute Engine client
 func initComputeClient(ctx context.Context, region string) (*ec2.Client, aws.Config, error) {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+	cfg, err := common.InitAWSConfig(ctx, region)
 	if err != nil {
 		return nil, cfg, fmt.Errorf("failed to load AWS config: %w", err)
 	}
