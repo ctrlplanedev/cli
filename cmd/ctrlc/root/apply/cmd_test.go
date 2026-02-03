@@ -440,3 +440,33 @@ func TestExpandGlob_ExcludeThenReinclude(t *testing.T) {
 		t.Error("test_app.yaml should be excluded")
 	}
 }
+
+func TestExpandGlob_URLInclude(t *testing.T) {
+	url := "https://example.com/config.yaml"
+
+	files, err := expandGlob([]string{url})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(files) != 1 {
+		t.Fatalf("expected 1 file, got %d: %v", len(files), files)
+	}
+
+	if files[0] != url {
+		t.Errorf("expected %s, got %s", url, files[0])
+	}
+}
+
+func TestExpandGlob_URLExclude(t *testing.T) {
+	url := "https://example.com/config.yaml"
+
+	_, err := expandGlob([]string{url, "!" + url})
+	if err == nil {
+		t.Fatal("expected error when URL is excluded")
+	}
+
+	if err.Error() != "no files matched patterns" {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}

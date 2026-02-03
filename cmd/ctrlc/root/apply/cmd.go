@@ -31,6 +31,9 @@ func NewApplyCmd() *cobra.Command {
 			# Apply a multi-document file with systems, deployments, and environments
 			$ ctrlc apply -f config.yaml
 
+			# Apply a remote YAML file
+			$ ctrlc apply -f https://example.com/config.yaml
+
 			# Apply all YAML files matching a glob pattern
 			$ ctrlc apply -f "**/*.ctrlc.yaml"
 
@@ -52,13 +55,13 @@ func NewApplyCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringArrayVarP(&filePatterns, "file", "f", nil, "Path or glob pattern to YAML files (can be specified multiple times, prefix with ! to exclude)")
+	cmd.Flags().StringArrayVarP(&filePatterns, "file", "f", nil, "Path, glob pattern, or URL to YAML files (can be specified multiple times, prefix with ! to exclude)")
 	cmd.MarkFlagRequired("file")
 
 	return cmd
 }
 
-// expandGlob expands glob patterns to file paths, supporting ** for recursive matching
+// expandGlob expands glob patterns to file paths or URLs, supporting ** for recursive matching
 // It follows git-style pattern matching where later patterns override earlier ones
 // and ! prefix negates (excludes) a pattern
 func expandGlob(patterns []string) ([]string, error) {
@@ -69,21 +72,32 @@ func expandGlob(patterns []string) ([]string, error) {
 	type patternRule struct {
 		pattern string
 		include bool // true = include, false = exclude
+		isURL   bool
 	}
 
 	var rules []patternRule
 	for _, p := range patterns {
+		include := true
+		pattern := p
 		if strings.HasPrefix(p, "!") {
-			rules = append(rules, patternRule{strings.TrimPrefix(p, "!"), false})
-		} else {
-			rules = append(rules, patternRule{p, true})
+			include = false
+			pattern = strings.TrimPrefix(p, "!")
 		}
+		rules = append(rules, patternRule{
+			pattern: pattern,
+			include: include,
+			isURL:   isHTTPURL(pattern),
+		})
 	}
 
 	// First, collect all potential files from include patterns
 	candidateFiles := make(map[string]bool)
 	for _, rule := range rules {
 		if rule.include {
+			if rule.isURL {
+				candidateFiles[rule.pattern] = true
+				continue
+			}
 			matches, err := doublestar.FilepathGlob(rule.pattern)
 			if err != nil {
 				return nil, fmt.Errorf("invalid glob pattern '%s': %w", rule.pattern, err)
@@ -101,7 +115,17 @@ func expandGlob(patterns []string) ([]string, error) {
 	// For each candidate file, evaluate all rules in order - last match wins
 	for filePath := range candidateFiles {
 		included := false
+		targetIsURL := isHTTPURL(filePath)
 		for _, rule := range rules {
+			if rule.isURL != targetIsURL {
+				continue
+			}
+			if rule.isURL {
+				if rule.pattern == filePath {
+					included = rule.include
+				}
+				continue
+			}
 			matched, err := doublestar.PathMatch(rule.pattern, filePath)
 			if err != nil {
 				return nil, fmt.Errorf("invalid pattern '%s': %w", rule.pattern, err)
@@ -146,9 +170,9 @@ func runApply(ctx context.Context, filePatterns []string) error {
 
 	var documents []Document
 	for _, filePath := range files {
-		docs, err := ParseFile(filePath)
+		docs, err := ParseInput(ctx, filePath)
 		if err != nil {
-			return fmt.Errorf("failed to parse file %s: %w", filePath, err)
+			return fmt.Errorf("failed to parse input %s: %w", filePath, err)
 		}
 		documents = append(documents, docs...)
 	}
