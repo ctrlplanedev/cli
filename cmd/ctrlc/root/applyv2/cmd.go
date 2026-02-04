@@ -19,6 +19,7 @@ import (
 // NewApplyV2Cmd creates a new apply-v2 command
 func NewApplyV2Cmd() *cobra.Command {
 	var filePatterns []string
+	var selectorRaw string
 
 	cmd := &cobra.Command{
 		Use:   "apply-v2",
@@ -36,17 +37,18 @@ func NewApplyV2Cmd() *cobra.Command {
 		`),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runApplyV2(cmd.Context(), filePatterns)
+			return runApply(cmd.Context(), filePatterns, selectorRaw)
 		},
 	}
 
 	cmd.Flags().StringArrayVarP(&filePatterns, "file", "f", nil, "Path or glob pattern to YAML files (can be specified multiple times, prefix with ! to exclude)")
+	cmd.Flags().StringVar(&selectorRaw, "selector", "", "Metadata selector in key=value format to apply to created resources")
 	cmd.MarkFlagRequired("file")
 
 	return cmd
 }
 
-func runApplyV2(ctx context.Context, filePatterns []string) error {
+func runApply(ctx context.Context, filePatterns []string, selectorRaw string) error {
 	files, err := expandGlob(filePatterns)
 	if err != nil {
 		return err
@@ -87,10 +89,20 @@ func runApplyV2(ctx context.Context, filePatterns []string) error {
 		return nil
 	}
 
+	if selectorRaw != "" {
+		selector, err := providers.ParseSelector(selectorRaw)
+		if err != nil {
+			return err
+		}
+		applySelectorToSpecs(selector, specs)
+	}
+
 	log.Info("Applying resources", "count", len(specs), "files", len(files))
 
 	sortedSpecs := sortSpecsByOrder(specs)
-	results := providers.DefaultProviderEngine.BatchApply(applyCtx, sortedSpecs, providers.BatchApplyOptions{})
+	results := providers.
+		DefaultProviderEngine.
+		BatchApply(applyCtx, sortedSpecs, providers.BatchApplyOptions{})
 
 	printResults(results)
 
