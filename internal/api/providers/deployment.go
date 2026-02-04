@@ -135,7 +135,7 @@ func (d *DeploymentSpec) upsert(ctx Context, id string) error {
 		jobAgentID = &agentIDValue
 	}
 
-	var jobAgentConfig api.DeploymentJobAgentConfig
+	jobAgentConfig := api.DeploymentJobAgentConfig{}
 	if d.Agent != nil {
 		jobAgentConfig = d.Agent.Config
 	}
