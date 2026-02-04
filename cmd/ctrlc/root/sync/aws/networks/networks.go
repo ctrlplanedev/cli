@@ -192,7 +192,7 @@ func processNetworks(
 	for {
 		output, err := ec2Client.DescribeVpcs(ctx, &ec2.DescribeVpcsInput{
 			NextToken: nextToken,
-			Filters: getOwnerFilter(accountId),
+			Filters:   getOwnerFilter(accountId),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to list VPCs: %w", err)
@@ -410,7 +410,7 @@ func getOwnerFilter(accountId string) []types.Filter {
 	ownerId := "owner-id"
 	return []types.Filter{
 		{
-			Name: &ownerId,
+			Name:   &ownerId,
 			Values: []string{accountId},
 		},
 	}
