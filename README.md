@@ -83,6 +83,30 @@ ctrlc config set api-key your-api-key
 ctrlc config set workspace your-workspace-id
 ```
 
+### Contexts (use-context)
+
+Define named contexts in your config file and switch between them (similar to
+`kubectl config use-context`):
+
+```yaml
+contexts:
+  wandb:
+    url: https://ctrlplane.wandb.io
+    api-key: your-api-key
+    workspace: wandb
+  local:
+    url: http://localhost:5173
+    api-key: local-api-key
+    workspace: test
+current-context: wandb
+```
+
+Switch contexts:
+
+```bash
+ctrlc config use-context wandb
+```
+
 ## Commands
 
 ### Agent

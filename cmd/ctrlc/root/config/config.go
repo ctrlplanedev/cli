@@ -16,6 +16,7 @@ func NewConfigCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(set.NewSetCmd())
+	cmd.AddCommand(NewUseContextCmd())
 
 	return cmd
 }
