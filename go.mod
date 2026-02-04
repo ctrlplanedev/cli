@@ -21,11 +21,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/eks v1.64.0
 	github.com/aws/aws-sdk-go-v2/service/rds v1.95.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.19
+	github.com/bmatcuk/doublestar/v4 v4.9.1
 	github.com/charmbracelet/log v0.4.0
 	github.com/creack/pty v1.1.24
+	github.com/fatih/color v1.16.0
 	github.com/google/go-github/v57 v57.0.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
+	github.com/gosimple/slug v1.15.0
 	github.com/hashicorp/go-tfe v1.73.1
 	github.com/k-capehart/go-salesforce/v2 v2.5.2
 	github.com/loft-sh/vcluster v0.25.0
@@ -80,7 +83,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
-	github.com/bmatcuk/doublestar/v4 v4.9.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
@@ -100,7 +102,6 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20210407135951-1de76d718b3f // indirect
 	github.com/fatih/camelcase v1.0.0 // indirect
-	github.com/fatih/color v1.16.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/forcedotcom/go-soql v0.0.0-20220705175410-00f698360bee // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
@@ -129,7 +130,6 @@ require (
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
-	github.com/gosimple/slug v1.15.0 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
