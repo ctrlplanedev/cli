@@ -46,15 +46,15 @@ func (p *ResourceProvider) Parse(raw []byte) (ResourceSpec, error) {
 }
 
 type ResourceItemSpec struct {
-	Type       string            `yaml:"type,omitempty"`
+	Type        string            `yaml:"type,omitempty"`
 	DisplayName string            `yaml:"name"`
-	Identifier string            `yaml:"identifier"`
-	Kind       string            `yaml:"kind"`
-	Version    string            `yaml:"version"`
-	Config     map[string]any    `yaml:"config,omitempty"`
-	Metadata   map[string]string `yaml:"metadata,omitempty"`
-	Variables  map[string]any    `yaml:"variables,omitempty"`
-	Provider   string            `yaml:"provider,omitempty"`
+	Identifier  string            `yaml:"identifier"`
+	Kind        string            `yaml:"kind"`
+	Version     string            `yaml:"version"`
+	Config      map[string]any    `yaml:"config,omitempty"`
+	Metadata    map[string]string `yaml:"metadata,omitempty"`
+	Variables   map[string]any    `yaml:"variables,omitempty"`
+	Provider    string            `yaml:"provider,omitempty"`
 }
 
 func (r *ResourceItemSpec) Name() string {

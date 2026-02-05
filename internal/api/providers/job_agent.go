@@ -113,8 +113,8 @@ func (j *JobAgentSpec) upsert(ctx Context, id string) error {
 		return fmt.Errorf("failed to marshal job agent config: %w", err)
 	}
 
-	var jobAgentConfig api.JobAgentConfig
-	if err := jobAgentConfig.UnmarshalJSON(configBytes); err != nil {
+	var jobAgentConfig map[string]any
+	if err := json.Unmarshal(configBytes, &jobAgentConfig); err != nil {
 		return fmt.Errorf("failed to parse job agent config: %w", err)
 	}
 

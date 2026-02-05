@@ -30,16 +30,6 @@ const (
 	ApprovalStatusRejected ApprovalStatus = "rejected"
 )
 
-// Defines values for ArgoCDJobAgentConfigType.
-const (
-	ArgoCDJobAgentConfigTypeArgoCd ArgoCDJobAgentConfigType = "argo-cd"
-)
-
-// Defines values for CustomJobAgentConfigType.
-const (
-	Custom CustomJobAgentConfigType = "custom"
-)
-
 // Defines values for DatadogMetricProviderAggregator.
 const (
 	Area       DatadogMetricProviderAggregator = "area"
@@ -58,21 +48,6 @@ const (
 	Datadog DatadogMetricProviderType = "datadog"
 )
 
-// Defines values for DeploymentArgoCDJobAgentConfigType.
-const (
-	DeploymentArgoCDJobAgentConfigTypeArgoCd DeploymentArgoCDJobAgentConfigType = "argo-cd"
-)
-
-// Defines values for DeploymentGithubJobAgentConfigType.
-const (
-	DeploymentGithubJobAgentConfigTypeGithubApp DeploymentGithubJobAgentConfigType = "github-app"
-)
-
-// Defines values for DeploymentTerraformCloudJobAgentConfigType.
-const (
-	DeploymentTerraformCloudJobAgentConfigTypeTfe DeploymentTerraformCloudJobAgentConfigType = "tfe"
-)
-
 // Defines values for DeploymentVersionStatus.
 const (
 	DeploymentVersionStatusBuilding    DeploymentVersionStatus = "building"
@@ -80,26 +55,6 @@ const (
 	DeploymentVersionStatusReady       DeploymentVersionStatus = "ready"
 	DeploymentVersionStatusRejected    DeploymentVersionStatus = "rejected"
 	DeploymentVersionStatusUnspecified DeploymentVersionStatus = "unspecified"
-)
-
-// Defines values for FullArgoCDJobAgentConfigType.
-const (
-	ArgoCd FullArgoCDJobAgentConfigType = "argo-cd"
-)
-
-// Defines values for FullGithubJobAgentConfigType.
-const (
-	FullGithubJobAgentConfigTypeGithubApp FullGithubJobAgentConfigType = "github-app"
-)
-
-// Defines values for FullTerraformCloudJobAgentConfigType.
-const (
-	FullTerraformCloudJobAgentConfigTypeTfe FullTerraformCloudJobAgentConfigType = "tfe"
-)
-
-// Defines values for GithubJobAgentConfigType.
-const (
-	GithubApp GithubJobAgentConfigType = "github-app"
 )
 
 // Defines values for GradualRolloutRuleRolloutType.
@@ -126,16 +81,16 @@ const (
 
 // Defines values for JobStatus.
 const (
-	JobStatusActionRequired      JobStatus = "actionRequired"
-	JobStatusCancelled           JobStatus = "cancelled"
-	JobStatusExternalRunNotFound JobStatus = "externalRunNotFound"
-	JobStatusFailure             JobStatus = "failure"
-	JobStatusInProgress          JobStatus = "inProgress"
-	JobStatusInvalidIntegration  JobStatus = "invalidIntegration"
-	JobStatusInvalidJobAgent     JobStatus = "invalidJobAgent"
-	JobStatusPending             JobStatus = "pending"
-	JobStatusSkipped             JobStatus = "skipped"
-	JobStatusSuccessful          JobStatus = "successful"
+	ActionRequired      JobStatus = "actionRequired"
+	Cancelled           JobStatus = "cancelled"
+	ExternalRunNotFound JobStatus = "externalRunNotFound"
+	Failure             JobStatus = "failure"
+	InProgress          JobStatus = "inProgress"
+	InvalidIntegration  JobStatus = "invalidIntegration"
+	InvalidJobAgent     JobStatus = "invalidJobAgent"
+	Pending             JobStatus = "pending"
+	Skipped             JobStatus = "skipped"
+	Successful          JobStatus = "successful"
 )
 
 // Defines values for NullValue.
@@ -161,25 +116,9 @@ const (
 	Sleep SleepMetricProviderType = "sleep"
 )
 
-// Defines values for TerraformCloudJobAgentConfigType.
-const (
-	Tfe TerraformCloudJobAgentConfigType = "tfe"
-)
-
 // Defines values for TerraformCloudRunMetricProviderType.
 const (
 	TerraformCloudRun TerraformCloudRunMetricProviderType = "terraformCloudRun"
-)
-
-// Defines values for TestRunnerJobAgentConfigStatus.
-const (
-	TestRunnerJobAgentConfigStatusCompleted TestRunnerJobAgentConfigStatus = "completed"
-	TestRunnerJobAgentConfigStatusFailure   TestRunnerJobAgentConfigStatus = "failure"
-)
-
-// Defines values for TestRunnerJobAgentConfigType.
-const (
-	TestRunner TestRunnerJobAgentConfigType = "test-runner"
 )
 
 // Defines values for VerificationMeasurementStatus.
@@ -197,6 +136,38 @@ const (
 	JobSuccess VerificationRuleTriggerOn = "jobSuccess"
 )
 
+// Defines values for WorkflowBooleanInputType.
+const (
+	Boolean WorkflowBooleanInputType = "boolean"
+)
+
+// Defines values for WorkflowManualArrayInputType.
+const (
+	WorkflowManualArrayInputTypeArray WorkflowManualArrayInputType = "array"
+)
+
+// Defines values for WorkflowNumberInputType.
+const (
+	Number WorkflowNumberInputType = "number"
+)
+
+// Defines values for WorkflowSelectorArrayInputSelectorEntityType.
+const (
+	WorkflowSelectorArrayInputSelectorEntityTypeDeployment  WorkflowSelectorArrayInputSelectorEntityType = "deployment"
+	WorkflowSelectorArrayInputSelectorEntityTypeEnvironment WorkflowSelectorArrayInputSelectorEntityType = "environment"
+	WorkflowSelectorArrayInputSelectorEntityTypeResource    WorkflowSelectorArrayInputSelectorEntityType = "resource"
+)
+
+// Defines values for WorkflowSelectorArrayInputType.
+const (
+	WorkflowSelectorArrayInputTypeArray WorkflowSelectorArrayInputType = "array"
+)
+
+// Defines values for WorkflowStringInputType.
+const (
+	String WorkflowStringInputType = "string"
+)
+
 // AnyApprovalRule defines model for AnyApprovalRule.
 type AnyApprovalRule struct {
 	MinApprovals int32 `json:"minApprovals"`
@@ -204,21 +175,6 @@ type AnyApprovalRule struct {
 
 // ApprovalStatus defines model for ApprovalStatus.
 type ApprovalStatus string
-
-// ArgoCDJobAgentConfig defines model for ArgoCDJobAgentConfig.
-type ArgoCDJobAgentConfig struct {
-	// ApiKey ArgoCD API token.
-	ApiKey string `json:"apiKey"`
-
-	// ServerUrl ArgoCD server address (host[:port] or URL).
-	ServerUrl string `json:"serverUrl"`
-
-	// Type Job agent type discriminator.
-	Type ArgoCDJobAgentConfigType `json:"type"`
-}
-
-// ArgoCDJobAgentConfigType Job agent type discriminator.
-type ArgoCDJobAgentConfigType string
 
 // BooleanValue defines model for BooleanValue.
 type BooleanValue = bool
@@ -235,15 +191,13 @@ type CelSelector struct {
 
 // CreateDeploymentRequest defines model for CreateDeploymentRequest.
 type CreateDeploymentRequest struct {
-	Description *string `json:"description,omitempty"`
-
-	// JobAgentConfig Arbitrary object (record<string, any>) for the deployment job agent config.
-	JobAgentConfig   *DeploymentJobAgentConfig `json:"jobAgentConfig,omitempty"`
-	JobAgentId       *string                   `json:"jobAgentId,omitempty"`
-	Name             string                    `json:"name"`
-	ResourceSelector *Selector                 `json:"resourceSelector,omitempty"`
-	Slug             string                    `json:"slug"`
-	SystemId         string                    `json:"systemId"`
+	Description      *string                 `json:"description,omitempty"`
+	JobAgentConfig   *map[string]interface{} `json:"jobAgentConfig,omitempty"`
+	JobAgentId       *string                 `json:"jobAgentId,omitempty"`
+	Name             string                  `json:"name"`
+	ResourceSelector *Selector               `json:"resourceSelector,omitempty"`
+	Slug             string                  `json:"slug"`
+	SystemId         string                  `json:"systemId"`
 }
 
 // CreateDeploymentVersionRequest defines model for CreateDeploymentVersionRequest.
@@ -312,16 +266,6 @@ type CreateWorkspaceRequest struct {
 	Slug string `json:"slug"`
 }
 
-// CustomJobAgentConfig defines model for CustomJobAgentConfig.
-type CustomJobAgentConfig struct {
-	// Type Job agent type discriminator.
-	Type                 CustomJobAgentConfigType `json:"type"`
-	AdditionalProperties map[string]interface{}   `json:"-"`
-}
-
-// CustomJobAgentConfigType Job agent type discriminator.
-type CustomJobAgentConfigType string
-
 // DatadogMetricProvider defines model for DatadogMetricProvider.
 type DatadogMetricProvider struct {
 	// Aggregator Datadog aggregator
@@ -355,16 +299,14 @@ type DatadogMetricProviderType string
 
 // Deployment defines model for Deployment.
 type Deployment struct {
-	Description *string `json:"description,omitempty"`
-	Id          string  `json:"id"`
-
-	// JobAgentConfig Arbitrary object (record<string, any>) for the deployment job agent config.
-	JobAgentConfig   DeploymentJobAgentConfig `json:"jobAgentConfig"`
-	JobAgentId       *string                  `json:"jobAgentId,omitempty"`
-	Name             string                   `json:"name"`
-	ResourceSelector *Selector                `json:"resourceSelector,omitempty"`
-	Slug             string                   `json:"slug"`
-	SystemId         string                   `json:"systemId"`
+	Description      *string                `json:"description,omitempty"`
+	Id               string                 `json:"id"`
+	JobAgentConfig   map[string]interface{} `json:"jobAgentConfig"`
+	JobAgentId       *string                `json:"jobAgentId,omitempty"`
+	Name             string                 `json:"name"`
+	ResourceSelector *Selector              `json:"resourceSelector,omitempty"`
+	Slug             string                 `json:"slug"`
+	SystemId         string                 `json:"systemId"`
 }
 
 // DeploymentAndSystem defines model for DeploymentAndSystem.
@@ -373,55 +315,10 @@ type DeploymentAndSystem struct {
 	System     System     `json:"system"`
 }
 
-// DeploymentArgoCDJobAgentConfig defines model for DeploymentArgoCDJobAgentConfig.
-type DeploymentArgoCDJobAgentConfig struct {
-	// Template ArgoCD Application YAML/JSON template (supports Go templates).
-	Template string `json:"template"`
-
-	// Type Deployment job agent type discriminator.
-	Type DeploymentArgoCDJobAgentConfigType `json:"type"`
-}
-
-// DeploymentArgoCDJobAgentConfigType Deployment job agent type discriminator.
-type DeploymentArgoCDJobAgentConfigType string
-
 // DeploymentDependencyRule defines model for DeploymentDependencyRule.
 type DeploymentDependencyRule struct {
 	DependsOnDeploymentSelector Selector `json:"dependsOnDeploymentSelector"`
 }
-
-// DeploymentGithubJobAgentConfig defines model for DeploymentGithubJobAgentConfig.
-type DeploymentGithubJobAgentConfig struct {
-	// Ref Git ref to run the workflow on (defaults to "main" if omitted).
-	Ref *string `json:"ref,omitempty"`
-
-	// Repo GitHub repository name.
-	Repo string `json:"repo"`
-
-	// Type Deployment job agent type discriminator.
-	Type DeploymentGithubJobAgentConfigType `json:"type"`
-
-	// WorkflowId GitHub Actions workflow ID.
-	WorkflowId int64 `json:"workflowId"`
-}
-
-// DeploymentGithubJobAgentConfigType Deployment job agent type discriminator.
-type DeploymentGithubJobAgentConfigType string
-
-// DeploymentJobAgentConfig Arbitrary object (record<string, any>) for the deployment job agent config.
-type DeploymentJobAgentConfig map[string]interface{}
-
-// DeploymentTerraformCloudJobAgentConfig defines model for DeploymentTerraformCloudJobAgentConfig.
-type DeploymentTerraformCloudJobAgentConfig struct {
-	// Template Terraform Cloud workspace template (YAML/JSON; supports Go templates).
-	Template string `json:"template"`
-
-	// Type Deployment job agent type discriminator.
-	Type DeploymentTerraformCloudJobAgentConfigType `json:"type"`
-}
-
-// DeploymentTerraformCloudJobAgentConfigType Deployment job agent type discriminator.
-type DeploymentTerraformCloudJobAgentConfigType string
 
 // DeploymentVariable defines model for DeploymentVariable.
 type DeploymentVariable struct {
@@ -525,90 +422,6 @@ type ErrorResponse struct {
 	Error *string `json:"error,omitempty"`
 }
 
-// FullArgoCDJobAgentConfig defines model for FullArgoCDJobAgentConfig.
-type FullArgoCDJobAgentConfig struct {
-	// ApiKey ArgoCD API token.
-	ApiKey string `json:"apiKey"`
-
-	// ServerUrl ArgoCD server address (host[:port] or URL).
-	ServerUrl string `json:"serverUrl"`
-
-	// Template ArgoCD Application YAML/JSON template (supports Go templates).
-	Template string `json:"template"`
-
-	// Type Deployment job agent type discriminator.
-	Type FullArgoCDJobAgentConfigType `json:"type"`
-}
-
-// FullArgoCDJobAgentConfigType Deployment job agent type discriminator.
-type FullArgoCDJobAgentConfigType string
-
-// FullCustomJobAgentConfig defines model for FullCustomJobAgentConfig.
-type FullCustomJobAgentConfig = CustomJobAgentConfig
-
-// FullGithubJobAgentConfig defines model for FullGithubJobAgentConfig.
-type FullGithubJobAgentConfig struct {
-	InstallationId int    `json:"installationId"`
-	Owner          string `json:"owner"`
-
-	// Ref Git ref to run the workflow on (defaults to "main" if omitted).
-	Ref *string `json:"ref,omitempty"`
-
-	// Repo GitHub repository name.
-	Repo string `json:"repo"`
-
-	// Type Deployment job agent type discriminator.
-	Type FullGithubJobAgentConfigType `json:"type"`
-
-	// WorkflowId GitHub Actions workflow ID.
-	WorkflowId int64 `json:"workflowId"`
-}
-
-// FullGithubJobAgentConfigType Deployment job agent type discriminator.
-type FullGithubJobAgentConfigType string
-
-// FullJobAgentConfig defines model for FullJobAgentConfig.
-type FullJobAgentConfig struct {
-	union json.RawMessage
-}
-
-// FullTerraformCloudJobAgentConfig defines model for FullTerraformCloudJobAgentConfig.
-type FullTerraformCloudJobAgentConfig struct {
-	// Address Terraform Cloud address (e.g. https://app.terraform.io).
-	Address string `json:"address"`
-
-	// Organization Terraform Cloud organization name.
-	Organization string `json:"organization"`
-
-	// Template Terraform Cloud workspace template (YAML/JSON; supports Go templates).
-	Template string `json:"template"`
-
-	// Token Terraform Cloud API token.
-	Token string `json:"token"`
-
-	// Type Deployment job agent type discriminator.
-	Type                 FullTerraformCloudJobAgentConfigType `json:"type"`
-	AdditionalProperties map[string]interface{}               `json:"-"`
-}
-
-// FullTerraformCloudJobAgentConfigType Deployment job agent type discriminator.
-type FullTerraformCloudJobAgentConfigType string
-
-// FullTestRunnerJobAgentConfig defines model for FullTestRunnerJobAgentConfig.
-type FullTestRunnerJobAgentConfig = TestRunnerJobAgentConfig
-
-// GithubJobAgentConfig defines model for GithubJobAgentConfig.
-type GithubJobAgentConfig struct {
-	InstallationId int    `json:"installationId"`
-	Owner          string `json:"owner"`
-
-	// Type Job agent type discriminator.
-	Type GithubJobAgentConfigType `json:"type"`
-}
-
-// GithubJobAgentConfigType Job agent type discriminator.
-type GithubJobAgentConfigType string
-
 // GradualRolloutRule defines model for GradualRolloutRule.
 type GradualRolloutRule struct {
 	// RolloutType Strategy for scheduling deployments to release targets. "linear": Each target is deployed at a fixed interval of timeScaleInterval seconds. "linear-normalized": Deployments are spaced evenly so that the last target is scheduled at or before timeScaleInterval seconds. See rolloutType algorithm documentation for details.
@@ -653,31 +466,26 @@ type IntegerValue = int
 
 // Job defines model for Job.
 type Job struct {
-	CompletedAt    *time.Time         `json:"completedAt,omitempty"`
-	CreatedAt      time.Time          `json:"createdAt"`
-	ExternalId     *string            `json:"externalId,omitempty"`
-	Id             string             `json:"id"`
-	JobAgentConfig FullJobAgentConfig `json:"jobAgentConfig"`
-	JobAgentId     string             `json:"jobAgentId"`
-	Metadata       map[string]string  `json:"metadata"`
-	ReleaseId      string             `json:"releaseId"`
-	StartedAt      *time.Time         `json:"startedAt,omitempty"`
-	Status         JobStatus          `json:"status"`
-	UpdatedAt      time.Time          `json:"updatedAt"`
+	CompletedAt    *time.Time             `json:"completedAt,omitempty"`
+	CreatedAt      time.Time              `json:"createdAt"`
+	ExternalId     *string                `json:"externalId,omitempty"`
+	Id             string                 `json:"id"`
+	JobAgentConfig map[string]interface{} `json:"jobAgentConfig"`
+	JobAgentId     string                 `json:"jobAgentId"`
+	Metadata       map[string]string      `json:"metadata"`
+	ReleaseId      string                 `json:"releaseId"`
+	StartedAt      *time.Time             `json:"startedAt,omitempty"`
+	Status         JobStatus              `json:"status"`
+	UpdatedAt      time.Time              `json:"updatedAt"`
 }
 
 // JobAgent defines model for JobAgent.
 type JobAgent struct {
-	Config   JobAgentConfig    `json:"config"`
-	Id       string            `json:"id"`
-	Metadata map[string]string `json:"metadata"`
-	Name     string            `json:"name"`
-	Type     string            `json:"type"`
-}
-
-// JobAgentConfig defines model for JobAgentConfig.
-type JobAgentConfig struct {
-	union json.RawMessage
+	Config   map[string]interface{} `json:"config"`
+	Id       string                 `json:"id"`
+	Metadata map[string]string      `json:"metadata"`
+	Name     string                 `json:"name"`
+	Type     string                 `json:"type"`
 }
 
 // JobStatus defines model for JobStatus.
@@ -926,28 +734,6 @@ type System struct {
 	WorkspaceId string  `json:"workspaceId"`
 }
 
-// TerraformCloudJobAgentConfig defines model for TerraformCloudJobAgentConfig.
-type TerraformCloudJobAgentConfig struct {
-	// Address Terraform Cloud address (e.g. https://app.terraform.io).
-	Address string `json:"address"`
-
-	// Organization Terraform Cloud organization name.
-	Organization string `json:"organization"`
-
-	// Template Terraform Cloud workspace template (YAML/JSON; supports Go templates).
-	Template *string `json:"template,omitempty"`
-
-	// Token Terraform Cloud API token.
-	Token string `json:"token"`
-
-	// Type Job agent type discriminator.
-	Type                 TerraformCloudJobAgentConfigType `json:"type"`
-	AdditionalProperties map[string]interface{}           `json:"-"`
-}
-
-// TerraformCloudJobAgentConfigType Job agent type discriminator.
-type TerraformCloudJobAgentConfigType string
-
 // TerraformCloudRunMetricProvider defines model for TerraformCloudRunMetricProvider.
 type TerraformCloudRunMetricProvider struct {
 	// Address Terraform Cloud address
@@ -965,27 +751,6 @@ type TerraformCloudRunMetricProvider struct {
 
 // TerraformCloudRunMetricProviderType Provider type
 type TerraformCloudRunMetricProviderType string
-
-// TestRunnerJobAgentConfig defines model for TestRunnerJobAgentConfig.
-type TestRunnerJobAgentConfig struct {
-	// DelaySeconds Delay before resolving the job.
-	DelaySeconds *int `json:"delaySeconds,omitempty"`
-
-	// Message Optional message to include in the job output.
-	Message *string `json:"message,omitempty"`
-
-	// Status Final status to set.
-	Status *TestRunnerJobAgentConfigStatus `json:"status,omitempty"`
-
-	// Type Job agent type discriminator.
-	Type TestRunnerJobAgentConfigType `json:"type"`
-}
-
-// TestRunnerJobAgentConfigStatus Final status to set.
-type TestRunnerJobAgentConfigStatus string
-
-// TestRunnerJobAgentConfigType Job agent type discriminator.
-type TestRunnerJobAgentConfigType string
 
 // UpdateDeploymentVersionRequest defines model for UpdateDeploymentVersionRequest.
 type UpdateDeploymentVersionRequest struct {
@@ -1009,15 +774,13 @@ type UpdateWorkspaceRequest struct {
 
 // UpsertDeploymentRequest defines model for UpsertDeploymentRequest.
 type UpsertDeploymentRequest struct {
-	Description *string `json:"description,omitempty"`
-
-	// JobAgentConfig Arbitrary object (record<string, any>) for the deployment job agent config.
-	JobAgentConfig   *DeploymentJobAgentConfig `json:"jobAgentConfig,omitempty"`
-	JobAgentId       *string                   `json:"jobAgentId,omitempty"`
-	Name             string                    `json:"name"`
-	ResourceSelector *Selector                 `json:"resourceSelector,omitempty"`
-	Slug             string                    `json:"slug"`
-	SystemId         string                    `json:"systemId"`
+	Description      *string                 `json:"description,omitempty"`
+	JobAgentConfig   *map[string]interface{} `json:"jobAgentConfig,omitempty"`
+	JobAgentId       *string                 `json:"jobAgentId,omitempty"`
+	Name             string                  `json:"name"`
+	ResourceSelector *Selector               `json:"resourceSelector,omitempty"`
+	Slug             string                  `json:"slug"`
+	SystemId         string                  `json:"systemId"`
 }
 
 // UpsertDeploymentVariableRequest defines model for UpsertDeploymentVariableRequest.
@@ -1044,10 +807,10 @@ type UpsertEnvironmentRequest struct {
 
 // UpsertJobAgentRequest defines model for UpsertJobAgentRequest.
 type UpsertJobAgentRequest struct {
-	Config   JobAgentConfig     `json:"config"`
-	Metadata *map[string]string `json:"metadata,omitempty"`
-	Name     string             `json:"name"`
-	Type     string             `json:"type"`
+	Config   map[string]interface{} `json:"config"`
+	Metadata *map[string]string     `json:"metadata,omitempty"`
+	Name     string                 `json:"name"`
+	Type     string                 `json:"type"`
 }
 
 // UpsertPolicyRequest defines model for UpsertPolicyRequest.
@@ -1196,6 +959,106 @@ type VerificationRuleTriggerOn string
 type VersionCooldownRule struct {
 	// IntervalSeconds Minimum time in seconds that must pass since the currently deployed (or in-progress) version was created before allowing another deployment. This enables batching of frequent upstream releases into periodic deployments.
 	IntervalSeconds int32 `json:"intervalSeconds"`
+}
+
+// WorkflowArrayInput defines model for WorkflowArrayInput.
+type WorkflowArrayInput struct {
+	union json.RawMessage
+}
+
+// WorkflowBooleanInput defines model for WorkflowBooleanInput.
+type WorkflowBooleanInput struct {
+	Default bool                     `json:"default"`
+	Name    string                   `json:"name"`
+	Type    WorkflowBooleanInputType `json:"type"`
+}
+
+// WorkflowBooleanInputType defines model for WorkflowBooleanInput.Type.
+type WorkflowBooleanInputType string
+
+// WorkflowInput defines model for WorkflowInput.
+type WorkflowInput struct {
+	union json.RawMessage
+}
+
+// WorkflowJobMatrix defines model for WorkflowJobMatrix.
+type WorkflowJobMatrix map[string]WorkflowJobMatrix_AdditionalProperties
+
+// WorkflowJobMatrix0 defines model for .
+type WorkflowJobMatrix0 = []map[string]interface{}
+
+// WorkflowJobMatrix1 defines model for .
+type WorkflowJobMatrix1 = string
+
+// WorkflowJobMatrix_AdditionalProperties defines model for WorkflowJobMatrix.AdditionalProperties.
+type WorkflowJobMatrix_AdditionalProperties struct {
+	union json.RawMessage
+}
+
+// WorkflowJobTemplate defines model for WorkflowJobTemplate.
+type WorkflowJobTemplate struct {
+	// Config Configuration for the job agent
+	Config map[string]interface{} `json:"config"`
+	Id     string                 `json:"id"`
+	Matrix *WorkflowJobMatrix     `json:"matrix,omitempty"`
+	Name   string                 `json:"name"`
+
+	// Ref Reference to the job agent
+	Ref string `json:"ref"`
+}
+
+// WorkflowManualArrayInput defines model for WorkflowManualArrayInput.
+type WorkflowManualArrayInput struct {
+	Default *[]map[string]interface{}    `json:"default,omitempty"`
+	Name    string                       `json:"name"`
+	Type    WorkflowManualArrayInputType `json:"type"`
+}
+
+// WorkflowManualArrayInputType defines model for WorkflowManualArrayInput.Type.
+type WorkflowManualArrayInputType string
+
+// WorkflowNumberInput defines model for WorkflowNumberInput.
+type WorkflowNumberInput struct {
+	Default float32                 `json:"default"`
+	Name    string                  `json:"name"`
+	Type    WorkflowNumberInputType `json:"type"`
+}
+
+// WorkflowNumberInputType defines model for WorkflowNumberInput.Type.
+type WorkflowNumberInputType string
+
+// WorkflowSelectorArrayInput defines model for WorkflowSelectorArrayInput.
+type WorkflowSelectorArrayInput struct {
+	Name     string `json:"name"`
+	Selector struct {
+		Default    *Selector                                    `json:"default,omitempty"`
+		EntityType WorkflowSelectorArrayInputSelectorEntityType `json:"entityType"`
+	} `json:"selector"`
+	Type WorkflowSelectorArrayInputType `json:"type"`
+}
+
+// WorkflowSelectorArrayInputSelectorEntityType defines model for WorkflowSelectorArrayInput.Selector.EntityType.
+type WorkflowSelectorArrayInputSelectorEntityType string
+
+// WorkflowSelectorArrayInputType defines model for WorkflowSelectorArrayInput.Type.
+type WorkflowSelectorArrayInputType string
+
+// WorkflowStringInput defines model for WorkflowStringInput.
+type WorkflowStringInput struct {
+	Default string                  `json:"default"`
+	Name    string                  `json:"name"`
+	Type    WorkflowStringInputType `json:"type"`
+}
+
+// WorkflowStringInputType defines model for WorkflowStringInput.Type.
+type WorkflowStringInputType string
+
+// WorkflowTemplate defines model for WorkflowTemplate.
+type WorkflowTemplate struct {
+	Id     string                `json:"id"`
+	Inputs []WorkflowInput       `json:"inputs"`
+	Jobs   []WorkflowJobTemplate `json:"jobs"`
+	Name   string                `json:"name"`
 }
 
 // Workspace defines model for Workspace.
@@ -1359,6 +1222,12 @@ type ListSystemsParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// CreateWorkflowTemplateFromYamlJSONBody defines parameters for CreateWorkflowTemplateFromYaml.
+type CreateWorkflowTemplateFromYamlJSONBody struct {
+	// Yaml The workflow definition in YAML format
+	Yaml string `json:"yaml"`
+}
+
 // CreateWorkspaceJSONRequestBody defines body for CreateWorkspace for application/json ContentType.
 type CreateWorkspaceJSONRequestBody = CreateWorkspaceRequest
 
@@ -1395,6 +1264,9 @@ type UpsertEnvironmentByIdJSONRequestBody = UpsertEnvironmentRequest
 // UpsertJobAgentJSONRequestBody defines body for UpsertJobAgent for application/json ContentType.
 type UpsertJobAgentJSONRequestBody = UpsertJobAgentRequest
 
+// UpdateJobStatusJSONRequestBody defines body for UpdateJobStatus for application/json ContentType.
+type UpdateJobStatusJSONRequestBody = JobStatus
+
 // CreatePolicyJSONRequestBody defines body for CreatePolicy for application/json ContentType.
 type CreatePolicyJSONRequestBody = CreatePolicyRequest
 
@@ -1425,309 +1297,8 @@ type CreateSystemJSONRequestBody = CreateSystemRequest
 // UpsertSystemByIdJSONRequestBody defines body for UpsertSystemById for application/json ContentType.
 type UpsertSystemByIdJSONRequestBody = UpsertSystemRequest
 
-// Getter for additional properties for CustomJobAgentConfig. Returns the specified
-// element and whether it was found
-func (a CustomJobAgentConfig) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for CustomJobAgentConfig
-func (a *CustomJobAgentConfig) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for CustomJobAgentConfig to handle AdditionalProperties
-func (a *CustomJobAgentConfig) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["type"]; found {
-		err = json.Unmarshal(raw, &a.Type)
-		if err != nil {
-			return fmt.Errorf("error reading 'type': %w", err)
-		}
-		delete(object, "type")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for CustomJobAgentConfig to handle AdditionalProperties
-func (a CustomJobAgentConfig) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	object["type"], err = json.Marshal(a.Type)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'type': %w", err)
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for FullTerraformCloudJobAgentConfig. Returns the specified
-// element and whether it was found
-func (a FullTerraformCloudJobAgentConfig) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for FullTerraformCloudJobAgentConfig
-func (a *FullTerraformCloudJobAgentConfig) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for FullTerraformCloudJobAgentConfig to handle AdditionalProperties
-func (a *FullTerraformCloudJobAgentConfig) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["address"]; found {
-		err = json.Unmarshal(raw, &a.Address)
-		if err != nil {
-			return fmt.Errorf("error reading 'address': %w", err)
-		}
-		delete(object, "address")
-	}
-
-	if raw, found := object["organization"]; found {
-		err = json.Unmarshal(raw, &a.Organization)
-		if err != nil {
-			return fmt.Errorf("error reading 'organization': %w", err)
-		}
-		delete(object, "organization")
-	}
-
-	if raw, found := object["template"]; found {
-		err = json.Unmarshal(raw, &a.Template)
-		if err != nil {
-			return fmt.Errorf("error reading 'template': %w", err)
-		}
-		delete(object, "template")
-	}
-
-	if raw, found := object["token"]; found {
-		err = json.Unmarshal(raw, &a.Token)
-		if err != nil {
-			return fmt.Errorf("error reading 'token': %w", err)
-		}
-		delete(object, "token")
-	}
-
-	if raw, found := object["type"]; found {
-		err = json.Unmarshal(raw, &a.Type)
-		if err != nil {
-			return fmt.Errorf("error reading 'type': %w", err)
-		}
-		delete(object, "type")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for FullTerraformCloudJobAgentConfig to handle AdditionalProperties
-func (a FullTerraformCloudJobAgentConfig) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	object["address"], err = json.Marshal(a.Address)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'address': %w", err)
-	}
-
-	object["organization"], err = json.Marshal(a.Organization)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'organization': %w", err)
-	}
-
-	object["template"], err = json.Marshal(a.Template)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'template': %w", err)
-	}
-
-	object["token"], err = json.Marshal(a.Token)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'token': %w", err)
-	}
-
-	object["type"], err = json.Marshal(a.Type)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'type': %w", err)
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for TerraformCloudJobAgentConfig. Returns the specified
-// element and whether it was found
-func (a TerraformCloudJobAgentConfig) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for TerraformCloudJobAgentConfig
-func (a *TerraformCloudJobAgentConfig) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for TerraformCloudJobAgentConfig to handle AdditionalProperties
-func (a *TerraformCloudJobAgentConfig) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["address"]; found {
-		err = json.Unmarshal(raw, &a.Address)
-		if err != nil {
-			return fmt.Errorf("error reading 'address': %w", err)
-		}
-		delete(object, "address")
-	}
-
-	if raw, found := object["organization"]; found {
-		err = json.Unmarshal(raw, &a.Organization)
-		if err != nil {
-			return fmt.Errorf("error reading 'organization': %w", err)
-		}
-		delete(object, "organization")
-	}
-
-	if raw, found := object["template"]; found {
-		err = json.Unmarshal(raw, &a.Template)
-		if err != nil {
-			return fmt.Errorf("error reading 'template': %w", err)
-		}
-		delete(object, "template")
-	}
-
-	if raw, found := object["token"]; found {
-		err = json.Unmarshal(raw, &a.Token)
-		if err != nil {
-			return fmt.Errorf("error reading 'token': %w", err)
-		}
-		delete(object, "token")
-	}
-
-	if raw, found := object["type"]; found {
-		err = json.Unmarshal(raw, &a.Type)
-		if err != nil {
-			return fmt.Errorf("error reading 'type': %w", err)
-		}
-		delete(object, "type")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for TerraformCloudJobAgentConfig to handle AdditionalProperties
-func (a TerraformCloudJobAgentConfig) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	object["address"], err = json.Marshal(a.Address)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'address': %w", err)
-	}
-
-	object["organization"], err = json.Marshal(a.Organization)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'organization': %w", err)
-	}
-
-	if a.Template != nil {
-		object["template"], err = json.Marshal(a.Template)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'template': %w", err)
-		}
-	}
-
-	object["token"], err = json.Marshal(a.Token)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'token': %w", err)
-	}
-
-	object["type"], err = json.Marshal(a.Type)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'type': %w", err)
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
+// CreateWorkflowTemplateFromYamlJSONRequestBody defines body for CreateWorkflowTemplateFromYaml for application/json ContentType.
+type CreateWorkflowTemplateFromYamlJSONRequestBody CreateWorkflowTemplateFromYamlJSONBody
 
 // AsCelMatcher returns the union data inside the CreateRelationshipRuleRequest_Matcher as a CelMatcher
 func (t CreateRelationshipRuleRequest_Matcher) AsCelMatcher() (CelMatcher, error) {
@@ -1761,364 +1332,6 @@ func (t CreateRelationshipRuleRequest_Matcher) MarshalJSON() ([]byte, error) {
 }
 
 func (t *CreateRelationshipRuleRequest_Matcher) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsFullGithubJobAgentConfig returns the union data inside the FullJobAgentConfig as a FullGithubJobAgentConfig
-func (t FullJobAgentConfig) AsFullGithubJobAgentConfig() (FullGithubJobAgentConfig, error) {
-	var body FullGithubJobAgentConfig
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromFullGithubJobAgentConfig overwrites any union data inside the FullJobAgentConfig as the provided FullGithubJobAgentConfig
-func (t *FullJobAgentConfig) FromFullGithubJobAgentConfig(v FullGithubJobAgentConfig) error {
-	v.Type = "github-app"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeFullGithubJobAgentConfig performs a merge with any union data inside the FullJobAgentConfig, using the provided FullGithubJobAgentConfig
-func (t *FullJobAgentConfig) MergeFullGithubJobAgentConfig(v FullGithubJobAgentConfig) error {
-	v.Type = "github-app"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsFullArgoCDJobAgentConfig returns the union data inside the FullJobAgentConfig as a FullArgoCDJobAgentConfig
-func (t FullJobAgentConfig) AsFullArgoCDJobAgentConfig() (FullArgoCDJobAgentConfig, error) {
-	var body FullArgoCDJobAgentConfig
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromFullArgoCDJobAgentConfig overwrites any union data inside the FullJobAgentConfig as the provided FullArgoCDJobAgentConfig
-func (t *FullJobAgentConfig) FromFullArgoCDJobAgentConfig(v FullArgoCDJobAgentConfig) error {
-	v.Type = "argo-cd"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeFullArgoCDJobAgentConfig performs a merge with any union data inside the FullJobAgentConfig, using the provided FullArgoCDJobAgentConfig
-func (t *FullJobAgentConfig) MergeFullArgoCDJobAgentConfig(v FullArgoCDJobAgentConfig) error {
-	v.Type = "argo-cd"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsFullTerraformCloudJobAgentConfig returns the union data inside the FullJobAgentConfig as a FullTerraformCloudJobAgentConfig
-func (t FullJobAgentConfig) AsFullTerraformCloudJobAgentConfig() (FullTerraformCloudJobAgentConfig, error) {
-	var body FullTerraformCloudJobAgentConfig
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromFullTerraformCloudJobAgentConfig overwrites any union data inside the FullJobAgentConfig as the provided FullTerraformCloudJobAgentConfig
-func (t *FullJobAgentConfig) FromFullTerraformCloudJobAgentConfig(v FullTerraformCloudJobAgentConfig) error {
-	v.Type = "tfe"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeFullTerraformCloudJobAgentConfig performs a merge with any union data inside the FullJobAgentConfig, using the provided FullTerraformCloudJobAgentConfig
-func (t *FullJobAgentConfig) MergeFullTerraformCloudJobAgentConfig(v FullTerraformCloudJobAgentConfig) error {
-	v.Type = "tfe"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsFullTestRunnerJobAgentConfig returns the union data inside the FullJobAgentConfig as a FullTestRunnerJobAgentConfig
-func (t FullJobAgentConfig) AsFullTestRunnerJobAgentConfig() (FullTestRunnerJobAgentConfig, error) {
-	var body FullTestRunnerJobAgentConfig
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromFullTestRunnerJobAgentConfig overwrites any union data inside the FullJobAgentConfig as the provided FullTestRunnerJobAgentConfig
-func (t *FullJobAgentConfig) FromFullTestRunnerJobAgentConfig(v FullTestRunnerJobAgentConfig) error {
-	v.Type = "test-runner"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeFullTestRunnerJobAgentConfig performs a merge with any union data inside the FullJobAgentConfig, using the provided FullTestRunnerJobAgentConfig
-func (t *FullJobAgentConfig) MergeFullTestRunnerJobAgentConfig(v FullTestRunnerJobAgentConfig) error {
-	v.Type = "test-runner"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsFullCustomJobAgentConfig returns the union data inside the FullJobAgentConfig as a FullCustomJobAgentConfig
-func (t FullJobAgentConfig) AsFullCustomJobAgentConfig() (FullCustomJobAgentConfig, error) {
-	var body FullCustomJobAgentConfig
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromFullCustomJobAgentConfig overwrites any union data inside the FullJobAgentConfig as the provided FullCustomJobAgentConfig
-func (t *FullJobAgentConfig) FromFullCustomJobAgentConfig(v FullCustomJobAgentConfig) error {
-	v.Type = "custom"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeFullCustomJobAgentConfig performs a merge with any union data inside the FullJobAgentConfig, using the provided FullCustomJobAgentConfig
-func (t *FullJobAgentConfig) MergeFullCustomJobAgentConfig(v FullCustomJobAgentConfig) error {
-	v.Type = "custom"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t FullJobAgentConfig) Discriminator() (string, error) {
-	var discriminator struct {
-		Discriminator string `json:"type"`
-	}
-	err := json.Unmarshal(t.union, &discriminator)
-	return discriminator.Discriminator, err
-}
-
-func (t FullJobAgentConfig) ValueByDiscriminator() (interface{}, error) {
-	discriminator, err := t.Discriminator()
-	if err != nil {
-		return nil, err
-	}
-	switch discriminator {
-	case "argo-cd":
-		return t.AsFullArgoCDJobAgentConfig()
-	case "custom":
-		return t.AsFullCustomJobAgentConfig()
-	case "github-app":
-		return t.AsFullGithubJobAgentConfig()
-	case "test-runner":
-		return t.AsFullTestRunnerJobAgentConfig()
-	case "tfe":
-		return t.AsFullTerraformCloudJobAgentConfig()
-	default:
-		return nil, errors.New("unknown discriminator value: " + discriminator)
-	}
-}
-
-func (t FullJobAgentConfig) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *FullJobAgentConfig) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsGithubJobAgentConfig returns the union data inside the JobAgentConfig as a GithubJobAgentConfig
-func (t JobAgentConfig) AsGithubJobAgentConfig() (GithubJobAgentConfig, error) {
-	var body GithubJobAgentConfig
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromGithubJobAgentConfig overwrites any union data inside the JobAgentConfig as the provided GithubJobAgentConfig
-func (t *JobAgentConfig) FromGithubJobAgentConfig(v GithubJobAgentConfig) error {
-	v.Type = "github-app"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeGithubJobAgentConfig performs a merge with any union data inside the JobAgentConfig, using the provided GithubJobAgentConfig
-func (t *JobAgentConfig) MergeGithubJobAgentConfig(v GithubJobAgentConfig) error {
-	v.Type = "github-app"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsArgoCDJobAgentConfig returns the union data inside the JobAgentConfig as a ArgoCDJobAgentConfig
-func (t JobAgentConfig) AsArgoCDJobAgentConfig() (ArgoCDJobAgentConfig, error) {
-	var body ArgoCDJobAgentConfig
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromArgoCDJobAgentConfig overwrites any union data inside the JobAgentConfig as the provided ArgoCDJobAgentConfig
-func (t *JobAgentConfig) FromArgoCDJobAgentConfig(v ArgoCDJobAgentConfig) error {
-	v.Type = "argo-cd"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeArgoCDJobAgentConfig performs a merge with any union data inside the JobAgentConfig, using the provided ArgoCDJobAgentConfig
-func (t *JobAgentConfig) MergeArgoCDJobAgentConfig(v ArgoCDJobAgentConfig) error {
-	v.Type = "argo-cd"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsTerraformCloudJobAgentConfig returns the union data inside the JobAgentConfig as a TerraformCloudJobAgentConfig
-func (t JobAgentConfig) AsTerraformCloudJobAgentConfig() (TerraformCloudJobAgentConfig, error) {
-	var body TerraformCloudJobAgentConfig
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromTerraformCloudJobAgentConfig overwrites any union data inside the JobAgentConfig as the provided TerraformCloudJobAgentConfig
-func (t *JobAgentConfig) FromTerraformCloudJobAgentConfig(v TerraformCloudJobAgentConfig) error {
-	v.Type = "tfe"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeTerraformCloudJobAgentConfig performs a merge with any union data inside the JobAgentConfig, using the provided TerraformCloudJobAgentConfig
-func (t *JobAgentConfig) MergeTerraformCloudJobAgentConfig(v TerraformCloudJobAgentConfig) error {
-	v.Type = "tfe"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsTestRunnerJobAgentConfig returns the union data inside the JobAgentConfig as a TestRunnerJobAgentConfig
-func (t JobAgentConfig) AsTestRunnerJobAgentConfig() (TestRunnerJobAgentConfig, error) {
-	var body TestRunnerJobAgentConfig
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromTestRunnerJobAgentConfig overwrites any union data inside the JobAgentConfig as the provided TestRunnerJobAgentConfig
-func (t *JobAgentConfig) FromTestRunnerJobAgentConfig(v TestRunnerJobAgentConfig) error {
-	v.Type = "test-runner"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeTestRunnerJobAgentConfig performs a merge with any union data inside the JobAgentConfig, using the provided TestRunnerJobAgentConfig
-func (t *JobAgentConfig) MergeTestRunnerJobAgentConfig(v TestRunnerJobAgentConfig) error {
-	v.Type = "test-runner"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsCustomJobAgentConfig returns the union data inside the JobAgentConfig as a CustomJobAgentConfig
-func (t JobAgentConfig) AsCustomJobAgentConfig() (CustomJobAgentConfig, error) {
-	var body CustomJobAgentConfig
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromCustomJobAgentConfig overwrites any union data inside the JobAgentConfig as the provided CustomJobAgentConfig
-func (t *JobAgentConfig) FromCustomJobAgentConfig(v CustomJobAgentConfig) error {
-	v.Type = "custom"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeCustomJobAgentConfig performs a merge with any union data inside the JobAgentConfig, using the provided CustomJobAgentConfig
-func (t *JobAgentConfig) MergeCustomJobAgentConfig(v CustomJobAgentConfig) error {
-	v.Type = "custom"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t JobAgentConfig) Discriminator() (string, error) {
-	var discriminator struct {
-		Discriminator string `json:"type"`
-	}
-	err := json.Unmarshal(t.union, &discriminator)
-	return discriminator.Discriminator, err
-}
-
-func (t JobAgentConfig) ValueByDiscriminator() (interface{}, error) {
-	discriminator, err := t.Discriminator()
-	if err != nil {
-		return nil, err
-	}
-	switch discriminator {
-	case "argo-cd":
-		return t.AsArgoCDJobAgentConfig()
-	case "custom":
-		return t.AsCustomJobAgentConfig()
-	case "github-app":
-		return t.AsGithubJobAgentConfig()
-	case "test-runner":
-		return t.AsTestRunnerJobAgentConfig()
-	case "tfe":
-		return t.AsTerraformCloudJobAgentConfig()
-	default:
-		return nil, errors.New("unknown discriminator value: " + discriminator)
-	}
-}
-
-func (t JobAgentConfig) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *JobAgentConfig) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -2660,6 +1873,244 @@ func (t *Value) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsWorkflowManualArrayInput returns the union data inside the WorkflowArrayInput as a WorkflowManualArrayInput
+func (t WorkflowArrayInput) AsWorkflowManualArrayInput() (WorkflowManualArrayInput, error) {
+	var body WorkflowManualArrayInput
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowManualArrayInput overwrites any union data inside the WorkflowArrayInput as the provided WorkflowManualArrayInput
+func (t *WorkflowArrayInput) FromWorkflowManualArrayInput(v WorkflowManualArrayInput) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowManualArrayInput performs a merge with any union data inside the WorkflowArrayInput, using the provided WorkflowManualArrayInput
+func (t *WorkflowArrayInput) MergeWorkflowManualArrayInput(v WorkflowManualArrayInput) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowSelectorArrayInput returns the union data inside the WorkflowArrayInput as a WorkflowSelectorArrayInput
+func (t WorkflowArrayInput) AsWorkflowSelectorArrayInput() (WorkflowSelectorArrayInput, error) {
+	var body WorkflowSelectorArrayInput
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowSelectorArrayInput overwrites any union data inside the WorkflowArrayInput as the provided WorkflowSelectorArrayInput
+func (t *WorkflowArrayInput) FromWorkflowSelectorArrayInput(v WorkflowSelectorArrayInput) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowSelectorArrayInput performs a merge with any union data inside the WorkflowArrayInput, using the provided WorkflowSelectorArrayInput
+func (t *WorkflowArrayInput) MergeWorkflowSelectorArrayInput(v WorkflowSelectorArrayInput) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t WorkflowArrayInput) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *WorkflowArrayInput) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsWorkflowStringInput returns the union data inside the WorkflowInput as a WorkflowStringInput
+func (t WorkflowInput) AsWorkflowStringInput() (WorkflowStringInput, error) {
+	var body WorkflowStringInput
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowStringInput overwrites any union data inside the WorkflowInput as the provided WorkflowStringInput
+func (t *WorkflowInput) FromWorkflowStringInput(v WorkflowStringInput) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowStringInput performs a merge with any union data inside the WorkflowInput, using the provided WorkflowStringInput
+func (t *WorkflowInput) MergeWorkflowStringInput(v WorkflowStringInput) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowNumberInput returns the union data inside the WorkflowInput as a WorkflowNumberInput
+func (t WorkflowInput) AsWorkflowNumberInput() (WorkflowNumberInput, error) {
+	var body WorkflowNumberInput
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowNumberInput overwrites any union data inside the WorkflowInput as the provided WorkflowNumberInput
+func (t *WorkflowInput) FromWorkflowNumberInput(v WorkflowNumberInput) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowNumberInput performs a merge with any union data inside the WorkflowInput, using the provided WorkflowNumberInput
+func (t *WorkflowInput) MergeWorkflowNumberInput(v WorkflowNumberInput) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowBooleanInput returns the union data inside the WorkflowInput as a WorkflowBooleanInput
+func (t WorkflowInput) AsWorkflowBooleanInput() (WorkflowBooleanInput, error) {
+	var body WorkflowBooleanInput
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowBooleanInput overwrites any union data inside the WorkflowInput as the provided WorkflowBooleanInput
+func (t *WorkflowInput) FromWorkflowBooleanInput(v WorkflowBooleanInput) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowBooleanInput performs a merge with any union data inside the WorkflowInput, using the provided WorkflowBooleanInput
+func (t *WorkflowInput) MergeWorkflowBooleanInput(v WorkflowBooleanInput) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowArrayInput returns the union data inside the WorkflowInput as a WorkflowArrayInput
+func (t WorkflowInput) AsWorkflowArrayInput() (WorkflowArrayInput, error) {
+	var body WorkflowArrayInput
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowArrayInput overwrites any union data inside the WorkflowInput as the provided WorkflowArrayInput
+func (t *WorkflowInput) FromWorkflowArrayInput(v WorkflowArrayInput) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowArrayInput performs a merge with any union data inside the WorkflowInput, using the provided WorkflowArrayInput
+func (t *WorkflowInput) MergeWorkflowArrayInput(v WorkflowArrayInput) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t WorkflowInput) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *WorkflowInput) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsWorkflowJobMatrix0 returns the union data inside the WorkflowJobMatrix_AdditionalProperties as a WorkflowJobMatrix0
+func (t WorkflowJobMatrix_AdditionalProperties) AsWorkflowJobMatrix0() (WorkflowJobMatrix0, error) {
+	var body WorkflowJobMatrix0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowJobMatrix0 overwrites any union data inside the WorkflowJobMatrix_AdditionalProperties as the provided WorkflowJobMatrix0
+func (t *WorkflowJobMatrix_AdditionalProperties) FromWorkflowJobMatrix0(v WorkflowJobMatrix0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowJobMatrix0 performs a merge with any union data inside the WorkflowJobMatrix_AdditionalProperties, using the provided WorkflowJobMatrix0
+func (t *WorkflowJobMatrix_AdditionalProperties) MergeWorkflowJobMatrix0(v WorkflowJobMatrix0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowJobMatrix1 returns the union data inside the WorkflowJobMatrix_AdditionalProperties as a WorkflowJobMatrix1
+func (t WorkflowJobMatrix_AdditionalProperties) AsWorkflowJobMatrix1() (WorkflowJobMatrix1, error) {
+	var body WorkflowJobMatrix1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowJobMatrix1 overwrites any union data inside the WorkflowJobMatrix_AdditionalProperties as the provided WorkflowJobMatrix1
+func (t *WorkflowJobMatrix_AdditionalProperties) FromWorkflowJobMatrix1(v WorkflowJobMatrix1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowJobMatrix1 performs a merge with any union data inside the WorkflowJobMatrix_AdditionalProperties, using the provided WorkflowJobMatrix1
+func (t *WorkflowJobMatrix_AdditionalProperties) MergeWorkflowJobMatrix1(v WorkflowJobMatrix1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t WorkflowJobMatrix_AdditionalProperties) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *WorkflowJobMatrix_AdditionalProperties) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
 
@@ -2859,6 +2310,11 @@ type ClientInterface interface {
 	// GetJob request
 	GetJob(ctx context.Context, workspaceId string, jobId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// UpdateJobStatusWithBody request with any body
+	UpdateJobStatusWithBody(ctx context.Context, workspaceId string, jobId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateJobStatus(ctx context.Context, workspaceId string, jobId string, body UpdateJobStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetJobWithRelease request
 	GetJobWithRelease(ctx context.Context, workspaceId string, jobId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -2933,6 +2389,9 @@ type ClientInterface interface {
 	// GetAllResources request
 	GetAllResources(ctx context.Context, workspaceId string, params *GetAllResourcesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteResourceByIdentifier request
+	DeleteResourceByIdentifier(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetResourceByIdentifier request
 	GetResourceByIdentifier(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -2965,6 +2424,11 @@ type ClientInterface interface {
 	UpsertSystemByIdWithBody(ctx context.Context, workspaceId string, systemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpsertSystemById(ctx context.Context, workspaceId string, systemId string, body UpsertSystemByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateWorkflowTemplateFromYamlWithBody request with any body
+	CreateWorkflowTemplateFromYamlWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateWorkflowTemplateFromYaml(ctx context.Context, workspaceId string, body CreateWorkflowTemplateFromYamlJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) ListWorkspaces(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3519,6 +2983,30 @@ func (c *Client) GetJob(ctx context.Context, workspaceId string, jobId string, r
 	return c.Client.Do(req)
 }
 
+func (c *Client) UpdateJobStatusWithBody(ctx context.Context, workspaceId string, jobId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateJobStatusRequestWithBody(c.Server, workspaceId, jobId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateJobStatus(ctx context.Context, workspaceId string, jobId string, body UpdateJobStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateJobStatusRequest(c.Server, workspaceId, jobId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetJobWithRelease(ctx context.Context, workspaceId string, jobId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetJobWithReleaseRequest(c.Server, workspaceId, jobId)
 	if err != nil {
@@ -3843,6 +3331,18 @@ func (c *Client) GetAllResources(ctx context.Context, workspaceId string, params
 	return c.Client.Do(req)
 }
 
+func (c *Client) DeleteResourceByIdentifier(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteResourceByIdentifierRequest(c.Server, workspaceId, identifier)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetResourceByIdentifier(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetResourceByIdentifierRequest(c.Server, workspaceId, identifier)
 	if err != nil {
@@ -3977,6 +3477,30 @@ func (c *Client) UpsertSystemByIdWithBody(ctx context.Context, workspaceId strin
 
 func (c *Client) UpsertSystemById(ctx context.Context, workspaceId string, systemId string, body UpsertSystemByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpsertSystemByIdRequest(c.Server, workspaceId, systemId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateWorkflowTemplateFromYamlWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateWorkflowTemplateFromYamlRequestWithBody(c.Server, workspaceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateWorkflowTemplateFromYaml(ctx context.Context, workspaceId string, body CreateWorkflowTemplateFromYamlJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateWorkflowTemplateFromYamlRequest(c.Server, workspaceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5775,6 +5299,60 @@ func NewGetJobRequest(server string, workspaceId string, jobId string) (*http.Re
 	return req, nil
 }
 
+// NewUpdateJobStatusRequest calls the generic UpdateJobStatus builder with application/json body
+func NewUpdateJobStatusRequest(server string, workspaceId string, jobId string, body UpdateJobStatusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateJobStatusRequestWithBody(server, workspaceId, jobId, "application/json", bodyReader)
+}
+
+// NewUpdateJobStatusRequestWithBody generates requests for UpdateJobStatus with any type of body
+func NewUpdateJobStatusRequestWithBody(server string, workspaceId string, jobId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "jobId", runtime.ParamLocationPath, jobId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/jobs/%s/status", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetJobWithReleaseRequest generates requests for GetJobWithRelease
 func NewGetJobWithReleaseRequest(server string, workspaceId string, jobId string) (*http.Request, error) {
 	var err error
@@ -6819,6 +6397,47 @@ func NewGetAllResourcesRequest(server string, workspaceId string, params *GetAll
 	return req, nil
 }
 
+// NewDeleteResourceByIdentifierRequest generates requests for DeleteResourceByIdentifier
+func NewDeleteResourceByIdentifierRequest(server string, workspaceId string, identifier string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "identifier", runtime.ParamLocationPath, identifier)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/resources/identifier/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetResourceByIdentifierRequest generates requests for GetResourceByIdentifier
 func NewGetResourceByIdentifierRequest(server string, workspaceId string, identifier string) (*http.Request, error) {
 	var err error
@@ -7296,6 +6915,53 @@ func NewUpsertSystemByIdRequestWithBody(server string, workspaceId string, syste
 	return req, nil
 }
 
+// NewCreateWorkflowTemplateFromYamlRequest calls the generic CreateWorkflowTemplateFromYaml builder with application/json body
+func NewCreateWorkflowTemplateFromYamlRequest(server string, workspaceId string, body CreateWorkflowTemplateFromYamlJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateWorkflowTemplateFromYamlRequestWithBody(server, workspaceId, "application/json", bodyReader)
+}
+
+// NewCreateWorkflowTemplateFromYamlRequestWithBody generates requests for CreateWorkflowTemplateFromYaml with any type of body
+func NewCreateWorkflowTemplateFromYamlRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflow-templates", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -7465,6 +7131,11 @@ type ClientWithResponsesInterface interface {
 	// GetJobWithResponse request
 	GetJobWithResponse(ctx context.Context, workspaceId string, jobId string, reqEditors ...RequestEditorFn) (*GetJobResponse, error)
 
+	// UpdateJobStatusWithBodyWithResponse request with any body
+	UpdateJobStatusWithBodyWithResponse(ctx context.Context, workspaceId string, jobId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateJobStatusResponse, error)
+
+	UpdateJobStatusWithResponse(ctx context.Context, workspaceId string, jobId string, body UpdateJobStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateJobStatusResponse, error)
+
 	// GetJobWithReleaseWithResponse request
 	GetJobWithReleaseWithResponse(ctx context.Context, workspaceId string, jobId string, reqEditors ...RequestEditorFn) (*GetJobWithReleaseResponse, error)
 
@@ -7539,6 +7210,9 @@ type ClientWithResponsesInterface interface {
 	// GetAllResourcesWithResponse request
 	GetAllResourcesWithResponse(ctx context.Context, workspaceId string, params *GetAllResourcesParams, reqEditors ...RequestEditorFn) (*GetAllResourcesResponse, error)
 
+	// DeleteResourceByIdentifierWithResponse request
+	DeleteResourceByIdentifierWithResponse(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*DeleteResourceByIdentifierResponse, error)
+
 	// GetResourceByIdentifierWithResponse request
 	GetResourceByIdentifierWithResponse(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*GetResourceByIdentifierResponse, error)
 
@@ -7571,6 +7245,11 @@ type ClientWithResponsesInterface interface {
 	UpsertSystemByIdWithBodyWithResponse(ctx context.Context, workspaceId string, systemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertSystemByIdResponse, error)
 
 	UpsertSystemByIdWithResponse(ctx context.Context, workspaceId string, systemId string, body UpsertSystemByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertSystemByIdResponse, error)
+
+	// CreateWorkflowTemplateFromYamlWithBodyWithResponse request with any body
+	CreateWorkflowTemplateFromYamlWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWorkflowTemplateFromYamlResponse, error)
+
+	CreateWorkflowTemplateFromYamlWithResponse(ctx context.Context, workspaceId string, body CreateWorkflowTemplateFromYamlJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWorkflowTemplateFromYamlResponse, error)
 }
 
 type ListWorkspacesResponse struct {
@@ -8442,6 +8121,30 @@ func (r GetJobResponse) StatusCode() int {
 	return 0
 }
 
+type UpdateJobStatusResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Job
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateJobStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateJobStatusResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetJobWithReleaseResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -8942,6 +8645,29 @@ func (r GetAllResourcesResponse) StatusCode() int {
 	return 0
 }
 
+type DeleteResourceByIdentifierResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteResourceByIdentifierResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteResourceByIdentifierResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetResourceByIdentifierResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -9166,6 +8892,29 @@ func (r UpsertSystemByIdResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UpsertSystemByIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateWorkflowTemplateFromYamlResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *WorkflowTemplate
+	JSON400      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateWorkflowTemplateFromYamlResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateWorkflowTemplateFromYamlResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -9574,6 +9323,23 @@ func (c *ClientWithResponses) GetJobWithResponse(ctx context.Context, workspaceI
 	return ParseGetJobResponse(rsp)
 }
 
+// UpdateJobStatusWithBodyWithResponse request with arbitrary body returning *UpdateJobStatusResponse
+func (c *ClientWithResponses) UpdateJobStatusWithBodyWithResponse(ctx context.Context, workspaceId string, jobId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateJobStatusResponse, error) {
+	rsp, err := c.UpdateJobStatusWithBody(ctx, workspaceId, jobId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateJobStatusResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateJobStatusWithResponse(ctx context.Context, workspaceId string, jobId string, body UpdateJobStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateJobStatusResponse, error) {
+	rsp, err := c.UpdateJobStatus(ctx, workspaceId, jobId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateJobStatusResponse(rsp)
+}
+
 // GetJobWithReleaseWithResponse request returning *GetJobWithReleaseResponse
 func (c *ClientWithResponses) GetJobWithReleaseWithResponse(ctx context.Context, workspaceId string, jobId string, reqEditors ...RequestEditorFn) (*GetJobWithReleaseResponse, error) {
 	rsp, err := c.GetJobWithRelease(ctx, workspaceId, jobId, reqEditors...)
@@ -9810,6 +9576,15 @@ func (c *ClientWithResponses) GetAllResourcesWithResponse(ctx context.Context, w
 	return ParseGetAllResourcesResponse(rsp)
 }
 
+// DeleteResourceByIdentifierWithResponse request returning *DeleteResourceByIdentifierResponse
+func (c *ClientWithResponses) DeleteResourceByIdentifierWithResponse(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*DeleteResourceByIdentifierResponse, error) {
+	rsp, err := c.DeleteResourceByIdentifier(ctx, workspaceId, identifier, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteResourceByIdentifierResponse(rsp)
+}
+
 // GetResourceByIdentifierWithResponse request returning *GetResourceByIdentifierResponse
 func (c *ClientWithResponses) GetResourceByIdentifierWithResponse(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*GetResourceByIdentifierResponse, error) {
 	rsp, err := c.GetResourceByIdentifier(ctx, workspaceId, identifier, reqEditors...)
@@ -9913,6 +9688,23 @@ func (c *ClientWithResponses) UpsertSystemByIdWithResponse(ctx context.Context, 
 		return nil, err
 	}
 	return ParseUpsertSystemByIdResponse(rsp)
+}
+
+// CreateWorkflowTemplateFromYamlWithBodyWithResponse request with arbitrary body returning *CreateWorkflowTemplateFromYamlResponse
+func (c *ClientWithResponses) CreateWorkflowTemplateFromYamlWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWorkflowTemplateFromYamlResponse, error) {
+	rsp, err := c.CreateWorkflowTemplateFromYamlWithBody(ctx, workspaceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateWorkflowTemplateFromYamlResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateWorkflowTemplateFromYamlWithResponse(ctx context.Context, workspaceId string, body CreateWorkflowTemplateFromYamlJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWorkflowTemplateFromYamlResponse, error) {
+	rsp, err := c.CreateWorkflowTemplateFromYaml(ctx, workspaceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateWorkflowTemplateFromYamlResponse(rsp)
 }
 
 // ParseListWorkspacesResponse parses an HTTP response from a ListWorkspacesWithResponse call
@@ -11172,6 +10964,46 @@ func ParseGetJobResponse(rsp *http.Response) (*GetJobResponse, error) {
 	return response, nil
 }
 
+// ParseUpdateJobStatusResponse parses an HTTP response from a UpdateJobStatusWithResponse call
+func ParseUpdateJobStatusResponse(rsp *http.Response) (*UpdateJobStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateJobStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Job
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetJobWithReleaseResponse parses an HTTP response from a GetJobWithReleaseWithResponse call
 func ParseGetJobWithReleaseResponse(rsp *http.Response) (*GetJobWithReleaseResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -11902,6 +11734,39 @@ func ParseGetAllResourcesResponse(rsp *http.Response) (*GetAllResourcesResponse,
 	return response, nil
 }
 
+// ParseDeleteResourceByIdentifierResponse parses an HTTP response from a DeleteResourceByIdentifierWithResponse call
+func ParseDeleteResourceByIdentifierResponse(rsp *http.Response) (*DeleteResourceByIdentifierResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteResourceByIdentifierResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetResourceByIdentifierResponse parses an HTTP response from a GetResourceByIdentifierWithResponse call
 func ParseGetResourceByIdentifierResponse(rsp *http.Response) (*GetResourceByIdentifierResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -12222,6 +12087,39 @@ func ParseUpsertSystemByIdResponse(rsp *http.Response) (*UpsertSystemByIdRespons
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateWorkflowTemplateFromYamlResponse parses an HTTP response from a CreateWorkflowTemplateFromYamlWithResponse call
+func ParseCreateWorkflowTemplateFromYamlResponse(rsp *http.Response) (*CreateWorkflowTemplateFromYamlResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateWorkflowTemplateFromYamlResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest WorkflowTemplate
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	}
 
