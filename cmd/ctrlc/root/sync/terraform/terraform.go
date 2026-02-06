@@ -91,10 +91,10 @@ func NewSyncTerraformCmd() *cobra.Command {
 				resources = append(resources, resource)
 			}
 
-			patchReq := api.RequestResourceProvidersResourcesPatchJSONRequestBody{
+			patchReq := api.SetResourceProviderResourcesJSONRequestBody{
 				Resources: resources,
 			}
-			upsertResp, err := ctrlplaneClient.RequestResourceProvidersResourcesPatch(ctx, workspaceId, providerId, patchReq)
+			upsertResp, err := ctrlplaneClient.SetResourceProviderResources(ctx, workspaceId, providerId, patchReq)
 			if err != nil {
 				return fmt.Errorf("failed to upsert resources: %w", err)
 			}

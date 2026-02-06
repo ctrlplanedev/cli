@@ -260,10 +260,10 @@ func UpsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderReso
 	providerId := providerResp.JSON202.Id
 	log.Info("Upserting resources", "provider", providerName, "count", len(resources))
 
-	patchReq := api.RequestResourceProvidersResourcesPatchJSONRequestBody{
+	patchReq := api.SetResourceProviderResourcesJSONRequestBody{
 		Resources: resources,
 	}
-	setResp, err := ctrlplaneClient.RequestResourceProvidersResourcesPatchWithResponse(ctx, workspaceId, providerId, patchReq)
+	setResp, err := ctrlplaneClient.SetResourceProviderResourcesWithResponse(ctx, workspaceId, providerId, patchReq)
 	if err != nil {
 		return fmt.Errorf("failed to set resources: %w", err)
 	}

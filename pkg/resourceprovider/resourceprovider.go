@@ -60,11 +60,11 @@ type ResourceProvider struct {
 }
 
 func (r *ResourceProvider) UpsertResource(ctx context.Context, resources []api.ResourceProviderResource) (*http.Response, error) {
-	upsertResp, err := r.client.RequestResourceProvidersResourcesPatch(
+	upsertResp, err := r.client.SetResourceProviderResources(
 		ctx,
 		r.workspaceId,
 		r.ID,
-		api.RequestResourceProvidersResourcesPatchJSONRequestBody{
+		api.SetResourceProviderResourcesJSONRequestBody{
 			Resources: resources,
 		},
 	)

@@ -112,10 +112,10 @@ func (r *ResourceItemSpec) upsert(ctx Context) error {
 		},
 	}
 
-	patchReq := api.RequestResourceProvidersResourcesPatchJSONRequestBody{
+	patchReq := api.SetResourceProviderResourcesJSONRequestBody{
 		Resources: resources,
 	}
-	resp, err := ctx.APIClient().RequestResourceProvidersResourcesPatchWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), providerID, patchReq)
+	resp, err := ctx.APIClient().SetResourceProviderResourcesWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), providerID, patchReq)
 	if err != nil {
 		return fmt.Errorf("failed to upsert resource: %w", err)
 	}

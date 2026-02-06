@@ -1189,13 +1189,8 @@ type GetReleaseTargetStateParams struct {
 	BypassCache *bool `form:"bypassCache,omitempty" json:"bypassCache,omitempty"`
 }
 
-// RequestResourceProvidersResourcesPatchJSONBody defines parameters for RequestResourceProvidersResourcesPatch.
-type RequestResourceProvidersResourcesPatchJSONBody struct {
-	Resources []ResourceProviderResource `json:"resources"`
-}
-
-// RequestResourceProvidersResourcesJSONBody defines parameters for RequestResourceProvidersResources.
-type RequestResourceProvidersResourcesJSONBody struct {
+// SetResourceProviderResourcesJSONBody defines parameters for SetResourceProviderResources.
+type SetResourceProviderResourcesJSONBody struct {
 	Resources []ResourceProviderResource `json:"resources"`
 }
 
@@ -1292,11 +1287,8 @@ type RequestRelationshipRuleUpsertJSONRequestBody = UpsertRelationshipRuleReques
 // RequestResourceProviderUpsertJSONRequestBody defines body for RequestResourceProviderUpsert for application/json ContentType.
 type RequestResourceProviderUpsertJSONRequestBody = UpsertResourceProviderRequest
 
-// RequestResourceProvidersResourcesPatchJSONRequestBody defines body for RequestResourceProvidersResourcesPatch for application/json ContentType.
-type RequestResourceProvidersResourcesPatchJSONRequestBody RequestResourceProvidersResourcesPatchJSONBody
-
-// RequestResourceProvidersResourcesJSONRequestBody defines body for RequestResourceProvidersResources for application/json ContentType.
-type RequestResourceProvidersResourcesJSONRequestBody RequestResourceProvidersResourcesJSONBody
+// SetResourceProviderResourcesJSONRequestBody defines body for SetResourceProviderResources for application/json ContentType.
+type SetResourceProviderResourcesJSONRequestBody SetResourceProviderResourcesJSONBody
 
 // RequestResourceVariablesUpdateJSONRequestBody defines body for RequestResourceVariablesUpdate for application/json ContentType.
 type RequestResourceVariablesUpdateJSONRequestBody RequestResourceVariablesUpdateJSONBody
@@ -2383,15 +2375,10 @@ type ClientInterface interface {
 	// GetResourceProviderByName request
 	GetResourceProviderByName(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RequestResourceProvidersResourcesPatchWithBody request with any body
-	RequestResourceProvidersResourcesPatchWithBody(ctx context.Context, workspaceId string, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// SetResourceProviderResourcesWithBody request with any body
+	SetResourceProviderResourcesWithBody(ctx context.Context, workspaceId string, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	RequestResourceProvidersResourcesPatch(ctx context.Context, workspaceId string, providerId string, body RequestResourceProvidersResourcesPatchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RequestResourceProvidersResourcesWithBody request with any body
-	RequestResourceProvidersResourcesWithBody(ctx context.Context, workspaceId string, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	RequestResourceProvidersResources(ctx context.Context, workspaceId string, providerId string, body RequestResourceProvidersResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SetResourceProviderResources(ctx context.Context, workspaceId string, providerId string, body SetResourceProviderResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetAllResources request
 	GetAllResources(ctx context.Context, workspaceId string, params *GetAllResourcesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3266,8 +3253,8 @@ func (c *Client) GetResourceProviderByName(ctx context.Context, workspaceId stri
 	return c.Client.Do(req)
 }
 
-func (c *Client) RequestResourceProvidersResourcesPatchWithBody(ctx context.Context, workspaceId string, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRequestResourceProvidersResourcesPatchRequestWithBody(c.Server, workspaceId, providerId, contentType, body)
+func (c *Client) SetResourceProviderResourcesWithBody(ctx context.Context, workspaceId string, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetResourceProviderResourcesRequestWithBody(c.Server, workspaceId, providerId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3278,32 +3265,8 @@ func (c *Client) RequestResourceProvidersResourcesPatchWithBody(ctx context.Cont
 	return c.Client.Do(req)
 }
 
-func (c *Client) RequestResourceProvidersResourcesPatch(ctx context.Context, workspaceId string, providerId string, body RequestResourceProvidersResourcesPatchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRequestResourceProvidersResourcesPatchRequest(c.Server, workspaceId, providerId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) RequestResourceProvidersResourcesWithBody(ctx context.Context, workspaceId string, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRequestResourceProvidersResourcesRequestWithBody(c.Server, workspaceId, providerId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) RequestResourceProvidersResources(ctx context.Context, workspaceId string, providerId string, body RequestResourceProvidersResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRequestResourceProvidersResourcesRequest(c.Server, workspaceId, providerId, body)
+func (c *Client) SetResourceProviderResources(ctx context.Context, workspaceId string, providerId string, body SetResourceProviderResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetResourceProviderResourcesRequest(c.Server, workspaceId, providerId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -6155,73 +6118,19 @@ func NewGetResourceProviderByNameRequest(server string, workspaceId string, name
 	return req, nil
 }
 
-// NewRequestResourceProvidersResourcesPatchRequest calls the generic RequestResourceProvidersResourcesPatch builder with application/json body
-func NewRequestResourceProvidersResourcesPatchRequest(server string, workspaceId string, providerId string, body RequestResourceProvidersResourcesPatchJSONRequestBody) (*http.Request, error) {
+// NewSetResourceProviderResourcesRequest calls the generic SetResourceProviderResources builder with application/json body
+func NewSetResourceProviderResourcesRequest(server string, workspaceId string, providerId string, body SetResourceProviderResourcesJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewRequestResourceProvidersResourcesPatchRequestWithBody(server, workspaceId, providerId, "application/json", bodyReader)
+	return NewSetResourceProviderResourcesRequestWithBody(server, workspaceId, providerId, "application/json", bodyReader)
 }
 
-// NewRequestResourceProvidersResourcesPatchRequestWithBody generates requests for RequestResourceProvidersResourcesPatch with any type of body
-func NewRequestResourceProvidersResourcesPatchRequestWithBody(server string, workspaceId string, providerId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "providerId", runtime.ParamLocationPath, providerId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/resource-providers/%s/set", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PATCH", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewRequestResourceProvidersResourcesRequest calls the generic RequestResourceProvidersResources builder with application/json body
-func NewRequestResourceProvidersResourcesRequest(server string, workspaceId string, providerId string, body RequestResourceProvidersResourcesJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewRequestResourceProvidersResourcesRequestWithBody(server, workspaceId, providerId, "application/json", bodyReader)
-}
-
-// NewRequestResourceProvidersResourcesRequestWithBody generates requests for RequestResourceProvidersResources with any type of body
-func NewRequestResourceProvidersResourcesRequestWithBody(server string, workspaceId string, providerId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewSetResourceProviderResourcesRequestWithBody generates requests for SetResourceProviderResources with any type of body
+func NewSetResourceProviderResourcesRequestWithBody(server string, workspaceId string, providerId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7148,15 +7057,10 @@ type ClientWithResponsesInterface interface {
 	// GetResourceProviderByNameWithResponse request
 	GetResourceProviderByNameWithResponse(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*GetResourceProviderByNameResponse, error)
 
-	// RequestResourceProvidersResourcesPatchWithBodyWithResponse request with any body
-	RequestResourceProvidersResourcesPatchWithBodyWithResponse(ctx context.Context, workspaceId string, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestResourceProvidersResourcesPatchResponse, error)
+	// SetResourceProviderResourcesWithBodyWithResponse request with any body
+	SetResourceProviderResourcesWithBodyWithResponse(ctx context.Context, workspaceId string, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetResourceProviderResourcesResponse, error)
 
-	RequestResourceProvidersResourcesPatchWithResponse(ctx context.Context, workspaceId string, providerId string, body RequestResourceProvidersResourcesPatchJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestResourceProvidersResourcesPatchResponse, error)
-
-	// RequestResourceProvidersResourcesWithBodyWithResponse request with any body
-	RequestResourceProvidersResourcesWithBodyWithResponse(ctx context.Context, workspaceId string, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestResourceProvidersResourcesResponse, error)
-
-	RequestResourceProvidersResourcesWithResponse(ctx context.Context, workspaceId string, providerId string, body RequestResourceProvidersResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestResourceProvidersResourcesResponse, error)
+	SetResourceProviderResourcesWithResponse(ctx context.Context, workspaceId string, providerId string, body SetResourceProviderResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetResourceProviderResourcesResponse, error)
 
 	// GetAllResourcesWithResponse request
 	GetAllResourcesWithResponse(ctx context.Context, workspaceId string, params *GetAllResourcesParams, reqEditors ...RequestEditorFn) (*GetAllResourcesResponse, error)
@@ -8508,7 +8412,7 @@ func (r GetResourceProviderByNameResponse) StatusCode() int {
 	return 0
 }
 
-type RequestResourceProvidersResourcesPatchResponse struct {
+type SetResourceProviderResourcesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON202      *ResourceProviderRequestAccepted
@@ -8517,7 +8421,7 @@ type RequestResourceProvidersResourcesPatchResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r RequestResourceProvidersResourcesPatchResponse) Status() string {
+func (r SetResourceProviderResourcesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -8525,31 +8429,7 @@ func (r RequestResourceProvidersResourcesPatchResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r RequestResourceProvidersResourcesPatchResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type RequestResourceProvidersResourcesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON202      *ResourceProviderRequestAccepted
-	JSON400      *ErrorResponse
-	JSON404      *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r RequestResourceProvidersResourcesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RequestResourceProvidersResourcesResponse) StatusCode() int {
+func (r SetResourceProviderResourcesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -9469,38 +9349,21 @@ func (c *ClientWithResponses) GetResourceProviderByNameWithResponse(ctx context.
 	return ParseGetResourceProviderByNameResponse(rsp)
 }
 
-// RequestResourceProvidersResourcesPatchWithBodyWithResponse request with arbitrary body returning *RequestResourceProvidersResourcesPatchResponse
-func (c *ClientWithResponses) RequestResourceProvidersResourcesPatchWithBodyWithResponse(ctx context.Context, workspaceId string, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestResourceProvidersResourcesPatchResponse, error) {
-	rsp, err := c.RequestResourceProvidersResourcesPatchWithBody(ctx, workspaceId, providerId, contentType, body, reqEditors...)
+// SetResourceProviderResourcesWithBodyWithResponse request with arbitrary body returning *SetResourceProviderResourcesResponse
+func (c *ClientWithResponses) SetResourceProviderResourcesWithBodyWithResponse(ctx context.Context, workspaceId string, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetResourceProviderResourcesResponse, error) {
+	rsp, err := c.SetResourceProviderResourcesWithBody(ctx, workspaceId, providerId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseRequestResourceProvidersResourcesPatchResponse(rsp)
+	return ParseSetResourceProviderResourcesResponse(rsp)
 }
 
-func (c *ClientWithResponses) RequestResourceProvidersResourcesPatchWithResponse(ctx context.Context, workspaceId string, providerId string, body RequestResourceProvidersResourcesPatchJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestResourceProvidersResourcesPatchResponse, error) {
-	rsp, err := c.RequestResourceProvidersResourcesPatch(ctx, workspaceId, providerId, body, reqEditors...)
+func (c *ClientWithResponses) SetResourceProviderResourcesWithResponse(ctx context.Context, workspaceId string, providerId string, body SetResourceProviderResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetResourceProviderResourcesResponse, error) {
+	rsp, err := c.SetResourceProviderResources(ctx, workspaceId, providerId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseRequestResourceProvidersResourcesPatchResponse(rsp)
-}
-
-// RequestResourceProvidersResourcesWithBodyWithResponse request with arbitrary body returning *RequestResourceProvidersResourcesResponse
-func (c *ClientWithResponses) RequestResourceProvidersResourcesWithBodyWithResponse(ctx context.Context, workspaceId string, providerId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestResourceProvidersResourcesResponse, error) {
-	rsp, err := c.RequestResourceProvidersResourcesWithBody(ctx, workspaceId, providerId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRequestResourceProvidersResourcesResponse(rsp)
-}
-
-func (c *ClientWithResponses) RequestResourceProvidersResourcesWithResponse(ctx context.Context, workspaceId string, providerId string, body RequestResourceProvidersResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestResourceProvidersResourcesResponse, error) {
-	rsp, err := c.RequestResourceProvidersResources(ctx, workspaceId, providerId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRequestResourceProvidersResourcesResponse(rsp)
+	return ParseSetResourceProviderResourcesResponse(rsp)
 }
 
 // GetAllResourcesWithResponse request returning *GetAllResourcesResponse
@@ -11644,55 +11507,15 @@ func ParseGetResourceProviderByNameResponse(rsp *http.Response) (*GetResourcePro
 	return response, nil
 }
 
-// ParseRequestResourceProvidersResourcesPatchResponse parses an HTTP response from a RequestResourceProvidersResourcesPatchWithResponse call
-func ParseRequestResourceProvidersResourcesPatchResponse(rsp *http.Response) (*RequestResourceProvidersResourcesPatchResponse, error) {
+// ParseSetResourceProviderResourcesResponse parses an HTTP response from a SetResourceProviderResourcesWithResponse call
+func ParseSetResourceProviderResourcesResponse(rsp *http.Response) (*SetResourceProviderResourcesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &RequestResourceProvidersResourcesPatchResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest ResourceProviderRequestAccepted
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON202 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRequestResourceProvidersResourcesResponse parses an HTTP response from a RequestResourceProvidersResourcesWithResponse call
-func ParseRequestResourceProvidersResourcesResponse(rsp *http.Response) (*RequestResourceProvidersResourcesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RequestResourceProvidersResourcesResponse{
+	response := &SetResourceProviderResourcesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
