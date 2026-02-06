@@ -171,7 +171,7 @@ func (p *PolicySpec) Update(ctx Context, existingID string) error {
 }
 
 func (p *PolicySpec) Delete(ctx Context, existingID string) error {
-	resp, err := ctx.APIClient().DeletePolicyWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), existingID)
+	resp, err := ctx.APIClient().RequestPolicyDeletionWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), existingID)
 	if err != nil {
 		return fmt.Errorf("failed to delete policy: %w", err)
 	}
@@ -192,7 +192,7 @@ func (p *PolicySpec) upsert(ctx Context, policyID string) error {
 		return err
 	}
 
-	opts := api.UpsertPolicyJSONRequestBody{
+	upsertReq := api.RequestPolicyCreationJSONRequestBody{
 		Name:        p.DisplayName,
 		Description: p.Description,
 		Priority:    p.Priority,
@@ -201,14 +201,14 @@ func (p *PolicySpec) upsert(ctx Context, policyID string) error {
 	}
 
 	if p.Metadata != nil {
-		opts.Metadata = &p.Metadata
+		upsertReq.Metadata = &p.Metadata
 	}
 
 	if p.Selectors != nil {
-		opts.Selectors = &selectors
+		upsertReq.Selectors = &selectors
 	}
 
-	resp, err := ctx.APIClient().UpsertPolicyWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), policyID, opts)
+	resp, err := ctx.APIClient().RequestPolicyCreationWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), upsertReq)
 	if err != nil {
 		return fmt.Errorf("failed to update policy: %w", err)
 	}

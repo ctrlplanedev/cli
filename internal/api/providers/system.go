@@ -75,7 +75,7 @@ func (s *SystemSpec) Update(ctx Context, existingID string) error {
 }
 
 func (s *SystemSpec) Delete(ctx Context, existingID string) error {
-	resp, err := ctx.APIClient().DeleteSystemWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), existingID)
+	resp, err := ctx.APIClient().RequestSystemDeletionWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), existingID)
 	if err != nil {
 		return fmt.Errorf("failed to delete system: %w", err)
 	}
@@ -89,16 +89,16 @@ func (s *SystemSpec) Delete(ctx Context, existingID string) error {
 }
 
 func (s *SystemSpec) upsert(ctx Context, id string) error {
-	upsertReq := api.UpsertSystemByIdJSONRequestBody{
+	upsertReq := api.RequestSystemCreationJSONRequestBody{
 		Name:        s.DisplayName,
 		Description: s.Description,
 	}
 
-	resp, err := ctx.APIClient().UpsertSystemByIdWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), id, upsertReq)
+	resp, err := ctx.APIClient().RequestSystemCreationWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), upsertReq)
 	if err != nil {
 		return fmt.Errorf("failed to upsert system: %w", err)
 	}
-	if resp.JSON200 == nil {
+	if resp.JSON202 == nil {
 		return fmt.Errorf("failed to upsert system: %s", string(resp.Body))
 	}
 

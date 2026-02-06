@@ -58,18 +58,19 @@ func NewSyncTerraformCmd() *cobra.Command {
 			}
 
 			providerName := fmt.Sprintf("tf-%s", organization)
-			resp, err := ctrlplaneClient.UpsertResourceProviderWithResponse(ctx, workspaceId, api.UpsertResourceProviderJSONRequestBody{
+			upsertReq := api.RequestResourceProviderUpsertJSONRequestBody{
 				Name: providerName,
-			})
+			}
+			resp, err := ctrlplaneClient.RequestResourceProviderUpsertWithResponse(ctx, workspaceId, upsertReq)
 			if err != nil {
 				return fmt.Errorf("failed to upsert resource provider: %w", err)
 			}
 
-			if resp.JSON200 == nil {
+			if resp.JSON202 == nil {
 				return fmt.Errorf("failed to upsert resource provider: %s", resp.Body)
 			}
 
-			providerId := resp.JSON200.Id
+			providerId := resp.JSON202.Id
 			fmt.Println("Provider ID:", providerId)
 			workspaces, err := getWorkspacesInOrg(cmd.Context(), terraformClient, organization)
 			if err != nil {
@@ -90,9 +91,10 @@ func NewSyncTerraformCmd() *cobra.Command {
 				resources = append(resources, resource)
 			}
 
-			upsertResp, err := ctrlplaneClient.SetResourceProvidersResources(ctx, workspaceId, providerId, api.SetResourceProvidersResourcesJSONRequestBody{
+			patchReq := api.RequestResourceProvidersResourcesPatchJSONRequestBody{
 				Resources: resources,
-			})
+			}
+			upsertResp, err := ctrlplaneClient.RequestResourceProvidersResourcesPatch(ctx, workspaceId, providerId, patchReq)
 			if err != nil {
 				return fmt.Errorf("failed to upsert resources: %w", err)
 			}

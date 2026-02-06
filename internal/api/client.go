@@ -1,4 +1,4 @@
-//go:generate go tool oapi-codegen -config ../../openapi.client.yaml ../../openapi.json
+//go:generate go tool oapi-codegen -config ../../openapi.client.yaml https://raw.githubusercontent.com/ctrlplanedev/ctrlplane/refs/heads/main/apps/api/openapi/openapi.json
 package api
 
 import (

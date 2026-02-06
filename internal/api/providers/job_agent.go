@@ -123,17 +123,17 @@ func (j *JobAgentSpec) upsert(ctx Context, id string) error {
 		jobAgentID = uuid.New().String()
 	}
 
-	opts := api.UpsertJobAgentJSONRequestBody{
+	upsertReq := api.RequestJobAgentUpsertJSONRequestBody{
 		Name:   j.DisplayName,
 		Type:   j.AgentType(),
 		Config: jobAgentConfig,
 	}
 
 	if j.Metadata != nil {
-		opts.Metadata = &j.Metadata
+		upsertReq.Metadata = &j.Metadata
 	}
 
-	upsertResp, err := ctx.APIClient().UpsertJobAgentWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), jobAgentID, opts)
+	upsertResp, err := ctx.APIClient().RequestJobAgentUpsertWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), jobAgentID, upsertReq)
 	if err != nil {
 		return fmt.Errorf("failed to upsert job agent: %w", err)
 	}

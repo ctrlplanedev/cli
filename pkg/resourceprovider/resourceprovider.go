@@ -15,7 +15,7 @@ func New(client *api.ClientWithResponses, workspace string, name string) (*Resou
 
 	log.Debug("Upserting resource provider", "workspaceId", workspaceId, "name", name)
 
-	resp, err := client.UpsertResourceProviderWithResponse(ctx, workspaceId, api.UpsertResourceProviderJSONRequestBody{
+	resp, err := client.RequestResourceProviderUpsertWithResponse(ctx, workspaceId, api.RequestResourceProviderUpsertJSONRequestBody{
 		Name: name,
 	})
 	if err != nil {
@@ -32,20 +32,20 @@ func New(client *api.ClientWithResponses, workspace string, name string) (*Resou
 		"status", resp.StatusCode,
 		"body", string(resp.Body))
 
-	if resp.JSON200 == nil {
+	if resp.JSON202 == nil {
 		log.Error("Invalid response from upserting resource provider",
 			"status", resp.StatusCode(),
 			"body", string(resp.Body))
 		return nil, fmt.Errorf("failed to upsert resource provider: %s", string(resp.Body))
 	}
 
-	provider := resp.JSON200
+	provider := resp.JSON202
 	log.Debug("Successfully created resource provider",
 		"id", provider.Id,
-		"name", provider.Name)
+		"name", name)
 
 	return &ResourceProvider{
-		Name:        provider.Name,
+		Name:        name,
 		ID:          provider.Id,
 		client:      client,
 		workspaceId: workspaceId,
@@ -60,15 +60,18 @@ type ResourceProvider struct {
 }
 
 func (r *ResourceProvider) UpsertResource(ctx context.Context, resources []api.ResourceProviderResource) (*http.Response, error) {
-	resp, err := r.client.SetResourceProvidersResources(
+	upsertResp, err := r.client.RequestResourceProvidersResourcesPatch(
 		ctx,
 		r.workspaceId,
 		r.ID,
-		api.SetResourceProvidersResourcesJSONRequestBody{
+		api.RequestResourceProvidersResourcesPatchJSONRequestBody{
 			Resources: resources,
 		},
 	)
-	return resp, err
+	if err != nil {
+		return nil, fmt.Errorf("failed to upsert resource: %w", err)
+	}
+	return upsertResp, nil
 }
 
 // func (r *ResourceProvider) AddResourceRelationshipRule(ctx context.Context, rules []api.ResourceProviderResourceRelationshipRule) error {

@@ -2,6 +2,7 @@ package providers
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/avast/retry-go"
@@ -111,14 +112,15 @@ func (r *ResourceItemSpec) upsert(ctx Context) error {
 		},
 	}
 
-	resp, err := ctx.APIClient().SetResourceProvidersResourcesPatchWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), providerID, api.SetResourceProvidersResourcesPatchJSONRequestBody{
+	patchReq := api.RequestResourceProvidersResourcesPatchJSONRequestBody{
 		Resources: resources,
-	})
+	}
+	resp, err := ctx.APIClient().RequestResourceProvidersResourcesPatchWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), providerID, patchReq)
 	if err != nil {
 		return fmt.Errorf("failed to upsert resource: %w", err)
 	}
-	if resp.JSON202 == nil {
-		return fmt.Errorf("failed to upsert resource: %s", string(resp.Body))
+	if resp.StatusCode() != http.StatusAccepted {
+		return fmt.Errorf("failed to upsert resource: %s", resp.Status())
 	}
 
 	return r.syncVariables(ctx)
@@ -139,16 +141,16 @@ func (r *ResourceItemSpec) getProviderID(ctx Context) (string, error) {
 		return providerResp.JSON200.Id, nil
 	}
 
-	createResp, err := ctx.APIClient().UpsertResourceProviderWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), api.UpsertResourceProviderJSONRequestBody{
+	createResp, err := ctx.APIClient().RequestResourceProviderUpsertWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), api.RequestResourceProviderUpsertJSONRequestBody{
 		Name: providerName,
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to create resource provider: %w", err)
 	}
-	if createResp.JSON200 == nil {
-		return "", fmt.Errorf("failed to create resource provider: %s", string(createResp.Body))
+	if createResp.StatusCode() != http.StatusAccepted {
+		return "", fmt.Errorf("failed to create resource provider: %s", createResp.Status())
 	}
-	return createResp.JSON200.Id, nil
+	return createResp.JSON202.Id, nil
 }
 
 func (r *ResourceItemSpec) syncVariables(ctx Context) error {
@@ -159,7 +161,7 @@ func (r *ResourceItemSpec) syncVariables(ctx Context) error {
 
 	err := retry.Do(
 		func() error {
-			varsResp, err := ctx.APIClient().UpdateVariablesForResourceWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), r.Identifier, api.UpdateVariablesForResourceJSONRequestBody(vars))
+			varsResp, err := ctx.APIClient().RequestResourceVariablesUpdateWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), r.Identifier, api.RequestResourceVariablesUpdateJSONRequestBody(vars))
 			if err != nil {
 				return retry.Unrecoverable(fmt.Errorf("failed to update resource variables: %w", err))
 			}

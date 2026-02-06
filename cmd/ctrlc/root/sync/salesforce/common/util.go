@@ -245,23 +245,25 @@ func UpsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderReso
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	providerResp, err := ctrlplaneClient.UpsertResourceProviderWithResponse(ctx, workspaceId, api.UpsertResourceProviderJSONRequestBody{
+	upsertReq := api.RequestResourceProviderUpsertJSONRequestBody{
 		Name: providerName,
-	})
+	}
+	providerResp, err := ctrlplaneClient.RequestResourceProviderUpsertWithResponse(ctx, workspaceId, upsertReq)
 	if err != nil {
 		return fmt.Errorf("failed to upsert resource provider: %w", err)
 	}
 
-	if providerResp.JSON200 == nil {
+	if providerResp.JSON202 == nil {
 		return fmt.Errorf("failed to upsert resource provider: %s", providerResp.Body)
 	}
 
-	providerId := providerResp.JSON200.Id
+	providerId := providerResp.JSON202.Id
 	log.Info("Upserting resources", "provider", providerName, "count", len(resources))
 
-	setResp, err := ctrlplaneClient.SetResourceProvidersResourcesWithResponse(ctx, workspaceId, providerId, api.SetResourceProvidersResourcesJSONRequestBody{
+	patchReq := api.RequestResourceProvidersResourcesPatchJSONRequestBody{
 		Resources: resources,
-	})
+	}
+	setResp, err := ctrlplaneClient.RequestResourceProvidersResourcesPatchWithResponse(ctx, workspaceId, providerId, patchReq)
 	if err != nil {
 		return fmt.Errorf("failed to set resources: %w", err)
 	}

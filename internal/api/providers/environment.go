@@ -96,7 +96,7 @@ func (e *EnvironmentSpec) Update(ctx Context, existingID string) error {
 }
 
 func (e *EnvironmentSpec) Delete(ctx Context, existingID string) error {
-	deleteResp, err := ctx.APIClient().DeleteEnvironmentWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), existingID)
+	deleteResp, err := ctx.APIClient().RequestEnvironmentDeletionWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), existingID)
 	if err != nil {
 		return fmt.Errorf("failed to delete environment: %w", err)
 	}
@@ -123,18 +123,18 @@ func (e *EnvironmentSpec) upsert(ctx Context, id string) error {
 		return fmt.Errorf("failed to build resource selector: %w", err)
 	}
 
-	upsertReq := api.UpsertEnvironmentByIdJSONRequestBody{
+	upsertReq := api.RequestEnvironmentCreationJSONRequestBody{
 		Name:             e.DisplayName,
 		SystemId:         systemID.String(),
 		Description:      e.Description,
 		ResourceSelector: resourceSelector,
 	}
 
-	upsertResp, err := ctx.APIClient().UpsertEnvironmentByIdWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), id, upsertReq)
+	upsertResp, err := ctx.APIClient().RequestEnvironmentCreationWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), upsertReq)
 	if err != nil {
 		return fmt.Errorf("failed to upsert environment: %w", err)
 	}
-	if upsertResp.JSON200 == nil {
+	if upsertResp.JSON202 == nil {
 		return fmt.Errorf("failed to upsert environment: %s", string(upsertResp.Body))
 	}
 

@@ -98,7 +98,7 @@ func (d *DeploymentSpec) Update(ctx Context, existingID string) error {
 }
 
 func (d *DeploymentSpec) Delete(ctx Context, existingID string) error {
-	deleteResp, err := ctx.APIClient().DeleteDeploymentWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), existingID)
+	deleteResp, err := ctx.APIClient().RequestDeploymentDeletionWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), existingID)
 	if err != nil {
 		return fmt.Errorf("failed to delete deployment: %w", err)
 	}
@@ -140,7 +140,7 @@ func (d *DeploymentSpec) upsert(ctx Context, id string) error {
 		jobAgentConfig = d.Agent.Config
 	}
 
-	upsertReq := api.UpsertDeploymentJSONRequestBody{
+	upsertReq := api.RequestDeploymentCreationJSONRequestBody{
 		Name:             d.DisplayName,
 		Slug:             d.slugValue(),
 		SystemId:         systemID.String(),
@@ -151,7 +151,7 @@ func (d *DeploymentSpec) upsert(ctx Context, id string) error {
 	}
 
 	upsertResp, err := ctx.APIClient().
-		UpsertDeploymentWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), id, upsertReq)
+		RequestDeploymentCreationWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), upsertReq)
 	if err != nil {
 		return fmt.Errorf("failed to upsert deployment: %w", err)
 	}
