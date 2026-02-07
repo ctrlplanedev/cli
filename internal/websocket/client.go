@@ -70,23 +70,14 @@ func (c *Client) WritePump() {
 		c.conn.Close()
 	}()
 
-	//lint:ignore S1000 suppose to run in a go routine
-	for {
-		select {
-		case message, ok := <-c.send:
-			if !ok {
-				log.Error("WritePump channel closed")
-				// Channel was closed
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
-
-			if err := c.conn.WriteMessage(websocket.BinaryMessage, message); err != nil {
-				log.Error("WritePump error sending message", "error", err)
-				return
-			}
+	for message := range c.send {
+		if err := c.conn.WriteMessage(websocket.BinaryMessage, message); err != nil {
+			log.Error("WritePump error sending message", "error", err)
+			return
 		}
 	}
+	log.Error("WritePump channel closed")
+	c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 }
 
 // Send sends a message to the client

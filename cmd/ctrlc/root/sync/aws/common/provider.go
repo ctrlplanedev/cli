@@ -14,7 +14,7 @@ func EnsureProviderDetails(
 ) {
 	providerRegion := "all-regions"
 	// Use regions for name if none provided
-	if regions != nil && len(regions) > 0 {
+	if len(regions) > 0 {
 		providerRegion = strings.Join(regions, "-")
 	}
 

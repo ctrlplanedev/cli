@@ -176,7 +176,7 @@ func initInstanceMetadata(instance *bigtableadmin.Instance, project string) map[
 	// like other databases We'll use the instance type (PRODUCTION or
 	// DEVELOPMENT) as a proxy for version and add additional metadata about the
 	// instance
-	bigtableVersion := "unknown"
+	var bigtableVersion string
 	switch instance.Type {
 	case "PRODUCTION":
 		bigtableVersion = "production"

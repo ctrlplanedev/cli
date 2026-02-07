@@ -195,54 +195,6 @@ func processSecret(_ context.Context, secretClient *secretmanager.Service, secre
 	}, nil
 }
 
-// mapReplication converts the replication config to a simpler map
-func mapReplication(replication *secretmanager.Replication) map[string]interface{} {
-	if replication == nil {
-		return nil
-	}
-
-	result := map[string]interface{}{
-		"automatic": replication.Automatic != nil,
-	}
-
-	if replication.UserManaged != nil {
-		replicas := []map[string]interface{}{}
-		for _, replica := range replication.UserManaged.Replicas {
-			replicaInfo := map[string]interface{}{
-				"location": replica.Location,
-			}
-			if replica.CustomerManagedEncryption != nil {
-				replicaInfo["customerManagedEncryption"] = map[string]interface{}{
-					"kmsKeyName": replica.CustomerManagedEncryption.KmsKeyName,
-				}
-			}
-			replicas = append(replicas, replicaInfo)
-		}
-		result["userManaged"] = map[string]interface{}{
-			"replicas": replicas,
-		}
-	}
-
-	return result
-}
-
-// mapTopics converts the topics to a simpler map
-func mapTopics(topics []*secretmanager.Topic) []map[string]interface{} {
-	if topics == nil {
-		return nil
-	}
-
-	result := []map[string]interface{}{}
-	for _, topic := range topics {
-		topicInfo := map[string]interface{}{
-			"name": topic.Name,
-		}
-		result = append(result, topicInfo)
-	}
-
-	return result
-}
-
 // initSecretMetadata initializes the base metadata for a secret
 func initSecretMetadata(secret *secretmanager.Secret, project string) map[string]string {
 	// Extract secret name from full resource name

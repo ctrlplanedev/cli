@@ -26,7 +26,7 @@ func GetResourceGroupInfo(
 	for pager.More() {
 		page, err := pager.NextPage(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get next page of resource groups: %v\n", err)
+			return nil, fmt.Errorf("failed to get next page of resource groups: %w", err)
 		}
 
 		// Iterate through the resource groups in the current page

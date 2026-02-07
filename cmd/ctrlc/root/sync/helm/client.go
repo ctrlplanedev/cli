@@ -108,10 +108,8 @@ func getConfigFlags(config *rest.Config, namespace string) *genericclioptions.Co
 		configFlags.Insecure = &insecure
 	}
 
-	if len(config.CAData) > 0 {
-		// CA data is embedded in the config and will be used automatically
-		// We rely on the kubeconfig file being available rather than creating a temp file
-	}
+	// CA data is embedded in the config and will be used automatically
+	// We rely on the kubeconfig file being available rather than creating a temp file
 
 	// Set kubeconfig path (needed by Helm for some operations)
 	kubeconfigPath := os.Getenv("KUBECONFIG")
