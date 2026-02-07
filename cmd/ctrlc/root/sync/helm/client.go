@@ -103,12 +103,12 @@ func getConfigFlags(config *rest.Config, namespace string) *genericclioptions.Co
 	}
 
 	// Set TLS options
-	if config.TLSClientConfig.Insecure {
+	if config.Insecure {
 		insecure := true
 		configFlags.Insecure = &insecure
 	}
 
-	if len(config.TLSClientConfig.CAData) > 0 {
+	if len(config.CAData) > 0 {
 		// CA data is embedded in the config and will be used automatically
 		// We rely on the kubeconfig file being available rather than creating a temp file
 	}
