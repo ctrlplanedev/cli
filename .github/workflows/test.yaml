@@ -21,10 +21,14 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Download dependencies
+        run: go mod download
+
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
+          args: --timeout=5m
 
   test:
     runs-on: ubuntu-latest
