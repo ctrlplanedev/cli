@@ -18,24 +18,24 @@ var (
 func init() {
 	cobra.OnInitialize(initConfig)
 	cmd.PersistentFlags().StringVar(&cfgFile, "config", "", "Config file (default is $HOME/.ctrlc.yaml)")
-	viper.BindEnv("config", "CTRLPLANE_CONFIG")
+	mustBind(viper.BindEnv("config", "CTRLPLANE_CONFIG"))
 
 	cmd.PersistentFlags().String("url", "https://app.ctrlplane.dev", "API URL")
-	viper.BindPFlag("url", cmd.PersistentFlags().Lookup("url"))
-	viper.BindEnv("url", "CTRLPLANE_URL")
+	mustBind(viper.BindPFlag("url", cmd.PersistentFlags().Lookup("url")))
+	mustBind(viper.BindEnv("url", "CTRLPLANE_URL"))
 
 	cmd.PersistentFlags().String("api-key", "", "API key for authentication")
-	viper.BindPFlag("api-key", cmd.PersistentFlags().Lookup("api-key"))
-	viper.BindEnv("api-key", "CTRLPLANE_API_KEY")
+	mustBind(viper.BindPFlag("api-key", cmd.PersistentFlags().Lookup("api-key")))
+	mustBind(viper.BindEnv("api-key", "CTRLPLANE_API_KEY"))
 
 	cmd.PersistentFlags().String("workspace", "", "Ctrlplane Workspace ID")
-	viper.BindPFlag("workspace", cmd.PersistentFlags().Lookup("workspace"))
-	viper.BindEnv("workspace", "CTRLPLANE_WORKSPACE")
+	mustBind(viper.BindPFlag("workspace", cmd.PersistentFlags().Lookup("workspace")))
+	mustBind(viper.BindEnv("workspace", "CTRLPLANE_WORKSPACE"))
 
-	viper.BindPFlag("log-level", cmd.PersistentFlags().Lookup("log-level"))
-	viper.BindEnv("log-level", "CTRLPLANE_LOG_LEVEL")
+	mustBind(viper.BindPFlag("log-level", cmd.PersistentFlags().Lookup("log-level")))
+	mustBind(viper.BindEnv("log-level", "CTRLPLANE_LOG_LEVEL"))
 
-	viper.BindEnv("cluster-identifier", "CTRLPLANE_CLUSTER_IDENTIFIER")
+	mustBind(viper.BindEnv("cluster-identifier", "CTRLPLANE_CLUSTER_IDENTIFIER"))
 }
 
 func main() {
@@ -58,11 +58,18 @@ func initConfig() {
 		viper.AddConfigPath(home)
 		viper.SetConfigName(".ctrlc")
 		viper.SetConfigType("yaml")
-		viper.SafeWriteConfig()
+		mustBind(viper.SafeWriteConfig())
 	}
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Error("Can't read config", "error", err)
+		os.Exit(1)
+	}
+}
+
+func mustBind(err error) {
+	if err != nil {
+		log.Error("Config binding failed", "error", err)
 		os.Exit(1)
 	}
 }

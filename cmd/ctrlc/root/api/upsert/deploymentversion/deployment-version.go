@@ -144,9 +144,15 @@ func NewUpsertDeploymentVersionCmd() *cobra.Command {
 	cmd.Flags().StringVar(&message, "message", "", "Message of the deployment version")
 	cmd.Flags().StringVar(&jobAgentConfigFile, "job-agent-config-file", "", "Path to JSON file containing job agent configuration")
 
-	cmd.MarkFlagRequired("tag")
-	cmd.MarkFlagRequired("workspace")
-	cmd.MarkFlagRequired("deployment")
+	mustMarkFlagRequired(cmd, "tag")
+	mustMarkFlagRequired(cmd, "workspace")
+	mustMarkFlagRequired(cmd, "deployment")
 
 	return cmd
+}
+
+func mustMarkFlagRequired(cmd *cobra.Command, name string) {
+	if err := cmd.MarkFlagRequired(name); err != nil {
+		panic(fmt.Sprintf("failed to mark flag required: %s: %v", name, err))
+	}
 }
