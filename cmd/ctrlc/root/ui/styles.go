@@ -81,5 +81,4 @@ var (
 	resourceIndicatorStyle = lipgloss.NewStyle().
 				Foreground(primaryColor).
 				Bold(true)
-
 )

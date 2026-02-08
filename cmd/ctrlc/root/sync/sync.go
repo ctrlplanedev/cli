@@ -9,6 +9,7 @@ import (
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/google"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/helm"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/kubernetes"
+	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/pipe"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/salesforce"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/tailscale"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/terraform"
@@ -42,6 +43,10 @@ func NewSyncCmd() *cobra.Command {
 	cmd.AddCommand(cliutil.AddIntervalSupport(helm.NewSyncHelmCmd(), ""))
 	cmd.AddCommand(cliutil.AddIntervalSupport(github.NewSyncGitHubCmd(), ""))
 	cmd.AddCommand(cliutil.AddIntervalSupport(salesforce.NewSalesforceCmd(), ""))
+
+	// pipe is intentionally not wrapped with AddIntervalSupport -- it is
+	// one-shot by design; the OS scheduler (cron, systemd) handles repetition.
+	cmd.AddCommand(pipe.NewSyncPipeCmd())
 
 	return cmd
 }

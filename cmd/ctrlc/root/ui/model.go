@@ -8,8 +8,8 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/version"
+	"github.com/ctrlplanedev/cli/internal/api"
 )
 
 // tickMsg is emitted by the auto-refresh ticker
@@ -294,9 +294,9 @@ func (m Model) handleDrillDown() (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			jobFrame := viewFrame{
-				title:    depItem.Deployment.Name + " > Jobs",
-				resource: resourceTypeDeployments,
-				table:    newTableModel(columnsForDrillDown("deployment-jobs")),
+				title:     depItem.Deployment.Name + " > Jobs",
+				resource:  resourceTypeDeployments,
+				table:     newTableModel(columnsForDrillDown("deployment-jobs")),
 				drillKind: "deployment-jobs",
 				drill: &drillContext{
 					deploymentID:   depItem.Deployment.Id,
@@ -317,9 +317,9 @@ func (m Model) handleDrillDown() (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			depFrame := viewFrame{
-				title:    resItem.Name + " > Deployments",
-				resource: resourceTypeResources,
-				table:    newTableModel(columnsForDrillDown("resource-deployments")),
+				title:     resItem.Name + " > Deployments",
+				resource:  resourceTypeResources,
+				table:     newTableModel(columnsForDrillDown("resource-deployments")),
 				drillKind: "resource-deployments",
 				drill: &drillContext{
 					resourceIdentifier: resItem.Identifier,
