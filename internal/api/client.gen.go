@@ -220,11 +220,13 @@ type CreatePolicyRequest struct {
 	Enabled     *bool   `json:"enabled,omitempty"`
 
 	// Metadata Arbitrary metadata for the policy (record<string, string>)
-	Metadata  *map[string]string      `json:"metadata,omitempty"`
-	Name      string                  `json:"name"`
-	Priority  *int                    `json:"priority,omitempty"`
-	Rules     *[]PolicyRule           `json:"rules,omitempty"`
-	Selectors *[]PolicyTargetSelector `json:"selectors,omitempty"`
+	Metadata *map[string]string `json:"metadata,omitempty"`
+	Name     string             `json:"name"`
+	Priority *int               `json:"priority,omitempty"`
+	Rules    *[]PolicyRule      `json:"rules,omitempty"`
+
+	// Selector CEL expression for matching release targets. Use "true" to match all targets.
+	Selector *string `json:"selector,omitempty"`
 }
 
 // CreateRelationshipRuleRequest defines model for CreateRelationshipRuleRequest.
@@ -569,12 +571,14 @@ type Policy struct {
 	Id          string  `json:"id"`
 
 	// Metadata Arbitrary metadata for the policy (record<string, string>)
-	Metadata    map[string]string      `json:"metadata"`
-	Name        string                 `json:"name"`
-	Priority    int                    `json:"priority"`
-	Rules       []PolicyRule           `json:"rules"`
-	Selectors   []PolicyTargetSelector `json:"selectors"`
-	WorkspaceId string                 `json:"workspaceId"`
+	Metadata map[string]string `json:"metadata"`
+	Name     string            `json:"name"`
+	Priority int               `json:"priority"`
+	Rules    []PolicyRule      `json:"rules"`
+
+	// Selector CEL expression for matching release targets. Use "true" to match all targets.
+	Selector    string `json:"selector"`
+	WorkspaceId string `json:"workspaceId"`
 }
 
 // PolicyRequestAccepted defines model for PolicyRequestAccepted.
@@ -596,14 +600,6 @@ type PolicyRule struct {
 	Retry                  *RetryRule                  `json:"retry,omitempty"`
 	Verification           *VerificationRule           `json:"verification,omitempty"`
 	VersionCooldown        *VersionCooldownRule        `json:"versionCooldown,omitempty"`
-}
-
-// PolicyTargetSelector defines model for PolicyTargetSelector.
-type PolicyTargetSelector struct {
-	DeploymentSelector  *Selector `json:"deploymentSelector,omitempty"`
-	EnvironmentSelector *Selector `json:"environmentSelector,omitempty"`
-	Id                  string    `json:"id"`
-	ResourceSelector    *Selector `json:"resourceSelector,omitempty"`
 }
 
 // ReferenceValue defines model for ReferenceValue.
@@ -864,14 +860,16 @@ type UpsertJobAgentRequest struct {
 // UpsertPolicyRequest defines model for UpsertPolicyRequest.
 type UpsertPolicyRequest struct {
 	Description *string `json:"description,omitempty"`
-	Enabled     *bool   `json:"enabled,omitempty"`
+	Enabled     bool    `json:"enabled"`
 
 	// Metadata Arbitrary metadata for the policy (record<string, string>)
-	Metadata  *map[string]string      `json:"metadata,omitempty"`
-	Name      string                  `json:"name"`
-	Priority  *int                    `json:"priority,omitempty"`
-	Rules     *[]PolicyRule           `json:"rules,omitempty"`
-	Selectors *[]PolicyTargetSelector `json:"selectors,omitempty"`
+	Metadata map[string]string `json:"metadata"`
+	Name     string            `json:"name"`
+	Priority int               `json:"priority"`
+	Rules    []PolicyRule      `json:"rules"`
+
+	// Selector CEL expression for matching release targets. Use "true" to match all targets.
+	Selector string `json:"selector"`
 }
 
 // UpsertRelationshipRuleRequest defines model for UpsertRelationshipRuleRequest.
@@ -1204,6 +1202,15 @@ type GetAllResourcesParams struct {
 
 	// Cel CEL expression to filter the results
 	Cel *string `form:"cel,omitempty" json:"cel,omitempty"`
+}
+
+// GetDeploymentsForResourceParams defines parameters for GetDeploymentsForResource.
+type GetDeploymentsForResourceParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // GetVariablesForResourceParams defines parameters for GetVariablesForResource.
@@ -2389,6 +2396,9 @@ type ClientInterface interface {
 	// GetResourceByIdentifier request
 	GetResourceByIdentifier(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetDeploymentsForResource request
+	GetDeploymentsForResource(ctx context.Context, workspaceId string, identifier string, params *GetDeploymentsForResourceParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetVariablesForResource request
 	GetVariablesForResource(ctx context.Context, workspaceId string, identifier string, params *GetVariablesForResourceParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -3303,6 +3313,18 @@ func (c *Client) RequestResourceDeletionByIdentifier(ctx context.Context, worksp
 
 func (c *Client) GetResourceByIdentifier(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetResourceByIdentifierRequest(c.Server, workspaceId, identifier)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetDeploymentsForResource(ctx context.Context, workspaceId string, identifier string, params *GetDeploymentsForResourceParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDeploymentsForResourceRequest(c.Server, workspaceId, identifier, params)
 	if err != nil {
 		return nil, err
 	}
@@ -6342,6 +6364,85 @@ func NewGetResourceByIdentifierRequest(server string, workspaceId string, identi
 	return req, nil
 }
 
+// NewGetDeploymentsForResourceRequest generates requests for GetDeploymentsForResource
+func NewGetDeploymentsForResourceRequest(server string, workspaceId string, identifier string, params *GetDeploymentsForResourceParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "identifier", runtime.ParamLocationPath, identifier)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/resources/identifier/%s/deployments", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetVariablesForResourceRequest generates requests for GetVariablesForResource
 func NewGetVariablesForResourceRequest(server string, workspaceId string, identifier string, params *GetVariablesForResourceParams) (*http.Request, error) {
 	var err error
@@ -7070,6 +7171,9 @@ type ClientWithResponsesInterface interface {
 
 	// GetResourceByIdentifierWithResponse request
 	GetResourceByIdentifierWithResponse(ctx context.Context, workspaceId string, identifier string, reqEditors ...RequestEditorFn) (*GetResourceByIdentifierResponse, error)
+
+	// GetDeploymentsForResourceWithResponse request
+	GetDeploymentsForResourceWithResponse(ctx context.Context, workspaceId string, identifier string, params *GetDeploymentsForResourceParams, reqEditors ...RequestEditorFn) (*GetDeploymentsForResourceResponse, error)
 
 	// GetVariablesForResourceWithResponse request
 	GetVariablesForResourceWithResponse(ctx context.Context, workspaceId string, identifier string, params *GetVariablesForResourceParams, reqEditors ...RequestEditorFn) (*GetVariablesForResourceResponse, error)
@@ -8515,6 +8619,41 @@ func (r GetResourceByIdentifierResponse) StatusCode() int {
 	return 0
 }
 
+type GetDeploymentsForResourceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Items []Deployment `json:"items"`
+
+		// Limit Maximum number of items returned
+		Limit int `json:"limit"`
+
+		// Offset Number of items skipped
+		Offset int `json:"offset"`
+
+		// Total Total number of items available
+		Total int `json:"total"`
+	}
+	JSON400 *ErrorResponse
+	JSON404 *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDeploymentsForResourceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDeploymentsForResourceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetVariablesForResourceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -9391,6 +9530,15 @@ func (c *ClientWithResponses) GetResourceByIdentifierWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseGetResourceByIdentifierResponse(rsp)
+}
+
+// GetDeploymentsForResourceWithResponse request returning *GetDeploymentsForResourceResponse
+func (c *ClientWithResponses) GetDeploymentsForResourceWithResponse(ctx context.Context, workspaceId string, identifier string, params *GetDeploymentsForResourceParams, reqEditors ...RequestEditorFn) (*GetDeploymentsForResourceResponse, error) {
+	rsp, err := c.GetDeploymentsForResource(ctx, workspaceId, identifier, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDeploymentsForResourceResponse(rsp)
 }
 
 // GetVariablesForResourceWithResponse request returning *GetVariablesForResourceResponse
@@ -11644,6 +11792,57 @@ func ParseGetResourceByIdentifierResponse(rsp *http.Response) (*GetResourceByIde
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetDeploymentsForResourceResponse parses an HTTP response from a GetDeploymentsForResourceWithResponse call
+func ParseGetDeploymentsForResourceResponse(rsp *http.Response) (*GetDeploymentsForResourceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDeploymentsForResourceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Items []Deployment `json:"items"`
+
+			// Limit Maximum number of items returned
+			Limit int `json:"limit"`
+
+			// Offset Number of items skipped
+			Offset int `json:"offset"`
+
+			// Total Total number of items available
+			Total int `json:"total"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 

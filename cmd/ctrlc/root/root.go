@@ -10,6 +10,7 @@ import (
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/config"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/run"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync"
+	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/ui"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -56,6 +57,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(config.NewConfigCmd())
 	cmd.AddCommand(sync.NewSyncCmd())
 	cmd.AddCommand(run.NewRunCmd())
+	cmd.AddCommand(ui.NewUICmd())
 	cmd.AddCommand(version.NewVersionCmd())
 
 	return cmd
