@@ -98,6 +98,11 @@ const (
 	True NullValue = true
 )
 
+// Defines values for PrometheusMetricProviderType.
+const (
+	Prometheus PrometheusMetricProviderType = "prometheus"
+)
+
 // Defines values for RelatableEntityType.
 const (
 	RelatableEntityTypeDeployment  RelatableEntityType = "deployment"
@@ -254,6 +259,27 @@ type CreateSystemRequest struct {
 	Metadata    *map[string]string `json:"metadata,omitempty"`
 	Name        string             `json:"name"`
 	Slug        *string            `json:"slug,omitempty"`
+}
+
+// CreateWorkflowJobTemplate defines model for CreateWorkflowJobTemplate.
+type CreateWorkflowJobTemplate struct {
+	// Config Configuration for the job agent
+	Config map[string]interface{} `json:"config"`
+
+	// If CEL expression to determine if the job should run
+	If     *string            `json:"if,omitempty"`
+	Matrix *WorkflowJobMatrix `json:"matrix,omitempty"`
+	Name   string             `json:"name"`
+
+	// Ref Reference to the job agent
+	Ref string `json:"ref"`
+}
+
+// CreateWorkflowTemplate defines model for CreateWorkflowTemplate.
+type CreateWorkflowTemplate struct {
+	Inputs []WorkflowInput             `json:"inputs"`
+	Jobs   []CreateWorkflowJobTemplate `json:"jobs"`
+	Name   string                      `json:"name"`
 }
 
 // CreateWorkspaceRequest defines model for CreateWorkspaceRequest.
@@ -602,6 +628,66 @@ type PolicyRule struct {
 	VersionCooldown        *VersionCooldownRule        `json:"versionCooldown,omitempty"`
 }
 
+// PrometheusMetricProvider defines model for PrometheusMetricProvider.
+type PrometheusMetricProvider struct {
+	// Address Prometheus server address (supports Go templates)
+	Address string `json:"address"`
+
+	// Authentication Authentication configuration for Prometheus
+	Authentication *struct {
+		// BearerToken Bearer token for authentication (supports Go templates for variable references)
+		BearerToken *string `json:"bearerToken,omitempty"`
+
+		// Oauth2 OAuth2 client credentials flow
+		Oauth2 *struct {
+			// ClientId OAuth2 client ID (supports Go templates)
+			ClientId string `json:"clientId"`
+
+			// ClientSecret OAuth2 client secret (supports Go templates)
+			ClientSecret string `json:"clientSecret"`
+
+			// Scopes OAuth2 scopes
+			Scopes *[]string `json:"scopes,omitempty"`
+
+			// TokenUrl Token endpoint URL
+			TokenUrl string `json:"tokenUrl"`
+		} `json:"oauth2,omitempty"`
+	} `json:"authentication,omitempty"`
+
+	// Headers Additional HTTP headers for the Prometheus request (values support Go templates)
+	Headers *[]struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+	} `json:"headers,omitempty"`
+
+	// Insecure Skip TLS certificate verification
+	Insecure *bool `json:"insecure,omitempty"`
+
+	// Query PromQL query expression (supports Go templates)
+	Query string `json:"query"`
+
+	// RangeQuery If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query)
+	RangeQuery *struct {
+		// End How far back from now for the query end, as a Prometheus duration (e.g., "0s" for now, "1m" for 1 minute ago). Defaults to "0s" (now) if unset.
+		End *string `json:"end,omitempty"`
+
+		// Start How far back from now to start the query, as a Prometheus duration (e.g., "5m", "1h"). Defaults to 10 * step if unset.
+		Start *string `json:"start,omitempty"`
+
+		// Step Query resolution step width as a Prometheus duration (e.g., "15s", "1m", "500ms")
+		Step string `json:"step"`
+	} `json:"rangeQuery,omitempty"`
+
+	// Timeout Query timeout in seconds
+	Timeout *int64 `json:"timeout,omitempty"`
+
+	// Type Provider type
+	Type PrometheusMetricProviderType `json:"type"`
+}
+
+// PrometheusMetricProviderType Provider type
+type PrometheusMetricProviderType string
+
 // ReferenceValue defines model for ReferenceValue.
 type ReferenceValue struct {
 	Path      []string `json:"path"`
@@ -648,6 +734,13 @@ type ReleaseTarget struct {
 	ResourceId    string `json:"resourceId"`
 }
 
+// ReleaseTargetPreview defines model for ReleaseTargetPreview.
+type ReleaseTargetPreview struct {
+	Deployment  Deployment  `json:"deployment"`
+	Environment Environment `json:"environment"`
+	System      System      `json:"system"`
+}
+
 // ReleaseTargetState defines model for ReleaseTargetState.
 type ReleaseTargetState struct {
 	CurrentRelease *Release `json:"currentRelease,omitempty"`
@@ -669,6 +762,16 @@ type Resource struct {
 	UpdatedAt   *time.Time             `json:"updatedAt,omitempty"`
 	Version     string                 `json:"version"`
 	WorkspaceId string                 `json:"workspaceId"`
+}
+
+// ResourcePreviewRequest defines model for ResourcePreviewRequest.
+type ResourcePreviewRequest struct {
+	Config     map[string]interface{} `json:"config"`
+	Identifier string                 `json:"identifier"`
+	Kind       string                 `json:"kind"`
+	Metadata   map[string]string      `json:"metadata"`
+	Name       string                 `json:"name"`
+	Version    string                 `json:"version"`
 }
 
 // ResourceProvider defines model for ResourceProvider.
@@ -803,6 +906,13 @@ type UpdateDeploymentVersionRequest struct {
 	Name           *string                  `json:"name,omitempty"`
 	Status         *DeploymentVersionStatus `json:"status,omitempty"`
 	Tag            *string                  `json:"tag,omitempty"`
+}
+
+// UpdateWorkflowTemplate defines model for UpdateWorkflowTemplate.
+type UpdateWorkflowTemplate struct {
+	Inputs []WorkflowInput             `json:"inputs"`
+	Jobs   []CreateWorkflowJobTemplate `json:"jobs"`
+	Name   string                      `json:"name"`
 }
 
 // UpdateWorkspaceRequest defines model for UpdateWorkspaceRequest.
@@ -1008,8 +1118,11 @@ type WorkflowJobTemplate struct {
 	// Config Configuration for the job agent
 	Config map[string]interface{} `json:"config"`
 	Id     string                 `json:"id"`
-	Matrix *WorkflowJobMatrix     `json:"matrix,omitempty"`
-	Name   string                 `json:"name"`
+
+	// If CEL expression to determine if the job should run
+	If     *string            `json:"if,omitempty"`
+	Matrix *WorkflowJobMatrix `json:"matrix,omitempty"`
+	Name   string             `json:"name"`
 
 	// Ref Reference to the job agent
 	Ref string `json:"ref"`
@@ -1169,6 +1282,15 @@ type ListPoliciesParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// PreviewReleaseTargetsForResourceParams defines parameters for PreviewReleaseTargetsForResource.
+type PreviewReleaseTargetsForResourceParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // GetJobsForReleaseTargetParams defines parameters for GetJobsForReleaseTarget.
 type GetJobsForReleaseTargetParams struct {
 	// Limit Maximum number of items to return
@@ -1234,10 +1356,13 @@ type ListSystemsParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
-// CreateWorkflowTemplateFromYamlJSONBody defines parameters for CreateWorkflowTemplateFromYaml.
-type CreateWorkflowTemplateFromYamlJSONBody struct {
-	// Yaml The workflow definition in YAML format
-	Yaml string `json:"yaml"`
+// ListWorkflowTemplatesParams defines parameters for ListWorkflowTemplates.
+type ListWorkflowTemplatesParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // CreateWorkspaceJSONRequestBody defines body for CreateWorkspace for application/json ContentType.
@@ -1291,6 +1416,9 @@ type CreateRelationshipRuleJSONRequestBody = CreateRelationshipRuleRequest
 // RequestRelationshipRuleUpsertJSONRequestBody defines body for RequestRelationshipRuleUpsert for application/json ContentType.
 type RequestRelationshipRuleUpsertJSONRequestBody = UpsertRelationshipRuleRequest
 
+// PreviewReleaseTargetsForResourceJSONRequestBody defines body for PreviewReleaseTargetsForResource for application/json ContentType.
+type PreviewReleaseTargetsForResourceJSONRequestBody = ResourcePreviewRequest
+
 // RequestResourceProviderUpsertJSONRequestBody defines body for RequestResourceProviderUpsert for application/json ContentType.
 type RequestResourceProviderUpsertJSONRequestBody = UpsertResourceProviderRequest
 
@@ -1306,8 +1434,11 @@ type RequestSystemCreationJSONRequestBody = CreateSystemRequest
 // RequestSystemUpsertJSONRequestBody defines body for RequestSystemUpsert for application/json ContentType.
 type RequestSystemUpsertJSONRequestBody = UpsertSystemRequest
 
-// CreateWorkflowTemplateFromYamlJSONRequestBody defines body for CreateWorkflowTemplateFromYaml for application/json ContentType.
-type CreateWorkflowTemplateFromYamlJSONRequestBody CreateWorkflowTemplateFromYamlJSONBody
+// CreateWorkflowTemplateJSONRequestBody defines body for CreateWorkflowTemplate for application/json ContentType.
+type CreateWorkflowTemplateJSONRequestBody = CreateWorkflowTemplate
+
+// UpdateWorkflowTemplateJSONRequestBody defines body for UpdateWorkflowTemplate for application/json ContentType.
+type UpdateWorkflowTemplateJSONRequestBody = UpdateWorkflowTemplate
 
 // AsCelMatcher returns the union data inside the CreateRelationshipRuleRequest_Matcher as a CelMatcher
 func (t CreateRelationshipRuleRequest_Matcher) AsCelMatcher() (CelMatcher, error) {
@@ -1595,6 +1726,34 @@ func (t *MetricProvider) MergeDatadogMetricProvider(v DatadogMetricProvider) err
 	return err
 }
 
+// AsPrometheusMetricProvider returns the union data inside the MetricProvider as a PrometheusMetricProvider
+func (t MetricProvider) AsPrometheusMetricProvider() (PrometheusMetricProvider, error) {
+	var body PrometheusMetricProvider
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPrometheusMetricProvider overwrites any union data inside the MetricProvider as the provided PrometheusMetricProvider
+func (t *MetricProvider) FromPrometheusMetricProvider(v PrometheusMetricProvider) error {
+	v.Type = "prometheus"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePrometheusMetricProvider performs a merge with any union data inside the MetricProvider, using the provided PrometheusMetricProvider
+func (t *MetricProvider) MergePrometheusMetricProvider(v PrometheusMetricProvider) error {
+	v.Type = "prometheus"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsTerraformCloudRunMetricProvider returns the union data inside the MetricProvider as a TerraformCloudRunMetricProvider
 func (t MetricProvider) AsTerraformCloudRunMetricProvider() (TerraformCloudRunMetricProvider, error) {
 	var body TerraformCloudRunMetricProvider
@@ -1641,6 +1800,8 @@ func (t MetricProvider) ValueByDiscriminator() (interface{}, error) {
 		return t.AsDatadogMetricProvider()
 	case "http":
 		return t.AsHTTPMetricProvider()
+	case "prometheus":
+		return t.AsPrometheusMetricProvider()
 	case "sleep":
 		return t.AsSleepMetricProvider()
 	case "terraformCloudRun":
@@ -2362,6 +2523,11 @@ type ClientInterface interface {
 
 	RequestRelationshipRuleUpsert(ctx context.Context, workspaceId string, relationshipRuleId string, body RequestRelationshipRuleUpsertJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// PreviewReleaseTargetsForResourceWithBody request with any body
+	PreviewReleaseTargetsForResourceWithBody(ctx context.Context, workspaceId string, params *PreviewReleaseTargetsForResourceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PreviewReleaseTargetsForResource(ctx context.Context, workspaceId string, params *PreviewReleaseTargetsForResourceParams, body PreviewReleaseTargetsForResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetReleaseTargetDesiredRelease request
 	GetReleaseTargetDesiredRelease(ctx context.Context, workspaceId string, releaseTargetKey string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -2429,10 +2595,24 @@ type ClientInterface interface {
 
 	RequestSystemUpsert(ctx context.Context, workspaceId string, systemId string, body RequestSystemUpsertJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateWorkflowTemplateFromYamlWithBody request with any body
-	CreateWorkflowTemplateFromYamlWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListWorkflowTemplates request
+	ListWorkflowTemplates(ctx context.Context, workspaceId string, params *ListWorkflowTemplatesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreateWorkflowTemplateFromYaml(ctx context.Context, workspaceId string, body CreateWorkflowTemplateFromYamlJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateWorkflowTemplateWithBody request with any body
+	CreateWorkflowTemplateWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateWorkflowTemplate(ctx context.Context, workspaceId string, body CreateWorkflowTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteWorkflowTemplate request
+	DeleteWorkflowTemplate(ctx context.Context, workspaceId string, workflowTemplateId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetWorkflowTemplate request
+	GetWorkflowTemplate(ctx context.Context, workspaceId string, workflowTemplateId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateWorkflowTemplateWithBody request with any body
+	UpdateWorkflowTemplateWithBody(ctx context.Context, workspaceId string, workflowTemplateId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateWorkflowTemplate(ctx context.Context, workspaceId string, workflowTemplateId string, body UpdateWorkflowTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) ListWorkspaces(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3179,6 +3359,30 @@ func (c *Client) RequestRelationshipRuleUpsert(ctx context.Context, workspaceId 
 	return c.Client.Do(req)
 }
 
+func (c *Client) PreviewReleaseTargetsForResourceWithBody(ctx context.Context, workspaceId string, params *PreviewReleaseTargetsForResourceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPreviewReleaseTargetsForResourceRequestWithBody(c.Server, workspaceId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PreviewReleaseTargetsForResource(ctx context.Context, workspaceId string, params *PreviewReleaseTargetsForResourceParams, body PreviewReleaseTargetsForResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPreviewReleaseTargetsForResourceRequest(c.Server, workspaceId, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetReleaseTargetDesiredRelease(ctx context.Context, workspaceId string, releaseTargetKey string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetReleaseTargetDesiredReleaseRequest(c.Server, workspaceId, releaseTargetKey)
 	if err != nil {
@@ -3467,8 +3671,8 @@ func (c *Client) RequestSystemUpsert(ctx context.Context, workspaceId string, sy
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateWorkflowTemplateFromYamlWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateWorkflowTemplateFromYamlRequestWithBody(c.Server, workspaceId, contentType, body)
+func (c *Client) ListWorkflowTemplates(ctx context.Context, workspaceId string, params *ListWorkflowTemplatesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListWorkflowTemplatesRequest(c.Server, workspaceId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -3479,8 +3683,68 @@ func (c *Client) CreateWorkflowTemplateFromYamlWithBody(ctx context.Context, wor
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateWorkflowTemplateFromYaml(ctx context.Context, workspaceId string, body CreateWorkflowTemplateFromYamlJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateWorkflowTemplateFromYamlRequest(c.Server, workspaceId, body)
+func (c *Client) CreateWorkflowTemplateWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateWorkflowTemplateRequestWithBody(c.Server, workspaceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateWorkflowTemplate(ctx context.Context, workspaceId string, body CreateWorkflowTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateWorkflowTemplateRequest(c.Server, workspaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteWorkflowTemplate(ctx context.Context, workspaceId string, workflowTemplateId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteWorkflowTemplateRequest(c.Server, workspaceId, workflowTemplateId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetWorkflowTemplate(ctx context.Context, workspaceId string, workflowTemplateId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetWorkflowTemplateRequest(c.Server, workspaceId, workflowTemplateId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateWorkflowTemplateWithBody(ctx context.Context, workspaceId string, workflowTemplateId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateWorkflowTemplateRequestWithBody(c.Server, workspaceId, workflowTemplateId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateWorkflowTemplate(ctx context.Context, workspaceId string, workflowTemplateId string, body UpdateWorkflowTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateWorkflowTemplateRequest(c.Server, workspaceId, workflowTemplateId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5812,6 +6076,91 @@ func NewRequestRelationshipRuleUpsertRequestWithBody(server string, workspaceId 
 	return req, nil
 }
 
+// NewPreviewReleaseTargetsForResourceRequest calls the generic PreviewReleaseTargetsForResource builder with application/json body
+func NewPreviewReleaseTargetsForResourceRequest(server string, workspaceId string, params *PreviewReleaseTargetsForResourceParams, body PreviewReleaseTargetsForResourceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPreviewReleaseTargetsForResourceRequestWithBody(server, workspaceId, params, "application/json", bodyReader)
+}
+
+// NewPreviewReleaseTargetsForResourceRequestWithBody generates requests for PreviewReleaseTargetsForResource with any type of body
+func NewPreviewReleaseTargetsForResourceRequestWithBody(server string, workspaceId string, params *PreviewReleaseTargetsForResourceParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/release-targets/resource-preview", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetReleaseTargetDesiredReleaseRequest generates requests for GetReleaseTargetDesiredRelease
 func NewGetReleaseTargetDesiredReleaseRequest(server string, workspaceId string, releaseTargetKey string) (*http.Request, error) {
 	var err error
@@ -6879,19 +7228,91 @@ func NewRequestSystemUpsertRequestWithBody(server string, workspaceId string, sy
 	return req, nil
 }
 
-// NewCreateWorkflowTemplateFromYamlRequest calls the generic CreateWorkflowTemplateFromYaml builder with application/json body
-func NewCreateWorkflowTemplateFromYamlRequest(server string, workspaceId string, body CreateWorkflowTemplateFromYamlJSONRequestBody) (*http.Request, error) {
+// NewListWorkflowTemplatesRequest generates requests for ListWorkflowTemplates
+func NewListWorkflowTemplatesRequest(server string, workspaceId string, params *ListWorkflowTemplatesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflow-templates", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateWorkflowTemplateRequest calls the generic CreateWorkflowTemplate builder with application/json body
+func NewCreateWorkflowTemplateRequest(server string, workspaceId string, body CreateWorkflowTemplateJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateWorkflowTemplateFromYamlRequestWithBody(server, workspaceId, "application/json", bodyReader)
+	return NewCreateWorkflowTemplateRequestWithBody(server, workspaceId, "application/json", bodyReader)
 }
 
-// NewCreateWorkflowTemplateFromYamlRequestWithBody generates requests for CreateWorkflowTemplateFromYaml with any type of body
-func NewCreateWorkflowTemplateFromYamlRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateWorkflowTemplateRequestWithBody generates requests for CreateWorkflowTemplate with any type of body
+func NewCreateWorkflowTemplateRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -6917,6 +7338,142 @@ func NewCreateWorkflowTemplateFromYamlRequestWithBody(server string, workspaceId
 	}
 
 	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteWorkflowTemplateRequest generates requests for DeleteWorkflowTemplate
+func NewDeleteWorkflowTemplateRequest(server string, workspaceId string, workflowTemplateId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "workflowTemplateId", runtime.ParamLocationPath, workflowTemplateId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflow-templates/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetWorkflowTemplateRequest generates requests for GetWorkflowTemplate
+func NewGetWorkflowTemplateRequest(server string, workspaceId string, workflowTemplateId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "workflowTemplateId", runtime.ParamLocationPath, workflowTemplateId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflow-templates/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateWorkflowTemplateRequest calls the generic UpdateWorkflowTemplate builder with application/json body
+func NewUpdateWorkflowTemplateRequest(server string, workspaceId string, workflowTemplateId string, body UpdateWorkflowTemplateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateWorkflowTemplateRequestWithBody(server, workspaceId, workflowTemplateId, "application/json", bodyReader)
+}
+
+// NewUpdateWorkflowTemplateRequestWithBody generates requests for UpdateWorkflowTemplate with any type of body
+func NewUpdateWorkflowTemplateRequestWithBody(server string, workspaceId string, workflowTemplateId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "workflowTemplateId", runtime.ParamLocationPath, workflowTemplateId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflow-templates/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -7138,6 +7695,11 @@ type ClientWithResponsesInterface interface {
 
 	RequestRelationshipRuleUpsertWithResponse(ctx context.Context, workspaceId string, relationshipRuleId string, body RequestRelationshipRuleUpsertJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestRelationshipRuleUpsertResponse, error)
 
+	// PreviewReleaseTargetsForResourceWithBodyWithResponse request with any body
+	PreviewReleaseTargetsForResourceWithBodyWithResponse(ctx context.Context, workspaceId string, params *PreviewReleaseTargetsForResourceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewReleaseTargetsForResourceResponse, error)
+
+	PreviewReleaseTargetsForResourceWithResponse(ctx context.Context, workspaceId string, params *PreviewReleaseTargetsForResourceParams, body PreviewReleaseTargetsForResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewReleaseTargetsForResourceResponse, error)
+
 	// GetReleaseTargetDesiredReleaseWithResponse request
 	GetReleaseTargetDesiredReleaseWithResponse(ctx context.Context, workspaceId string, releaseTargetKey string, reqEditors ...RequestEditorFn) (*GetReleaseTargetDesiredReleaseResponse, error)
 
@@ -7205,10 +7767,24 @@ type ClientWithResponsesInterface interface {
 
 	RequestSystemUpsertWithResponse(ctx context.Context, workspaceId string, systemId string, body RequestSystemUpsertJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestSystemUpsertResponse, error)
 
-	// CreateWorkflowTemplateFromYamlWithBodyWithResponse request with any body
-	CreateWorkflowTemplateFromYamlWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWorkflowTemplateFromYamlResponse, error)
+	// ListWorkflowTemplatesWithResponse request
+	ListWorkflowTemplatesWithResponse(ctx context.Context, workspaceId string, params *ListWorkflowTemplatesParams, reqEditors ...RequestEditorFn) (*ListWorkflowTemplatesResponse, error)
 
-	CreateWorkflowTemplateFromYamlWithResponse(ctx context.Context, workspaceId string, body CreateWorkflowTemplateFromYamlJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWorkflowTemplateFromYamlResponse, error)
+	// CreateWorkflowTemplateWithBodyWithResponse request with any body
+	CreateWorkflowTemplateWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWorkflowTemplateResponse, error)
+
+	CreateWorkflowTemplateWithResponse(ctx context.Context, workspaceId string, body CreateWorkflowTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWorkflowTemplateResponse, error)
+
+	// DeleteWorkflowTemplateWithResponse request
+	DeleteWorkflowTemplateWithResponse(ctx context.Context, workspaceId string, workflowTemplateId string, reqEditors ...RequestEditorFn) (*DeleteWorkflowTemplateResponse, error)
+
+	// GetWorkflowTemplateWithResponse request
+	GetWorkflowTemplateWithResponse(ctx context.Context, workspaceId string, workflowTemplateId string, reqEditors ...RequestEditorFn) (*GetWorkflowTemplateResponse, error)
+
+	// UpdateWorkflowTemplateWithBodyWithResponse request with any body
+	UpdateWorkflowTemplateWithBodyWithResponse(ctx context.Context, workspaceId string, workflowTemplateId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateWorkflowTemplateResponse, error)
+
+	UpdateWorkflowTemplateWithResponse(ctx context.Context, workspaceId string, workflowTemplateId string, body UpdateWorkflowTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWorkflowTemplateResponse, error)
 }
 
 type ListWorkspacesResponse struct {
@@ -8363,6 +8939,40 @@ func (r RequestRelationshipRuleUpsertResponse) StatusCode() int {
 	return 0
 }
 
+type PreviewReleaseTargetsForResourceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Items []ReleaseTargetPreview `json:"items"`
+
+		// Limit Maximum number of items returned
+		Limit int `json:"limit"`
+
+		// Offset Number of items skipped
+		Offset int `json:"offset"`
+
+		// Total Total number of items available
+		Total int `json:"total"`
+	}
+	JSON400 *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PreviewReleaseTargetsForResourceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PreviewReleaseTargetsForResourceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetReleaseTargetDesiredReleaseResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -8862,15 +9472,26 @@ func (r RequestSystemUpsertResponse) StatusCode() int {
 	return 0
 }
 
-type CreateWorkflowTemplateFromYamlResponse struct {
+type ListWorkflowTemplatesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON202      *WorkflowTemplate
-	JSON400      *ErrorResponse
+	JSON200      *struct {
+		Items []WorkflowTemplate `json:"items"`
+
+		// Limit Maximum number of items returned
+		Limit int `json:"limit"`
+
+		// Offset Number of items skipped
+		Offset int `json:"offset"`
+
+		// Total Total number of items available
+		Total int `json:"total"`
+	}
+	JSON400 *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r CreateWorkflowTemplateFromYamlResponse) Status() string {
+func (r ListWorkflowTemplatesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -8878,7 +9499,102 @@ func (r CreateWorkflowTemplateFromYamlResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r CreateWorkflowTemplateFromYamlResponse) StatusCode() int {
+func (r ListWorkflowTemplatesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateWorkflowTemplateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *WorkflowTemplate
+	JSON400      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateWorkflowTemplateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateWorkflowTemplateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteWorkflowTemplateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *WorkflowTemplate
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteWorkflowTemplateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteWorkflowTemplateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetWorkflowTemplateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *WorkflowTemplate
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetWorkflowTemplateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetWorkflowTemplateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateWorkflowTemplateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *WorkflowTemplate
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateWorkflowTemplateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateWorkflowTemplateResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -9426,6 +10142,23 @@ func (c *ClientWithResponses) RequestRelationshipRuleUpsertWithResponse(ctx cont
 	return ParseRequestRelationshipRuleUpsertResponse(rsp)
 }
 
+// PreviewReleaseTargetsForResourceWithBodyWithResponse request with arbitrary body returning *PreviewReleaseTargetsForResourceResponse
+func (c *ClientWithResponses) PreviewReleaseTargetsForResourceWithBodyWithResponse(ctx context.Context, workspaceId string, params *PreviewReleaseTargetsForResourceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewReleaseTargetsForResourceResponse, error) {
+	rsp, err := c.PreviewReleaseTargetsForResourceWithBody(ctx, workspaceId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePreviewReleaseTargetsForResourceResponse(rsp)
+}
+
+func (c *ClientWithResponses) PreviewReleaseTargetsForResourceWithResponse(ctx context.Context, workspaceId string, params *PreviewReleaseTargetsForResourceParams, body PreviewReleaseTargetsForResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewReleaseTargetsForResourceResponse, error) {
+	rsp, err := c.PreviewReleaseTargetsForResource(ctx, workspaceId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePreviewReleaseTargetsForResourceResponse(rsp)
+}
+
 // GetReleaseTargetDesiredReleaseWithResponse request returning *GetReleaseTargetDesiredReleaseResponse
 func (c *ClientWithResponses) GetReleaseTargetDesiredReleaseWithResponse(ctx context.Context, workspaceId string, releaseTargetKey string, reqEditors ...RequestEditorFn) (*GetReleaseTargetDesiredReleaseResponse, error) {
 	rsp, err := c.GetReleaseTargetDesiredRelease(ctx, workspaceId, releaseTargetKey, reqEditors...)
@@ -9637,21 +10370,65 @@ func (c *ClientWithResponses) RequestSystemUpsertWithResponse(ctx context.Contex
 	return ParseRequestSystemUpsertResponse(rsp)
 }
 
-// CreateWorkflowTemplateFromYamlWithBodyWithResponse request with arbitrary body returning *CreateWorkflowTemplateFromYamlResponse
-func (c *ClientWithResponses) CreateWorkflowTemplateFromYamlWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWorkflowTemplateFromYamlResponse, error) {
-	rsp, err := c.CreateWorkflowTemplateFromYamlWithBody(ctx, workspaceId, contentType, body, reqEditors...)
+// ListWorkflowTemplatesWithResponse request returning *ListWorkflowTemplatesResponse
+func (c *ClientWithResponses) ListWorkflowTemplatesWithResponse(ctx context.Context, workspaceId string, params *ListWorkflowTemplatesParams, reqEditors ...RequestEditorFn) (*ListWorkflowTemplatesResponse, error) {
+	rsp, err := c.ListWorkflowTemplates(ctx, workspaceId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateWorkflowTemplateFromYamlResponse(rsp)
+	return ParseListWorkflowTemplatesResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreateWorkflowTemplateFromYamlWithResponse(ctx context.Context, workspaceId string, body CreateWorkflowTemplateFromYamlJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWorkflowTemplateFromYamlResponse, error) {
-	rsp, err := c.CreateWorkflowTemplateFromYaml(ctx, workspaceId, body, reqEditors...)
+// CreateWorkflowTemplateWithBodyWithResponse request with arbitrary body returning *CreateWorkflowTemplateResponse
+func (c *ClientWithResponses) CreateWorkflowTemplateWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWorkflowTemplateResponse, error) {
+	rsp, err := c.CreateWorkflowTemplateWithBody(ctx, workspaceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateWorkflowTemplateFromYamlResponse(rsp)
+	return ParseCreateWorkflowTemplateResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateWorkflowTemplateWithResponse(ctx context.Context, workspaceId string, body CreateWorkflowTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWorkflowTemplateResponse, error) {
+	rsp, err := c.CreateWorkflowTemplate(ctx, workspaceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateWorkflowTemplateResponse(rsp)
+}
+
+// DeleteWorkflowTemplateWithResponse request returning *DeleteWorkflowTemplateResponse
+func (c *ClientWithResponses) DeleteWorkflowTemplateWithResponse(ctx context.Context, workspaceId string, workflowTemplateId string, reqEditors ...RequestEditorFn) (*DeleteWorkflowTemplateResponse, error) {
+	rsp, err := c.DeleteWorkflowTemplate(ctx, workspaceId, workflowTemplateId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteWorkflowTemplateResponse(rsp)
+}
+
+// GetWorkflowTemplateWithResponse request returning *GetWorkflowTemplateResponse
+func (c *ClientWithResponses) GetWorkflowTemplateWithResponse(ctx context.Context, workspaceId string, workflowTemplateId string, reqEditors ...RequestEditorFn) (*GetWorkflowTemplateResponse, error) {
+	rsp, err := c.GetWorkflowTemplate(ctx, workspaceId, workflowTemplateId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetWorkflowTemplateResponse(rsp)
+}
+
+// UpdateWorkflowTemplateWithBodyWithResponse request with arbitrary body returning *UpdateWorkflowTemplateResponse
+func (c *ClientWithResponses) UpdateWorkflowTemplateWithBodyWithResponse(ctx context.Context, workspaceId string, workflowTemplateId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateWorkflowTemplateResponse, error) {
+	rsp, err := c.UpdateWorkflowTemplateWithBody(ctx, workspaceId, workflowTemplateId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateWorkflowTemplateResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateWorkflowTemplateWithResponse(ctx context.Context, workspaceId string, workflowTemplateId string, body UpdateWorkflowTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWorkflowTemplateResponse, error) {
+	rsp, err := c.UpdateWorkflowTemplate(ctx, workspaceId, workflowTemplateId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateWorkflowTemplateResponse(rsp)
 }
 
 // ParseListWorkspacesResponse parses an HTTP response from a ListWorkspacesWithResponse call
@@ -11430,6 +12207,50 @@ func ParseRequestRelationshipRuleUpsertResponse(rsp *http.Response) (*RequestRel
 	return response, nil
 }
 
+// ParsePreviewReleaseTargetsForResourceResponse parses an HTTP response from a PreviewReleaseTargetsForResourceWithResponse call
+func ParsePreviewReleaseTargetsForResourceResponse(rsp *http.Response) (*PreviewReleaseTargetsForResourceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PreviewReleaseTargetsForResourceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Items []ReleaseTargetPreview `json:"items"`
+
+			// Limit Maximum number of items returned
+			Limit int `json:"limit"`
+
+			// Offset Number of items skipped
+			Offset int `json:"offset"`
+
+			// Total Total number of items available
+			Total int `json:"total"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetReleaseTargetDesiredReleaseResponse parses an HTTP response from a GetReleaseTargetDesiredReleaseWithResponse call
 func ParseGetReleaseTargetDesiredReleaseResponse(rsp *http.Response) (*GetReleaseTargetDesiredReleaseResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -12149,15 +12970,59 @@ func ParseRequestSystemUpsertResponse(rsp *http.Response) (*RequestSystemUpsertR
 	return response, nil
 }
 
-// ParseCreateWorkflowTemplateFromYamlResponse parses an HTTP response from a CreateWorkflowTemplateFromYamlWithResponse call
-func ParseCreateWorkflowTemplateFromYamlResponse(rsp *http.Response) (*CreateWorkflowTemplateFromYamlResponse, error) {
+// ParseListWorkflowTemplatesResponse parses an HTTP response from a ListWorkflowTemplatesWithResponse call
+func ParseListWorkflowTemplatesResponse(rsp *http.Response) (*ListWorkflowTemplatesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &CreateWorkflowTemplateFromYamlResponse{
+	response := &ListWorkflowTemplatesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Items []WorkflowTemplate `json:"items"`
+
+			// Limit Maximum number of items returned
+			Limit int `json:"limit"`
+
+			// Offset Number of items skipped
+			Offset int `json:"offset"`
+
+			// Total Total number of items available
+			Total int `json:"total"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateWorkflowTemplateResponse parses an HTTP response from a CreateWorkflowTemplateWithResponse call
+func ParseCreateWorkflowTemplateResponse(rsp *http.Response) (*CreateWorkflowTemplateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateWorkflowTemplateResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -12176,6 +13041,126 @@ func ParseCreateWorkflowTemplateFromYamlResponse(rsp *http.Response) (*CreateWor
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteWorkflowTemplateResponse parses an HTTP response from a DeleteWorkflowTemplateWithResponse call
+func ParseDeleteWorkflowTemplateResponse(rsp *http.Response) (*DeleteWorkflowTemplateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteWorkflowTemplateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest WorkflowTemplate
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetWorkflowTemplateResponse parses an HTTP response from a GetWorkflowTemplateWithResponse call
+func ParseGetWorkflowTemplateResponse(rsp *http.Response) (*GetWorkflowTemplateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetWorkflowTemplateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest WorkflowTemplate
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateWorkflowTemplateResponse parses an HTTP response from a UpdateWorkflowTemplateWithResponse call
+func ParseUpdateWorkflowTemplateResponse(rsp *http.Response) (*UpdateWorkflowTemplateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateWorkflowTemplateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest WorkflowTemplate
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
