@@ -45,10 +45,8 @@ func main() {
 }
 
 func initConfig() {
-	configProvided := false
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
-		configProvided = true
 	} else {
 		// Find home directory.
 		home, err := homedir.Dir()
@@ -64,7 +62,7 @@ func initConfig() {
 	}
 
 	if err := viper.ReadInConfig(); err != nil {
-		if configProvided {
+		if cfgFile != "" {
 			log.Error("Can't read config", "error", err)
 			os.Exit(1)
 		} else {
