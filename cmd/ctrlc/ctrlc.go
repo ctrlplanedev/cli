@@ -62,7 +62,11 @@ func initConfig() {
 	}
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Error("Can't read config", "error", err)
-		os.Exit(1)
+		if cfgFile != "" {
+			log.Error("Can't read config", "error", err)
+			os.Exit(1)
+		} else {
+			log.Warn("Can't read config", "error", err)
+		}
 	}
 }
