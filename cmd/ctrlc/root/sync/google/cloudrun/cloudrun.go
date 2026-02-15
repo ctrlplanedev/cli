@@ -8,10 +8,8 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
-	"github.com/ctrlplanedev/cli/internal/cliutil"
-	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
+	ctrlp "github.com/ctrlplanedev/cli/internal/common"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"google.golang.org/api/run/v1"
 )
 
@@ -128,32 +126,8 @@ func runSync(project, providerName *string, regions *[]string) func(cmd *cobra.C
 			*providerName = fmt.Sprintf("google-cloudrun-%s", *project)
 		}
 
-		// Upsert resources to Ctrlplane using common logic
-		// We need to get the response for HandleResponseOutput, so we inline part of the logic
-		apiURL := viper.GetString("url")
-		apiKey := viper.GetString("api-key")
-		workspaceId := viper.GetString("workspace")
-
-		ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
-		if err != nil {
-			return fmt.Errorf("failed to create API client: %w", err)
-		}
-
-		log.Info("Upserting resource provider", "name", *providerName)
-		rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *providerName)
-		if err != nil {
-			return fmt.Errorf("failed to create resource provider: %w", err)
-		}
-
-		upsertResp, err := rp.UpsertResource(ctx, allResources)
-		if err != nil {
-			return fmt.Errorf("failed to upsert Cloud Run services: %w", err)
-		}
-
-		log.Info("Response from upserting resources", "status", upsertResp.Status)
-		fmt.Println(upsertResp)
-
-		return cliutil.HandleResponseOutput(cmd, upsertResp)
+		// Upsert resources to Ctrlplane
+		return ctrlp.UpsertResources(ctx, allResources, providerName)
 	}
 }
 
