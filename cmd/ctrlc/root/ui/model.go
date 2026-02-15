@@ -289,7 +289,7 @@ func (m Model) handleDrillDown() (tea.Model, tea.Cmd) {
 	switch frame.resource {
 	case resourceTypeDeployments:
 		if frame.drillKind == "" {
-			depItem, ok := row.rawItem.(api.DeploymentAndSystem)
+			depItem, ok := row.rawItem.(api.DeploymentAndSystems)
 			if !ok {
 				return m, nil
 			}
