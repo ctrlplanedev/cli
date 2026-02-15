@@ -149,6 +149,11 @@ const (
 	Number WorkflowNumberInputType = "number"
 )
 
+// Defines values for WorkflowObjectInputType.
+const (
+	Object WorkflowObjectInputType = "object"
+)
+
 // Defines values for WorkflowSelectorArrayInputSelectorEntityType.
 const (
 	WorkflowSelectorArrayInputSelectorEntityTypeDeployment  WorkflowSelectorArrayInputSelectorEntityType = "deployment"
@@ -196,7 +201,7 @@ type CreateDeploymentRequest struct {
 	Name             string                  `json:"name"`
 	ResourceSelector *Selector               `json:"resourceSelector,omitempty"`
 	Slug             string                  `json:"slug"`
-	SystemId         string                  `json:"systemId"`
+	SystemIds        []string                `json:"systemIds"`
 }
 
 // CreateDeploymentVersionRequest defines model for CreateDeploymentVersionRequest.
@@ -216,7 +221,7 @@ type CreateEnvironmentRequest struct {
 	Metadata         *map[string]string `json:"metadata,omitempty"`
 	Name             string             `json:"name"`
 	ResourceSelector *Selector          `json:"resourceSelector,omitempty"`
-	SystemId         string             `json:"systemId"`
+	SystemIds        []string           `json:"systemIds"`
 }
 
 // CreatePolicyRequest defines model for CreatePolicyRequest.
@@ -261,6 +266,13 @@ type CreateSystemRequest struct {
 	Slug        *string            `json:"slug,omitempty"`
 }
 
+// CreateWorkflow defines model for CreateWorkflow.
+type CreateWorkflow struct {
+	Inputs []WorkflowInput             `json:"inputs"`
+	Jobs   []CreateWorkflowJobTemplate `json:"jobs"`
+	Name   string                      `json:"name"`
+}
+
 // CreateWorkflowJobTemplate defines model for CreateWorkflowJobTemplate.
 type CreateWorkflowJobTemplate struct {
 	// Config Configuration for the job agent
@@ -273,13 +285,6 @@ type CreateWorkflowJobTemplate struct {
 
 	// Ref Reference to the job agent
 	Ref string `json:"ref"`
-}
-
-// CreateWorkflowTemplate defines model for CreateWorkflowTemplate.
-type CreateWorkflowTemplate struct {
-	Inputs []WorkflowInput             `json:"inputs"`
-	Jobs   []CreateWorkflowJobTemplate `json:"jobs"`
-	Name   string                      `json:"name"`
 }
 
 // CreateWorkspaceRequest defines model for CreateWorkspaceRequest.
@@ -332,18 +337,19 @@ type Deployment struct {
 	Name             string                 `json:"name"`
 	ResourceSelector *Selector              `json:"resourceSelector,omitempty"`
 	Slug             string                 `json:"slug"`
-	SystemId         string                 `json:"systemId"`
+	SystemIds        []string               `json:"systemIds"`
 }
 
-// DeploymentAndSystem defines model for DeploymentAndSystem.
-type DeploymentAndSystem struct {
+// DeploymentAndSystems defines model for DeploymentAndSystems.
+type DeploymentAndSystems struct {
 	Deployment Deployment `json:"deployment"`
-	System     System     `json:"system"`
+	Systems    []System   `json:"systems"`
 }
 
 // DeploymentDependencyRule defines model for DeploymentDependencyRule.
 type DeploymentDependencyRule struct {
-	DependsOnDeploymentSelector Selector `json:"dependsOnDeploymentSelector"`
+	// DependsOn CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed.
+	DependsOn string `json:"dependsOn"`
 }
 
 // DeploymentRequestAccepted defines model for DeploymentRequestAccepted.
@@ -426,6 +432,21 @@ type DeploymentWithVariables struct {
 	Variables  []DeploymentVariableWithValues `json:"variables"`
 }
 
+// DispatchContext defines model for DispatchContext.
+type DispatchContext struct {
+	Deployment     *Deployment              `json:"deployment,omitempty"`
+	Environment    *Environment             `json:"environment,omitempty"`
+	JobAgent       JobAgent                 `json:"jobAgent"`
+	JobAgentConfig JobAgentConfig           `json:"jobAgentConfig"`
+	Release        *Release                 `json:"release,omitempty"`
+	Resource       *Resource                `json:"resource,omitempty"`
+	Variables      *map[string]LiteralValue `json:"variables,omitempty"`
+	Version        *DeploymentVersion       `json:"version,omitempty"`
+	Workflow       *Workflow                `json:"workflow,omitempty"`
+	WorkflowJob    *WorkflowJob             `json:"workflowJob,omitempty"`
+	WorkflowRun    *WorkflowRun             `json:"workflowRun,omitempty"`
+}
+
 // Environment defines model for Environment.
 type Environment struct {
 	CreatedAt        time.Time          `json:"createdAt"`
@@ -434,7 +455,7 @@ type Environment struct {
 	Metadata         *map[string]string `json:"metadata,omitempty"`
 	Name             string             `json:"name"`
 	ResourceSelector *Selector          `json:"resourceSelector,omitempty"`
-	SystemId         string             `json:"systemId"`
+	SystemIds        []string           `json:"systemIds"`
 }
 
 // EnvironmentProgressionRule defines model for EnvironmentProgressionRule.
@@ -517,17 +538,18 @@ type IntegerValue = int
 
 // Job defines model for Job.
 type Job struct {
-	CompletedAt    *time.Time             `json:"completedAt,omitempty"`
-	CreatedAt      time.Time              `json:"createdAt"`
-	ExternalId     *string                `json:"externalId,omitempty"`
-	Id             string                 `json:"id"`
-	JobAgentConfig map[string]interface{} `json:"jobAgentConfig"`
-	JobAgentId     string                 `json:"jobAgentId"`
-	Metadata       map[string]string      `json:"metadata"`
-	ReleaseId      string                 `json:"releaseId"`
-	StartedAt      *time.Time             `json:"startedAt,omitempty"`
-	Status         JobStatus              `json:"status"`
-	UpdatedAt      time.Time              `json:"updatedAt"`
+	CompletedAt     *time.Time             `json:"completedAt,omitempty"`
+	CreatedAt       time.Time              `json:"createdAt"`
+	DispatchContext *DispatchContext       `json:"dispatchContext,omitempty"`
+	ExternalId      *string                `json:"externalId,omitempty"`
+	Id              string                 `json:"id"`
+	JobAgentConfig  map[string]interface{} `json:"jobAgentConfig"`
+	JobAgentId      string                 `json:"jobAgentId"`
+	Metadata        map[string]string      `json:"metadata"`
+	ReleaseId       string                 `json:"releaseId"`
+	StartedAt       *time.Time             `json:"startedAt,omitempty"`
+	Status          JobStatus              `json:"status"`
+	UpdatedAt       time.Time              `json:"updatedAt"`
 }
 
 // JobAgent defines model for JobAgent.
@@ -538,6 +560,9 @@ type JobAgent struct {
 	Name     string                 `json:"name"`
 	Type     string                 `json:"type"`
 }
+
+// JobAgentConfig defines model for JobAgentConfig.
+type JobAgentConfig map[string]interface{}
 
 // JobAgentRequestAccepted defines model for JobAgentRequestAccepted.
 type JobAgentRequestAccepted struct {
@@ -908,8 +933,8 @@ type UpdateDeploymentVersionRequest struct {
 	Tag            *string                  `json:"tag,omitempty"`
 }
 
-// UpdateWorkflowTemplate defines model for UpdateWorkflowTemplate.
-type UpdateWorkflowTemplate struct {
+// UpdateWorkflow defines model for UpdateWorkflow.
+type UpdateWorkflow struct {
 	Inputs []WorkflowInput             `json:"inputs"`
 	Jobs   []CreateWorkflowJobTemplate `json:"jobs"`
 	Name   string                      `json:"name"`
@@ -933,7 +958,7 @@ type UpsertDeploymentRequest struct {
 	Name             string                  `json:"name"`
 	ResourceSelector *Selector               `json:"resourceSelector,omitempty"`
 	Slug             string                  `json:"slug"`
-	SystemId         string                  `json:"systemId"`
+	SystemIds        []string                `json:"systemIds"`
 }
 
 // UpsertDeploymentVariableRequest defines model for UpsertDeploymentVariableRequest.
@@ -956,7 +981,7 @@ type UpsertEnvironmentRequest struct {
 	Metadata         *map[string]string `json:"metadata,omitempty"`
 	Name             string             `json:"name"`
 	ResourceSelector *Selector          `json:"resourceSelector,omitempty"`
-	SystemId         string             `json:"systemId"`
+	SystemIds        []string           `json:"systemIds"`
 }
 
 // UpsertJobAgentRequest defines model for UpsertJobAgentRequest.
@@ -1079,6 +1104,14 @@ type VersionCooldownRule struct {
 	IntervalSeconds int32 `json:"intervalSeconds"`
 }
 
+// Workflow defines model for Workflow.
+type Workflow struct {
+	Id     string                `json:"id"`
+	Inputs []WorkflowInput       `json:"inputs"`
+	Jobs   []WorkflowJobTemplate `json:"jobs"`
+	Name   string                `json:"name"`
+}
+
 // WorkflowArrayInput defines model for WorkflowArrayInput.
 type WorkflowArrayInput struct {
 	union json.RawMessage
@@ -1087,7 +1120,7 @@ type WorkflowArrayInput struct {
 // WorkflowBooleanInput defines model for WorkflowBooleanInput.
 type WorkflowBooleanInput struct {
 	Default *bool                    `json:"default,omitempty"`
-	Name    string                   `json:"name"`
+	Key     string                   `json:"key"`
 	Type    WorkflowBooleanInputType `json:"type"`
 }
 
@@ -1097,6 +1130,18 @@ type WorkflowBooleanInputType string
 // WorkflowInput defines model for WorkflowInput.
 type WorkflowInput struct {
 	union json.RawMessage
+}
+
+// WorkflowJob defines model for WorkflowJob.
+type WorkflowJob struct {
+	// Config Configuration for the job agent
+	Config map[string]interface{} `json:"config"`
+	Id     string                 `json:"id"`
+	Index  int                    `json:"index"`
+
+	// Ref Reference to the job agent
+	Ref        string `json:"ref"`
+	WorkflowId string `json:"workflowId"`
 }
 
 // WorkflowJobMatrix defines model for WorkflowJobMatrix.
@@ -1131,7 +1176,7 @@ type WorkflowJobTemplate struct {
 // WorkflowManualArrayInput defines model for WorkflowManualArrayInput.
 type WorkflowManualArrayInput struct {
 	Default *[]map[string]interface{}    `json:"default,omitempty"`
-	Name    string                       `json:"name"`
+	Key     string                       `json:"key"`
 	Type    WorkflowManualArrayInputType `json:"type"`
 }
 
@@ -1141,16 +1186,33 @@ type WorkflowManualArrayInputType string
 // WorkflowNumberInput defines model for WorkflowNumberInput.
 type WorkflowNumberInput struct {
 	Default *float32                `json:"default,omitempty"`
-	Name    string                  `json:"name"`
+	Key     string                  `json:"key"`
 	Type    WorkflowNumberInputType `json:"type"`
 }
 
 // WorkflowNumberInputType defines model for WorkflowNumberInput.Type.
 type WorkflowNumberInputType string
 
+// WorkflowObjectInput defines model for WorkflowObjectInput.
+type WorkflowObjectInput struct {
+	Default *map[string]interface{} `json:"default,omitempty"`
+	Key     string                  `json:"key"`
+	Type    WorkflowObjectInputType `json:"type"`
+}
+
+// WorkflowObjectInputType defines model for WorkflowObjectInput.Type.
+type WorkflowObjectInputType string
+
+// WorkflowRun defines model for WorkflowRun.
+type WorkflowRun struct {
+	Id         string                 `json:"id"`
+	Inputs     map[string]interface{} `json:"inputs"`
+	WorkflowId string                 `json:"workflowId"`
+}
+
 // WorkflowSelectorArrayInput defines model for WorkflowSelectorArrayInput.
 type WorkflowSelectorArrayInput struct {
-	Name     string `json:"name"`
+	Key      string `json:"key"`
 	Selector struct {
 		Default    *Selector                                    `json:"default,omitempty"`
 		EntityType WorkflowSelectorArrayInputSelectorEntityType `json:"entityType"`
@@ -1167,20 +1229,12 @@ type WorkflowSelectorArrayInputType string
 // WorkflowStringInput defines model for WorkflowStringInput.
 type WorkflowStringInput struct {
 	Default *string                 `json:"default,omitempty"`
-	Name    string                  `json:"name"`
+	Key     string                  `json:"key"`
 	Type    WorkflowStringInputType `json:"type"`
 }
 
 // WorkflowStringInputType defines model for WorkflowStringInput.Type.
 type WorkflowStringInputType string
-
-// WorkflowTemplate defines model for WorkflowTemplate.
-type WorkflowTemplate struct {
-	Id     string                `json:"id"`
-	Inputs []WorkflowInput       `json:"inputs"`
-	Jobs   []WorkflowJobTemplate `json:"jobs"`
-	Name   string                `json:"name"`
-}
 
 // Workspace defines model for Workspace.
 type Workspace struct {
@@ -1356,8 +1410,8 @@ type ListSystemsParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
-// ListWorkflowTemplatesParams defines parameters for ListWorkflowTemplates.
-type ListWorkflowTemplatesParams struct {
+// ListWorkflowsParams defines parameters for ListWorkflows.
+type ListWorkflowsParams struct {
 	// Limit Maximum number of items to return
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
@@ -1434,11 +1488,11 @@ type RequestSystemCreationJSONRequestBody = CreateSystemRequest
 // RequestSystemUpsertJSONRequestBody defines body for RequestSystemUpsert for application/json ContentType.
 type RequestSystemUpsertJSONRequestBody = UpsertSystemRequest
 
-// CreateWorkflowTemplateJSONRequestBody defines body for CreateWorkflowTemplate for application/json ContentType.
-type CreateWorkflowTemplateJSONRequestBody = CreateWorkflowTemplate
+// CreateWorkflowJSONRequestBody defines body for CreateWorkflow for application/json ContentType.
+type CreateWorkflowJSONRequestBody = CreateWorkflow
 
-// UpdateWorkflowTemplateJSONRequestBody defines body for UpdateWorkflowTemplate for application/json ContentType.
-type UpdateWorkflowTemplateJSONRequestBody = UpdateWorkflowTemplate
+// UpdateWorkflowJSONRequestBody defines body for UpdateWorkflow for application/json ContentType.
+type UpdateWorkflowJSONRequestBody = UpdateWorkflow
 
 // AsCelMatcher returns the union data inside the CreateRelationshipRuleRequest_Matcher as a CelMatcher
 func (t CreateRelationshipRuleRequest_Matcher) AsCelMatcher() (CelMatcher, error) {
@@ -2209,6 +2263,32 @@ func (t *WorkflowInput) MergeWorkflowArrayInput(v WorkflowArrayInput) error {
 	return err
 }
 
+// AsWorkflowObjectInput returns the union data inside the WorkflowInput as a WorkflowObjectInput
+func (t WorkflowInput) AsWorkflowObjectInput() (WorkflowObjectInput, error) {
+	var body WorkflowObjectInput
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowObjectInput overwrites any union data inside the WorkflowInput as the provided WorkflowObjectInput
+func (t *WorkflowInput) FromWorkflowObjectInput(v WorkflowObjectInput) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowObjectInput performs a merge with any union data inside the WorkflowInput, using the provided WorkflowObjectInput
+func (t *WorkflowInput) MergeWorkflowObjectInput(v WorkflowObjectInput) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t WorkflowInput) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
@@ -2595,24 +2675,24 @@ type ClientInterface interface {
 
 	RequestSystemUpsert(ctx context.Context, workspaceId string, systemId string, body RequestSystemUpsertJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListWorkflowTemplates request
-	ListWorkflowTemplates(ctx context.Context, workspaceId string, params *ListWorkflowTemplatesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListWorkflows request
+	ListWorkflows(ctx context.Context, workspaceId string, params *ListWorkflowsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateWorkflowTemplateWithBody request with any body
-	CreateWorkflowTemplateWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateWorkflowWithBody request with any body
+	CreateWorkflowWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreateWorkflowTemplate(ctx context.Context, workspaceId string, body CreateWorkflowTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateWorkflow(ctx context.Context, workspaceId string, body CreateWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteWorkflowTemplate request
-	DeleteWorkflowTemplate(ctx context.Context, workspaceId string, workflowTemplateId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// DeleteWorkflow request
+	DeleteWorkflow(ctx context.Context, workspaceId string, workflowId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetWorkflowTemplate request
-	GetWorkflowTemplate(ctx context.Context, workspaceId string, workflowTemplateId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetWorkflow request
+	GetWorkflow(ctx context.Context, workspaceId string, workflowId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateWorkflowTemplateWithBody request with any body
-	UpdateWorkflowTemplateWithBody(ctx context.Context, workspaceId string, workflowTemplateId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpdateWorkflowWithBody request with any body
+	UpdateWorkflowWithBody(ctx context.Context, workspaceId string, workflowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpdateWorkflowTemplate(ctx context.Context, workspaceId string, workflowTemplateId string, body UpdateWorkflowTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateWorkflow(ctx context.Context, workspaceId string, workflowId string, body UpdateWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) ListWorkspaces(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3671,8 +3751,8 @@ func (c *Client) RequestSystemUpsert(ctx context.Context, workspaceId string, sy
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListWorkflowTemplates(ctx context.Context, workspaceId string, params *ListWorkflowTemplatesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListWorkflowTemplatesRequest(c.Server, workspaceId, params)
+func (c *Client) ListWorkflows(ctx context.Context, workspaceId string, params *ListWorkflowsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListWorkflowsRequest(c.Server, workspaceId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -3683,8 +3763,8 @@ func (c *Client) ListWorkflowTemplates(ctx context.Context, workspaceId string, 
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateWorkflowTemplateWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateWorkflowTemplateRequestWithBody(c.Server, workspaceId, contentType, body)
+func (c *Client) CreateWorkflowWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateWorkflowRequestWithBody(c.Server, workspaceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3695,8 +3775,8 @@ func (c *Client) CreateWorkflowTemplateWithBody(ctx context.Context, workspaceId
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateWorkflowTemplate(ctx context.Context, workspaceId string, body CreateWorkflowTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateWorkflowTemplateRequest(c.Server, workspaceId, body)
+func (c *Client) CreateWorkflow(ctx context.Context, workspaceId string, body CreateWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateWorkflowRequest(c.Server, workspaceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3707,8 +3787,8 @@ func (c *Client) CreateWorkflowTemplate(ctx context.Context, workspaceId string,
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteWorkflowTemplate(ctx context.Context, workspaceId string, workflowTemplateId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteWorkflowTemplateRequest(c.Server, workspaceId, workflowTemplateId)
+func (c *Client) DeleteWorkflow(ctx context.Context, workspaceId string, workflowId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteWorkflowRequest(c.Server, workspaceId, workflowId)
 	if err != nil {
 		return nil, err
 	}
@@ -3719,8 +3799,8 @@ func (c *Client) DeleteWorkflowTemplate(ctx context.Context, workspaceId string,
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetWorkflowTemplate(ctx context.Context, workspaceId string, workflowTemplateId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetWorkflowTemplateRequest(c.Server, workspaceId, workflowTemplateId)
+func (c *Client) GetWorkflow(ctx context.Context, workspaceId string, workflowId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetWorkflowRequest(c.Server, workspaceId, workflowId)
 	if err != nil {
 		return nil, err
 	}
@@ -3731,8 +3811,8 @@ func (c *Client) GetWorkflowTemplate(ctx context.Context, workspaceId string, wo
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateWorkflowTemplateWithBody(ctx context.Context, workspaceId string, workflowTemplateId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateWorkflowTemplateRequestWithBody(c.Server, workspaceId, workflowTemplateId, contentType, body)
+func (c *Client) UpdateWorkflowWithBody(ctx context.Context, workspaceId string, workflowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateWorkflowRequestWithBody(c.Server, workspaceId, workflowId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3743,8 +3823,8 @@ func (c *Client) UpdateWorkflowTemplateWithBody(ctx context.Context, workspaceId
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateWorkflowTemplate(ctx context.Context, workspaceId string, workflowTemplateId string, body UpdateWorkflowTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateWorkflowTemplateRequest(c.Server, workspaceId, workflowTemplateId, body)
+func (c *Client) UpdateWorkflow(ctx context.Context, workspaceId string, workflowId string, body UpdateWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateWorkflowRequest(c.Server, workspaceId, workflowId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7228,8 +7308,8 @@ func NewRequestSystemUpsertRequestWithBody(server string, workspaceId string, sy
 	return req, nil
 }
 
-// NewListWorkflowTemplatesRequest generates requests for ListWorkflowTemplates
-func NewListWorkflowTemplatesRequest(server string, workspaceId string, params *ListWorkflowTemplatesParams) (*http.Request, error) {
+// NewListWorkflowsRequest generates requests for ListWorkflows
+func NewListWorkflowsRequest(server string, workspaceId string, params *ListWorkflowsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7244,7 +7324,7 @@ func NewListWorkflowTemplatesRequest(server string, workspaceId string, params *
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflow-templates", pathParam0)
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflows", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7300,19 +7380,19 @@ func NewListWorkflowTemplatesRequest(server string, workspaceId string, params *
 	return req, nil
 }
 
-// NewCreateWorkflowTemplateRequest calls the generic CreateWorkflowTemplate builder with application/json body
-func NewCreateWorkflowTemplateRequest(server string, workspaceId string, body CreateWorkflowTemplateJSONRequestBody) (*http.Request, error) {
+// NewCreateWorkflowRequest calls the generic CreateWorkflow builder with application/json body
+func NewCreateWorkflowRequest(server string, workspaceId string, body CreateWorkflowJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateWorkflowTemplateRequestWithBody(server, workspaceId, "application/json", bodyReader)
+	return NewCreateWorkflowRequestWithBody(server, workspaceId, "application/json", bodyReader)
 }
 
-// NewCreateWorkflowTemplateRequestWithBody generates requests for CreateWorkflowTemplate with any type of body
-func NewCreateWorkflowTemplateRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateWorkflowRequestWithBody generates requests for CreateWorkflow with any type of body
+func NewCreateWorkflowRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7327,7 +7407,7 @@ func NewCreateWorkflowTemplateRequestWithBody(server string, workspaceId string,
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflow-templates", pathParam0)
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflows", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7347,8 +7427,8 @@ func NewCreateWorkflowTemplateRequestWithBody(server string, workspaceId string,
 	return req, nil
 }
 
-// NewDeleteWorkflowTemplateRequest generates requests for DeleteWorkflowTemplate
-func NewDeleteWorkflowTemplateRequest(server string, workspaceId string, workflowTemplateId string) (*http.Request, error) {
+// NewDeleteWorkflowRequest generates requests for DeleteWorkflow
+func NewDeleteWorkflowRequest(server string, workspaceId string, workflowId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7360,7 +7440,7 @@ func NewDeleteWorkflowTemplateRequest(server string, workspaceId string, workflo
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "workflowTemplateId", runtime.ParamLocationPath, workflowTemplateId)
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "workflowId", runtime.ParamLocationPath, workflowId)
 	if err != nil {
 		return nil, err
 	}
@@ -7370,7 +7450,7 @@ func NewDeleteWorkflowTemplateRequest(server string, workspaceId string, workflo
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflow-templates/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflows/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7388,8 +7468,8 @@ func NewDeleteWorkflowTemplateRequest(server string, workspaceId string, workflo
 	return req, nil
 }
 
-// NewGetWorkflowTemplateRequest generates requests for GetWorkflowTemplate
-func NewGetWorkflowTemplateRequest(server string, workspaceId string, workflowTemplateId string) (*http.Request, error) {
+// NewGetWorkflowRequest generates requests for GetWorkflow
+func NewGetWorkflowRequest(server string, workspaceId string, workflowId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7401,7 +7481,7 @@ func NewGetWorkflowTemplateRequest(server string, workspaceId string, workflowTe
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "workflowTemplateId", runtime.ParamLocationPath, workflowTemplateId)
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "workflowId", runtime.ParamLocationPath, workflowId)
 	if err != nil {
 		return nil, err
 	}
@@ -7411,7 +7491,7 @@ func NewGetWorkflowTemplateRequest(server string, workspaceId string, workflowTe
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflow-templates/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflows/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7429,19 +7509,19 @@ func NewGetWorkflowTemplateRequest(server string, workspaceId string, workflowTe
 	return req, nil
 }
 
-// NewUpdateWorkflowTemplateRequest calls the generic UpdateWorkflowTemplate builder with application/json body
-func NewUpdateWorkflowTemplateRequest(server string, workspaceId string, workflowTemplateId string, body UpdateWorkflowTemplateJSONRequestBody) (*http.Request, error) {
+// NewUpdateWorkflowRequest calls the generic UpdateWorkflow builder with application/json body
+func NewUpdateWorkflowRequest(server string, workspaceId string, workflowId string, body UpdateWorkflowJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateWorkflowTemplateRequestWithBody(server, workspaceId, workflowTemplateId, "application/json", bodyReader)
+	return NewUpdateWorkflowRequestWithBody(server, workspaceId, workflowId, "application/json", bodyReader)
 }
 
-// NewUpdateWorkflowTemplateRequestWithBody generates requests for UpdateWorkflowTemplate with any type of body
-func NewUpdateWorkflowTemplateRequestWithBody(server string, workspaceId string, workflowTemplateId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewUpdateWorkflowRequestWithBody generates requests for UpdateWorkflow with any type of body
+func NewUpdateWorkflowRequestWithBody(server string, workspaceId string, workflowId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7453,7 +7533,7 @@ func NewUpdateWorkflowTemplateRequestWithBody(server string, workspaceId string,
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "workflowTemplateId", runtime.ParamLocationPath, workflowTemplateId)
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "workflowId", runtime.ParamLocationPath, workflowId)
 	if err != nil {
 		return nil, err
 	}
@@ -7463,7 +7543,7 @@ func NewUpdateWorkflowTemplateRequestWithBody(server string, workspaceId string,
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflow-templates/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflows/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7767,24 +7847,24 @@ type ClientWithResponsesInterface interface {
 
 	RequestSystemUpsertWithResponse(ctx context.Context, workspaceId string, systemId string, body RequestSystemUpsertJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestSystemUpsertResponse, error)
 
-	// ListWorkflowTemplatesWithResponse request
-	ListWorkflowTemplatesWithResponse(ctx context.Context, workspaceId string, params *ListWorkflowTemplatesParams, reqEditors ...RequestEditorFn) (*ListWorkflowTemplatesResponse, error)
+	// ListWorkflowsWithResponse request
+	ListWorkflowsWithResponse(ctx context.Context, workspaceId string, params *ListWorkflowsParams, reqEditors ...RequestEditorFn) (*ListWorkflowsResponse, error)
 
-	// CreateWorkflowTemplateWithBodyWithResponse request with any body
-	CreateWorkflowTemplateWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWorkflowTemplateResponse, error)
+	// CreateWorkflowWithBodyWithResponse request with any body
+	CreateWorkflowWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWorkflowResponse, error)
 
-	CreateWorkflowTemplateWithResponse(ctx context.Context, workspaceId string, body CreateWorkflowTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWorkflowTemplateResponse, error)
+	CreateWorkflowWithResponse(ctx context.Context, workspaceId string, body CreateWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWorkflowResponse, error)
 
-	// DeleteWorkflowTemplateWithResponse request
-	DeleteWorkflowTemplateWithResponse(ctx context.Context, workspaceId string, workflowTemplateId string, reqEditors ...RequestEditorFn) (*DeleteWorkflowTemplateResponse, error)
+	// DeleteWorkflowWithResponse request
+	DeleteWorkflowWithResponse(ctx context.Context, workspaceId string, workflowId string, reqEditors ...RequestEditorFn) (*DeleteWorkflowResponse, error)
 
-	// GetWorkflowTemplateWithResponse request
-	GetWorkflowTemplateWithResponse(ctx context.Context, workspaceId string, workflowTemplateId string, reqEditors ...RequestEditorFn) (*GetWorkflowTemplateResponse, error)
+	// GetWorkflowWithResponse request
+	GetWorkflowWithResponse(ctx context.Context, workspaceId string, workflowId string, reqEditors ...RequestEditorFn) (*GetWorkflowResponse, error)
 
-	// UpdateWorkflowTemplateWithBodyWithResponse request with any body
-	UpdateWorkflowTemplateWithBodyWithResponse(ctx context.Context, workspaceId string, workflowTemplateId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateWorkflowTemplateResponse, error)
+	// UpdateWorkflowWithBodyWithResponse request with any body
+	UpdateWorkflowWithBodyWithResponse(ctx context.Context, workspaceId string, workflowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateWorkflowResponse, error)
 
-	UpdateWorkflowTemplateWithResponse(ctx context.Context, workspaceId string, workflowTemplateId string, body UpdateWorkflowTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWorkflowTemplateResponse, error)
+	UpdateWorkflowWithResponse(ctx context.Context, workspaceId string, workflowId string, body UpdateWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWorkflowResponse, error)
 }
 
 type ListWorkspacesResponse struct {
@@ -7966,7 +8046,7 @@ type ListDeploymentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Items []DeploymentAndSystem `json:"items"`
+		Items []DeploymentAndSystems `json:"items"`
 
 		// Limit Maximum number of items returned
 		Limit int `json:"limit"`
@@ -9472,11 +9552,11 @@ func (r RequestSystemUpsertResponse) StatusCode() int {
 	return 0
 }
 
-type ListWorkflowTemplatesResponse struct {
+type ListWorkflowsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Items []WorkflowTemplate `json:"items"`
+		Items []Workflow `json:"items"`
 
 		// Limit Maximum number of items returned
 		Limit int `json:"limit"`
@@ -9491,7 +9571,7 @@ type ListWorkflowTemplatesResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r ListWorkflowTemplatesResponse) Status() string {
+func (r ListWorkflowsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -9499,22 +9579,22 @@ func (r ListWorkflowTemplatesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListWorkflowTemplatesResponse) StatusCode() int {
+func (r ListWorkflowsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type CreateWorkflowTemplateResponse struct {
+type CreateWorkflowResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON202      *WorkflowTemplate
+	JSON202      *Workflow
 	JSON400      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r CreateWorkflowTemplateResponse) Status() string {
+func (r CreateWorkflowResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -9522,47 +9602,23 @@ func (r CreateWorkflowTemplateResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r CreateWorkflowTemplateResponse) StatusCode() int {
+func (r CreateWorkflowResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type DeleteWorkflowTemplateResponse struct {
+type DeleteWorkflowResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON202      *WorkflowTemplate
-	JSON400      *ErrorResponse
-	JSON404      *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteWorkflowTemplateResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteWorkflowTemplateResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetWorkflowTemplateResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *WorkflowTemplate
+	JSON202      *Workflow
 	JSON400      *ErrorResponse
 	JSON404      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r GetWorkflowTemplateResponse) Status() string {
+func (r DeleteWorkflowResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -9570,23 +9626,23 @@ func (r GetWorkflowTemplateResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetWorkflowTemplateResponse) StatusCode() int {
+func (r DeleteWorkflowResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type UpdateWorkflowTemplateResponse struct {
+type GetWorkflowResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON202      *WorkflowTemplate
+	JSON200      *Workflow
 	JSON400      *ErrorResponse
 	JSON404      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r UpdateWorkflowTemplateResponse) Status() string {
+func (r GetWorkflowResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -9594,7 +9650,31 @@ func (r UpdateWorkflowTemplateResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpdateWorkflowTemplateResponse) StatusCode() int {
+func (r GetWorkflowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateWorkflowResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *Workflow
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateWorkflowResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateWorkflowResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -10370,65 +10450,65 @@ func (c *ClientWithResponses) RequestSystemUpsertWithResponse(ctx context.Contex
 	return ParseRequestSystemUpsertResponse(rsp)
 }
 
-// ListWorkflowTemplatesWithResponse request returning *ListWorkflowTemplatesResponse
-func (c *ClientWithResponses) ListWorkflowTemplatesWithResponse(ctx context.Context, workspaceId string, params *ListWorkflowTemplatesParams, reqEditors ...RequestEditorFn) (*ListWorkflowTemplatesResponse, error) {
-	rsp, err := c.ListWorkflowTemplates(ctx, workspaceId, params, reqEditors...)
+// ListWorkflowsWithResponse request returning *ListWorkflowsResponse
+func (c *ClientWithResponses) ListWorkflowsWithResponse(ctx context.Context, workspaceId string, params *ListWorkflowsParams, reqEditors ...RequestEditorFn) (*ListWorkflowsResponse, error) {
+	rsp, err := c.ListWorkflows(ctx, workspaceId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListWorkflowTemplatesResponse(rsp)
+	return ParseListWorkflowsResponse(rsp)
 }
 
-// CreateWorkflowTemplateWithBodyWithResponse request with arbitrary body returning *CreateWorkflowTemplateResponse
-func (c *ClientWithResponses) CreateWorkflowTemplateWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWorkflowTemplateResponse, error) {
-	rsp, err := c.CreateWorkflowTemplateWithBody(ctx, workspaceId, contentType, body, reqEditors...)
+// CreateWorkflowWithBodyWithResponse request with arbitrary body returning *CreateWorkflowResponse
+func (c *ClientWithResponses) CreateWorkflowWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWorkflowResponse, error) {
+	rsp, err := c.CreateWorkflowWithBody(ctx, workspaceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateWorkflowTemplateResponse(rsp)
+	return ParseCreateWorkflowResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreateWorkflowTemplateWithResponse(ctx context.Context, workspaceId string, body CreateWorkflowTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWorkflowTemplateResponse, error) {
-	rsp, err := c.CreateWorkflowTemplate(ctx, workspaceId, body, reqEditors...)
+func (c *ClientWithResponses) CreateWorkflowWithResponse(ctx context.Context, workspaceId string, body CreateWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWorkflowResponse, error) {
+	rsp, err := c.CreateWorkflow(ctx, workspaceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateWorkflowTemplateResponse(rsp)
+	return ParseCreateWorkflowResponse(rsp)
 }
 
-// DeleteWorkflowTemplateWithResponse request returning *DeleteWorkflowTemplateResponse
-func (c *ClientWithResponses) DeleteWorkflowTemplateWithResponse(ctx context.Context, workspaceId string, workflowTemplateId string, reqEditors ...RequestEditorFn) (*DeleteWorkflowTemplateResponse, error) {
-	rsp, err := c.DeleteWorkflowTemplate(ctx, workspaceId, workflowTemplateId, reqEditors...)
+// DeleteWorkflowWithResponse request returning *DeleteWorkflowResponse
+func (c *ClientWithResponses) DeleteWorkflowWithResponse(ctx context.Context, workspaceId string, workflowId string, reqEditors ...RequestEditorFn) (*DeleteWorkflowResponse, error) {
+	rsp, err := c.DeleteWorkflow(ctx, workspaceId, workflowId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteWorkflowTemplateResponse(rsp)
+	return ParseDeleteWorkflowResponse(rsp)
 }
 
-// GetWorkflowTemplateWithResponse request returning *GetWorkflowTemplateResponse
-func (c *ClientWithResponses) GetWorkflowTemplateWithResponse(ctx context.Context, workspaceId string, workflowTemplateId string, reqEditors ...RequestEditorFn) (*GetWorkflowTemplateResponse, error) {
-	rsp, err := c.GetWorkflowTemplate(ctx, workspaceId, workflowTemplateId, reqEditors...)
+// GetWorkflowWithResponse request returning *GetWorkflowResponse
+func (c *ClientWithResponses) GetWorkflowWithResponse(ctx context.Context, workspaceId string, workflowId string, reqEditors ...RequestEditorFn) (*GetWorkflowResponse, error) {
+	rsp, err := c.GetWorkflow(ctx, workspaceId, workflowId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetWorkflowTemplateResponse(rsp)
+	return ParseGetWorkflowResponse(rsp)
 }
 
-// UpdateWorkflowTemplateWithBodyWithResponse request with arbitrary body returning *UpdateWorkflowTemplateResponse
-func (c *ClientWithResponses) UpdateWorkflowTemplateWithBodyWithResponse(ctx context.Context, workspaceId string, workflowTemplateId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateWorkflowTemplateResponse, error) {
-	rsp, err := c.UpdateWorkflowTemplateWithBody(ctx, workspaceId, workflowTemplateId, contentType, body, reqEditors...)
+// UpdateWorkflowWithBodyWithResponse request with arbitrary body returning *UpdateWorkflowResponse
+func (c *ClientWithResponses) UpdateWorkflowWithBodyWithResponse(ctx context.Context, workspaceId string, workflowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateWorkflowResponse, error) {
+	rsp, err := c.UpdateWorkflowWithBody(ctx, workspaceId, workflowId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateWorkflowTemplateResponse(rsp)
+	return ParseUpdateWorkflowResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdateWorkflowTemplateWithResponse(ctx context.Context, workspaceId string, workflowTemplateId string, body UpdateWorkflowTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWorkflowTemplateResponse, error) {
-	rsp, err := c.UpdateWorkflowTemplate(ctx, workspaceId, workflowTemplateId, body, reqEditors...)
+func (c *ClientWithResponses) UpdateWorkflowWithResponse(ctx context.Context, workspaceId string, workflowId string, body UpdateWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWorkflowResponse, error) {
+	rsp, err := c.UpdateWorkflow(ctx, workspaceId, workflowId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateWorkflowTemplateResponse(rsp)
+	return ParseUpdateWorkflowResponse(rsp)
 }
 
 // ParseListWorkspacesResponse parses an HTTP response from a ListWorkspacesWithResponse call
@@ -10776,7 +10856,7 @@ func ParseListDeploymentsResponse(rsp *http.Response) (*ListDeploymentsResponse,
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Items []DeploymentAndSystem `json:"items"`
+			Items []DeploymentAndSystems `json:"items"`
 
 			// Limit Maximum number of items returned
 			Limit int `json:"limit"`
@@ -12970,15 +13050,15 @@ func ParseRequestSystemUpsertResponse(rsp *http.Response) (*RequestSystemUpsertR
 	return response, nil
 }
 
-// ParseListWorkflowTemplatesResponse parses an HTTP response from a ListWorkflowTemplatesWithResponse call
-func ParseListWorkflowTemplatesResponse(rsp *http.Response) (*ListWorkflowTemplatesResponse, error) {
+// ParseListWorkflowsResponse parses an HTTP response from a ListWorkflowsWithResponse call
+func ParseListWorkflowsResponse(rsp *http.Response) (*ListWorkflowsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListWorkflowTemplatesResponse{
+	response := &ListWorkflowsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -12986,7 +13066,7 @@ func ParseListWorkflowTemplatesResponse(rsp *http.Response) (*ListWorkflowTempla
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Items []WorkflowTemplate `json:"items"`
+			Items []Workflow `json:"items"`
 
 			// Limit Maximum number of items returned
 			Limit int `json:"limit"`
@@ -13014,22 +13094,22 @@ func ParseListWorkflowTemplatesResponse(rsp *http.Response) (*ListWorkflowTempla
 	return response, nil
 }
 
-// ParseCreateWorkflowTemplateResponse parses an HTTP response from a CreateWorkflowTemplateWithResponse call
-func ParseCreateWorkflowTemplateResponse(rsp *http.Response) (*CreateWorkflowTemplateResponse, error) {
+// ParseCreateWorkflowResponse parses an HTTP response from a CreateWorkflowWithResponse call
+func ParseCreateWorkflowResponse(rsp *http.Response) (*CreateWorkflowResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &CreateWorkflowTemplateResponse{
+	response := &CreateWorkflowResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest WorkflowTemplate
+		var dest Workflow
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -13047,22 +13127,22 @@ func ParseCreateWorkflowTemplateResponse(rsp *http.Response) (*CreateWorkflowTem
 	return response, nil
 }
 
-// ParseDeleteWorkflowTemplateResponse parses an HTTP response from a DeleteWorkflowTemplateWithResponse call
-func ParseDeleteWorkflowTemplateResponse(rsp *http.Response) (*DeleteWorkflowTemplateResponse, error) {
+// ParseDeleteWorkflowResponse parses an HTTP response from a DeleteWorkflowWithResponse call
+func ParseDeleteWorkflowResponse(rsp *http.Response) (*DeleteWorkflowResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeleteWorkflowTemplateResponse{
+	response := &DeleteWorkflowResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest WorkflowTemplate
+		var dest Workflow
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -13087,22 +13167,22 @@ func ParseDeleteWorkflowTemplateResponse(rsp *http.Response) (*DeleteWorkflowTem
 	return response, nil
 }
 
-// ParseGetWorkflowTemplateResponse parses an HTTP response from a GetWorkflowTemplateWithResponse call
-func ParseGetWorkflowTemplateResponse(rsp *http.Response) (*GetWorkflowTemplateResponse, error) {
+// ParseGetWorkflowResponse parses an HTTP response from a GetWorkflowWithResponse call
+func ParseGetWorkflowResponse(rsp *http.Response) (*GetWorkflowResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetWorkflowTemplateResponse{
+	response := &GetWorkflowResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest WorkflowTemplate
+		var dest Workflow
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -13127,22 +13207,22 @@ func ParseGetWorkflowTemplateResponse(rsp *http.Response) (*GetWorkflowTemplateR
 	return response, nil
 }
 
-// ParseUpdateWorkflowTemplateResponse parses an HTTP response from a UpdateWorkflowTemplateWithResponse call
-func ParseUpdateWorkflowTemplateResponse(rsp *http.Response) (*UpdateWorkflowTemplateResponse, error) {
+// ParseUpdateWorkflowResponse parses an HTTP response from a UpdateWorkflowWithResponse call
+func ParseUpdateWorkflowResponse(rsp *http.Response) (*UpdateWorkflowResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpdateWorkflowTemplateResponse{
+	response := &UpdateWorkflowResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest WorkflowTemplate
+		var dest Workflow
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

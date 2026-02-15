@@ -98,9 +98,17 @@ func fetchDeployments(ctx context.Context, client *api.ClientWithResponses, work
 		if item.Deployment.Description != nil {
 			desc = *item.Deployment.Description
 		}
+		// Get system names (now plural)
+		systemNames := ""
+		if len(item.Systems) > 0 {
+			systemNames = item.Systems[0].Name
+			for i := 1; i < len(item.Systems); i++ {
+				systemNames += ", " + item.Systems[i].Name
+			}
+		}
 		rows = append(rows, tableRow{
 			id:      item.Deployment.Id,
-			cols:    []string{item.Deployment.Name, item.System.Name, item.Deployment.Slug, desc},
+			cols:    []string{item.Deployment.Name, systemNames, item.Deployment.Slug, desc},
 			rawItem: item,
 		})
 	}
@@ -292,9 +300,17 @@ func fetchDeploymentsForResource(client *api.ClientWithResponses, workspaceID st
 			if dep.Description != nil {
 				desc = *dep.Description
 			}
+			// Join system IDs (now plural)
+			systemIds := ""
+			if len(dep.SystemIds) > 0 {
+				systemIds = dep.SystemIds[0]
+				for i := 1; i < len(dep.SystemIds); i++ {
+					systemIds += ", " + dep.SystemIds[i]
+				}
+			}
 			rows = append(rows, tableRow{
 				id:      dep.Id,
-				cols:    []string{dep.Name, dep.Slug, dep.SystemId, desc},
+				cols:    []string{dep.Name, dep.Slug, systemIds, desc},
 				rawItem: dep,
 			})
 		}
