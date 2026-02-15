@@ -14,9 +14,8 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/aws/common"
 	"github.com/ctrlplanedev/cli/internal/api"
-	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
+	ctrlp "github.com/ctrlplanedev/cli/internal/common"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // NewSyncNetworksCmd creates a new cobra command for syncing AWS Networks
@@ -137,7 +136,7 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 		common.EnsureProviderDetails(ctx, "aws-networks", regionsToSync, name)
 
 		// Upsert resources to Ctrlplane
-		return upsertToCtrlplane(ctx, allResources, name)
+		return ctrlp.UpsertResources(ctx, allResources, name)
 	}
 }
 
@@ -431,29 +430,4 @@ func getSubnetName(subnet types.Subnet) string {
 		}
 	}
 	return subnetName
-}
-
-// upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, name *string) error {
-	apiURL := viper.GetString("url")
-	apiKey := viper.GetString("api-key")
-	workspaceId := viper.GetString("workspace")
-
-	ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
-	if err != nil {
-		return fmt.Errorf("failed to create API client: %w", err)
-	}
-
-	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *name)
-	if err != nil {
-		return fmt.Errorf("failed to create resource provider: %w", err)
-	}
-
-	upsertResp, err := rp.UpsertResource(ctx, resources)
-	if err != nil {
-		return fmt.Errorf("failed to upsert resources: %w", err)
-	}
-
-	log.Info("Response from upserting resources", "status", upsertResp.Status)
-	return nil
 }

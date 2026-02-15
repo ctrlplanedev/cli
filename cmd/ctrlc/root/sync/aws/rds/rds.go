@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/aws/common"
 	"github.com/ctrlplanedev/cli/internal/api"
+	ctrlp "github.com/ctrlplanedev/cli/internal/common"
 	"github.com/ctrlplanedev/cli/internal/kinds"
 	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
@@ -30,13 +31,13 @@ func NewSyncRDSCmd() *cobra.Command {
 		Short: "Sync Amazon Relational Database Service instances into Ctrlplane",
 		Example: heredoc.Doc(`
 			# Make sure AWS credentials are configured via environment variables or AWS CLI
-			
+
 			# Sync all RDS instances from a region
 			$ ctrlc sync aws rds --region us-west-2
-			
+
 			# Sync all RDS instances from multiple regions
 			$ ctrlc sync aws rds --region us-west-2 --region us-east-1
-			
+
 			# Sync all RDS instances from all regions
 			$ ctrlc sync aws rds
 		`),
@@ -138,7 +139,7 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 		}
 
 		// Upsert resources to Ctrlplane
-		return upsertToCtrlplane(ctx, allResources, &providerRegion, name)
+		return ctrlp.UpsertResources(ctx, allResources, name)
 	}
 }
 

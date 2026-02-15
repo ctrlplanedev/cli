@@ -8,6 +8,7 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	ctrlp "github.com/ctrlplanedev/cli/internal/common"
 	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -78,6 +79,7 @@ func NewSyncKubernetesCmd() *cobra.Command {
 			$ ctrlc sync kubernetes --cluster-identifier 1234567890 --cluster-name my-cluster
 		`),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := context.Background()
 			log.Info("Syncing Kubernetes resources on a cluster")
 			if clusterIdentifier == "" {
 				clusterIdentifier = viper.GetString("cluster-identifier")
@@ -99,7 +101,6 @@ func NewSyncKubernetesCmd() *cobra.Command {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
 
-			ctx := context.Background()
 			clusterResource, _ := ctrlplaneClient.GetResourceByIdentifierWithResponse(ctx, workspaceId, clusterIdentifier)
 			if clusterResource.JSON200 != nil {
 				clusterName = clusterResource.JSON200.Name
@@ -149,7 +150,7 @@ func NewSyncKubernetesCmd() *cobra.Command {
 				}
 			}
 
-			return upsertToCtrlplane(ctrlplaneClient, resources, clusterIdentifier, clusterName, providerName)
+			return ctrlp.UpsertResources(ctx, resources, &providerName)
 		},
 	}
 	cmd.Flags().StringVarP(&providerName, "provider", "p", "", "Name of the resource provider")
