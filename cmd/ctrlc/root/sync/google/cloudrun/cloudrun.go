@@ -103,7 +103,6 @@ func processService(service *run.Service) api.ResourceProviderResource {
 	return resource
 }
 
-
 func runSync(project, providerName *string, regions *[]string) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		log.Info("Syncing Cloud Run services into Ctrlplane", "project", *project)

@@ -514,4 +514,3 @@ func fetchParameterGroupDetails(ctx context.Context, rdsClient *rds.Client, para
 		metadata["database/parameter-count"] = strconv.Itoa(paramCount)
 	}
 }
-

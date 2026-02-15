@@ -159,4 +159,3 @@ func NewSyncKubernetesCmd() *cobra.Command {
 
 	return cmd
 }
-
