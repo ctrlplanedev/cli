@@ -9,7 +9,6 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	ctrlp "github.com/ctrlplanedev/cli/internal/common"
-	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	appsv1 "k8s.io/api/apps/v1"

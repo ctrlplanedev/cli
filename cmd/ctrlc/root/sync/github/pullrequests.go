@@ -13,10 +13,8 @@ import (
 	"github.com/ctrlplanedev/cli/internal/api"
 	ctrlp "github.com/ctrlplanedev/cli/internal/common"
 	"github.com/ctrlplanedev/cli/internal/kinds"
-	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/google/go-github/v57/github"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
 )
 
