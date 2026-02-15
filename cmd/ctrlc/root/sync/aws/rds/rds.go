@@ -14,10 +14,9 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/aws/common"
 	"github.com/ctrlplanedev/cli/internal/api"
+	ctrlp "github.com/ctrlplanedev/cli/internal/common"
 	"github.com/ctrlplanedev/cli/internal/kinds"
-	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // NewSyncRDSCmd creates a new cobra command for syncing AWS RDS instances
@@ -30,13 +29,13 @@ func NewSyncRDSCmd() *cobra.Command {
 		Short: "Sync Amazon Relational Database Service instances into Ctrlplane",
 		Example: heredoc.Doc(`
 			# Make sure AWS credentials are configured via environment variables or AWS CLI
-			
+
 			# Sync all RDS instances from a region
 			$ ctrlc sync aws rds --region us-west-2
-			
+
 			# Sync all RDS instances from multiple regions
 			$ ctrlc sync aws rds --region us-west-2 --region us-east-1
-			
+
 			# Sync all RDS instances from all regions
 			$ ctrlc sync aws rds
 		`),
@@ -138,7 +137,7 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 		}
 
 		// Upsert resources to Ctrlplane
-		return upsertToCtrlplane(ctx, allResources, &providerRegion, name)
+		return ctrlp.UpsertResources(ctx, allResources, name)
 	}
 }
 
@@ -512,38 +511,4 @@ func fetchParameterGroupDetails(ctx context.Context, rdsClient *rds.Client, para
 	if paramCount > 0 {
 		metadata["database/parameter-count"] = strconv.Itoa(paramCount)
 	}
-}
-
-// upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, region, name *string) error {
-	if *name == "" {
-		*name = fmt.Sprintf("aws-rds-%s", *region)
-	}
-
-	apiURL := viper.GetString("url")
-	apiKey := viper.GetString("api-key")
-	workspaceId := viper.GetString("workspace")
-
-	ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
-	if err != nil {
-		return fmt.Errorf("failed to create API client: %w", err)
-	}
-
-	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *name)
-	if err != nil {
-		return fmt.Errorf("failed to create resource provider: %w", err)
-	}
-
-	// err = rp.AddResourceRelationshipRule(ctx, relationshipRules)
-	// if err != nil {
-	// 	log.Error("Failed to add resource relationship rule", "name", *name, "error", err)
-	// }
-
-	upsertResp, err := rp.UpsertResource(ctx, resources)
-	if err != nil {
-		return fmt.Errorf("failed to upsert resources: %w", err)
-	}
-
-	log.Info("Response from upserting resources", "status", upsertResp.Status)
-	return nil
 }

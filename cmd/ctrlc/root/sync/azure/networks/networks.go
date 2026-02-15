@@ -16,8 +16,8 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync/azure/common"
 	"github.com/ctrlplanedev/cli/internal/api"
+	ctrlp "github.com/ctrlplanedev/cli/internal/common"
 	"github.com/ctrlplanedev/cli/internal/kinds"
-	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -95,7 +95,7 @@ func runSync(subscriptionID, name *string) func(cmd *cobra.Command, args []strin
 		}
 
 		// Upsert resources to Ctrlplane
-		return upsertToCtrlplane(ctx, resources, subscriptionID, name)
+		return ctrlp.UpsertResources(ctx, resources, name)
 	}
 }
 
@@ -403,32 +403,4 @@ func getSubnetState(subnet *armnetwork.Subnet) string {
 		return string(*subnet.Properties.ProvisioningState)
 	}
 	return ""
-}
-
-func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, subscriptionID, name *string) error {
-	if *name == "" {
-		*name = fmt.Sprintf("azure-networks-%s", *subscriptionID)
-	}
-
-	apiURL := viper.GetString("url")
-	apiKey := viper.GetString("api-key")
-	workspaceId := viper.GetString("workspace")
-
-	ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
-	if err != nil {
-		return fmt.Errorf("failed to create API client: %w", err)
-	}
-
-	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *name)
-	if err != nil {
-		return fmt.Errorf("failed to create resource provider: %w", err)
-	}
-
-	upsertResp, err := rp.UpsertResource(ctx, resources)
-	if err != nil {
-		return fmt.Errorf("failed to upsert resources: %w", err)
-	}
-
-	log.Info("Response from upserting resources", "status", upsertResp.Status)
-	return nil
 }

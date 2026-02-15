@@ -8,7 +8,7 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
-	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
+	ctrlp "github.com/ctrlplanedev/cli/internal/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	appsv1 "k8s.io/api/apps/v1"
@@ -78,6 +78,7 @@ func NewSyncKubernetesCmd() *cobra.Command {
 			$ ctrlc sync kubernetes --cluster-identifier 1234567890 --cluster-name my-cluster
 		`),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := context.Background()
 			log.Info("Syncing Kubernetes resources on a cluster")
 			if clusterIdentifier == "" {
 				clusterIdentifier = viper.GetString("cluster-identifier")
@@ -99,7 +100,6 @@ func NewSyncKubernetesCmd() *cobra.Command {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
 
-			ctx := context.Background()
 			clusterResource, _ := ctrlplaneClient.GetResourceByIdentifierWithResponse(ctx, workspaceId, clusterIdentifier)
 			if clusterResource.JSON200 != nil {
 				clusterName = clusterResource.JSON200.Name
@@ -149,7 +149,7 @@ func NewSyncKubernetesCmd() *cobra.Command {
 				}
 			}
 
-			return upsertToCtrlplane(ctrlplaneClient, resources, clusterIdentifier, clusterName, providerName)
+			return ctrlp.UpsertResources(ctx, resources, &providerName)
 		},
 	}
 	cmd.Flags().StringVarP(&providerName, "provider", "p", "", "Name of the resource provider")
@@ -157,29 +157,4 @@ func NewSyncKubernetesCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&clusterName, "cluster-name", "n", "", "The name of the cluster")
 
 	return cmd
-}
-
-// upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctrlplaneClient *api.ClientWithResponses, resources []api.ResourceProviderResource, clusterIdentifier string, clusterName string, providerName string) error {
-	ctx := context.Background()
-	workspaceId := viper.GetString("workspace")
-
-	if providerName == "" {
-		providerName = fmt.Sprintf("kubernetes-cluster-%s", clusterName)
-	}
-
-	log.Info("Using provider name", "provider", providerName)
-
-	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, providerName)
-	if err != nil {
-		return fmt.Errorf("failed to create resource provider: %w", err)
-	}
-
-	upsertResp, err := rp.UpsertResource(ctx, resources)
-	if err != nil {
-		return fmt.Errorf("failed to upsert resources: %w", err)
-	}
-
-	log.Info("Response from upserting resources", "status", upsertResp.Status)
-	return nil
 }

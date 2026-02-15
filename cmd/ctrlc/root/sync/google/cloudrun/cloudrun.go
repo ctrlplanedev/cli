@@ -4,15 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
-	"github.com/ctrlplanedev/cli/internal/cliutil"
-	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
+	ctrlp "github.com/ctrlplanedev/cli/internal/common"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"google.golang.org/api/run/v1"
 )
 
@@ -102,35 +99,6 @@ func processService(service *run.Service) api.ResourceProviderResource {
 	return resource
 }
 
-func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, project *string, providerName *string) (*http.Response, error) {
-	if *providerName == "" {
-		*providerName = fmt.Sprintf("google-cloudrun-%s", *project)
-	}
-
-	apiURL := viper.GetString("url")
-	apiKey := viper.GetString("api-key")
-	workspaceId := viper.GetString("workspace")
-
-	ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create API client: %w", err)
-	}
-
-	log.Info("Upserting resource provider", "name", *providerName)
-	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *providerName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create resource provider: %w", err)
-	}
-
-	upsertResp, err := rp.UpsertResource(ctx, resources)
-	if err != nil {
-		return nil, fmt.Errorf("failed to upsert resources: %w", err)
-	}
-
-	log.Info("Response from upserting resources", "status", upsertResp.Status)
-	return upsertResp, nil
-}
-
 func runSync(project, providerName *string, regions *[]string) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		log.Info("Syncing Cloud Run services into Ctrlplane", "project", *project)
@@ -153,13 +121,13 @@ func runSync(project, providerName *string, regions *[]string) func(cmd *cobra.C
 			allResources = append(allResources, resource)
 		}
 
-		upsertResp, err := upsertToCtrlplane(ctx, allResources, project, providerName)
-		if err != nil {
-			return fmt.Errorf("failed to upsert Cloud Run services: %w", err)
+		// Set default provider name if not provided
+		if *providerName == "" {
+			*providerName = fmt.Sprintf("google-cloudrun-%s", *project)
 		}
-		fmt.Println(upsertResp)
 
-		return cliutil.HandleResponseOutput(cmd, upsertResp)
+		// Upsert resources to Ctrlplane
+		return ctrlp.UpsertResources(ctx, allResources, providerName)
 	}
 }
 
