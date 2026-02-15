@@ -11,6 +11,7 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	ctrlp "github.com/ctrlplanedev/cli/internal/common"
 	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -78,8 +79,13 @@ func runSync(project, name *string) func(cmd *cobra.Command, args []string) erro
 			return err
 		}
 
+		// Set default provider name if not provided
+		if *name == "" {
+			*name = fmt.Sprintf("google-buckets-project-%s", *project)
+		}
+
 		// Upsert resources to Ctrlplane
-		return upsertToCtrlplane(ctx, resources, project, name)
+		return ctrlp.UpsertResources(ctx, resources, name)
 	}
 }
 
@@ -457,33 +463,4 @@ func processBucketStats(storageClient *storage.Service, bucket *storage.Bucket, 
 			metadata["storage/size-mb"] = "0"
 		}
 	}
-}
-
-// upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, project, name *string) error {
-	if *name == "" {
-		*name = fmt.Sprintf("google-buckets-project-%s", *project)
-	}
-
-	apiURL := viper.GetString("url")
-	apiKey := viper.GetString("api-key")
-	workspaceId := viper.GetString("workspace")
-
-	ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
-	if err != nil {
-		return fmt.Errorf("failed to create API client: %w", err)
-	}
-
-	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *name)
-	if err != nil {
-		return fmt.Errorf("failed to create resource provider: %w", err)
-	}
-
-	upsertResp, err := rp.UpsertResource(ctx, resources)
-	if err != nil {
-		return fmt.Errorf("failed to upsert resources: %w", err)
-	}
-
-	log.Info("Response from upserting resources", "status", upsertResp.Status)
-	return nil
 }

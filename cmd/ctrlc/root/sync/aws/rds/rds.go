@@ -515,36 +515,3 @@ func fetchParameterGroupDetails(ctx context.Context, rdsClient *rds.Client, para
 	}
 }
 
-// upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, region, name *string) error {
-	if *name == "" {
-		*name = fmt.Sprintf("aws-rds-%s", *region)
-	}
-
-	apiURL := viper.GetString("url")
-	apiKey := viper.GetString("api-key")
-	workspaceId := viper.GetString("workspace")
-
-	ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
-	if err != nil {
-		return fmt.Errorf("failed to create API client: %w", err)
-	}
-
-	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *name)
-	if err != nil {
-		return fmt.Errorf("failed to create resource provider: %w", err)
-	}
-
-	// err = rp.AddResourceRelationshipRule(ctx, relationshipRules)
-	// if err != nil {
-	// 	log.Error("Failed to add resource relationship rule", "name", *name, "error", err)
-	// }
-
-	upsertResp, err := rp.UpsertResource(ctx, resources)
-	if err != nil {
-		return fmt.Errorf("failed to upsert resources: %w", err)
-	}
-
-	log.Info("Response from upserting resources", "status", upsertResp.Status)
-	return nil
-}

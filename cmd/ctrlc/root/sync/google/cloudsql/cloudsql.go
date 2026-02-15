@@ -10,6 +10,7 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	ctrlp "github.com/ctrlplanedev/cli/internal/common"
 	"github.com/ctrlplanedev/cli/internal/kinds"
 	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/spf13/cobra"
@@ -220,8 +221,13 @@ func runSync(project, providerName *string) func(cmd *cobra.Command, args []stri
 			return err
 		}
 
+		// Set default provider name if not provided
+		if *providerName == "" {
+			*providerName = fmt.Sprintf("google-cloudsql-%s", *project)
+		}
+
 		// Upsert resources to Ctrlplane
-		return upsertToCtrlplane(ctx, resources, project, providerName)
+		return ctrlp.UpsertResources(ctx, resources, providerName)
 	}
 }
 
@@ -389,38 +395,3 @@ func buildInstanceMetadata(instance *sqladmin.DatabaseInstance, project, region,
 // 		},
 // 	},
 // }
-
-// upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, project, providerName *string) error {
-	if *providerName == "" {
-		*providerName = fmt.Sprintf("google-cloudsql-%s", *project)
-	}
-
-	apiURL := viper.GetString("url")
-	apiKey := viper.GetString("api-key")
-	workspaceId := viper.GetString("workspace")
-
-	ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
-	if err != nil {
-		return fmt.Errorf("failed to create API client: %w", err)
-	}
-
-	log.Info("Upserting resource provider", "name", *providerName)
-	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, *providerName)
-	if err != nil {
-		return fmt.Errorf("failed to create resource provider: %w", err)
-	}
-
-	// err = rp.AddResourceRelationshipRule(ctx, relationshipRules)
-	// if err != nil {
-	// 	log.Error("Failed to add resource relationship rule", "name", *providerName, "error", err)
-	// }
-
-	upsertResp, err := rp.UpsertResource(ctx, resources)
-	if err != nil {
-		return fmt.Errorf("failed to upsert resources: %w", err)
-	}
-
-	log.Info("Response from upserting resources", "status", upsertResp.Status)
-	return nil
-}

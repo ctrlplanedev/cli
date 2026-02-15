@@ -160,27 +160,3 @@ func NewSyncKubernetesCmd() *cobra.Command {
 	return cmd
 }
 
-// upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctrlplaneClient *api.ClientWithResponses, resources []api.ResourceProviderResource, clusterIdentifier string, clusterName string, providerName string) error {
-	ctx := context.Background()
-	workspaceId := viper.GetString("workspace")
-
-	if providerName == "" {
-		providerName = fmt.Sprintf("kubernetes-cluster-%s", clusterName)
-	}
-
-	log.Info("Using provider name", "provider", providerName)
-
-	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, providerName)
-	if err != nil {
-		return fmt.Errorf("failed to create resource provider: %w", err)
-	}
-
-	upsertResp, err := rp.UpsertResource(ctx, resources)
-	if err != nil {
-		return fmt.Errorf("failed to upsert resources: %w", err)
-	}
-
-	log.Info("Response from upserting resources", "status", upsertResp.Status)
-	return nil
-}

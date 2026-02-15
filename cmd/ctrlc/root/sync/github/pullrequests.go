@@ -11,6 +11,7 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
+	ctrlp "github.com/ctrlplanedev/cli/internal/common"
 	"github.com/ctrlplanedev/cli/internal/kinds"
 	"github.com/ctrlplanedev/cli/pkg/resourceprovider"
 	"github.com/google/go-github/v57/github"
@@ -161,9 +162,17 @@ func runSync(repoPath, token, name *string, states *[]string) func(cmd *cobra.Co
 		}
 		log.Debug("Pull requests processed successfully", "count", len(resources))
 
+		// Set default provider name if not provided
+		if *name == "" {
+			*name = fmt.Sprintf("github-prs-%s-%s", owner, repo)
+			log.Debug("Using generated provider name", "name", *name)
+		} else {
+			log.Debug("Using provided provider name", "name", *name)
+		}
+
 		// Upsert resources to Ctrlplane
 		log.Debug("Upserting resources to Ctrlplane", "count", len(resources))
-		return upsertToCtrlplane(ctx, resources, owner, repo, *name)
+		return ctrlp.UpsertResources(ctx, resources, name)
 	}
 }
 
@@ -607,54 +616,3 @@ func initPullRequestMetadata(pr *github.PullRequest, owner, repo string) map[str
 }
 
 // var relationshipRules = []api.Relationship{}
-
-// upsertToCtrlplane handles upserting resources to Ctrlplane
-func upsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, owner, repo, name string) error {
-	log.Debug("Upserting resources to Ctrlplane", "count", len(resources))
-
-	if name == "" {
-		name = fmt.Sprintf("github-prs-%s-%s", owner, repo)
-		log.Debug("Using generated provider name", "name", name)
-	} else {
-		log.Debug("Using provided provider name", "name", name)
-	}
-
-	apiURL := viper.GetString("url")
-	apiKey := viper.GetString("api-key")
-	workspaceId := viper.GetString("workspace")
-
-	log.Debug("API configuration", "url", apiURL, "workspace", workspaceId)
-
-	log.Debug("Creating API client")
-	ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
-	if err != nil {
-		log.Error("Failed to create API client", "error", err)
-		return fmt.Errorf("failed to create API client: %w", err)
-	}
-
-	log.Debug("Creating resource provider", "name", name)
-	rp, err := resourceprovider.New(ctrlplaneClient, workspaceId, name)
-	if err != nil {
-		log.Error("Failed to create resource provider", "name", name, "error", err)
-		return fmt.Errorf("failed to create resource provider: %w", err)
-	}
-
-	// log.Debug("Adding resource relationship rules", "rules_count", len(relationshipRules))
-	// err = rp.AddResourceRelationshipRule(ctx, relationshipRules)
-	// if err != nil {
-	// 	log.Error("Failed to add resource relationship rule", "name", name, "error", err)
-	// } else {
-	// 	log.Debug("Successfully added relationship rules")
-	// }
-
-	log.Debug("Upserting resources", "count", len(resources))
-	upsertResp, err := rp.UpsertResource(ctx, resources)
-	if err != nil {
-		log.Error("Failed to upsert resources", "error", err)
-		return fmt.Errorf("failed to upsert resources: %w", err)
-	}
-
-	log.Info("Response from upserting resources", "status", upsertResp.Status)
-	log.Debug("Successfully upserted resources to Ctrlplane")
-	return nil
-}
