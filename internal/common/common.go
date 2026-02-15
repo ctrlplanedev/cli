@@ -11,7 +11,7 @@ import (
 )
 
 func UpsertResources(ctx context.Context, resources []api.ResourceProviderResource, name *string) error {
-	if *name == "" {
+	if name == nil || *name == "" {
 		return fmt.Errorf("name is unset, invalid usage.")
 	}
 
