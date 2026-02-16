@@ -147,10 +147,10 @@ func (r *ResourceItemSpec) getProviderID(ctx Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create resource provider: %w", err)
 	}
-	if createResp.StatusCode() != http.StatusAccepted {
+	if createResp.StatusCode() != http.StatusOK {
 		return "", fmt.Errorf("failed to create resource provider: %s", createResp.Status())
 	}
-	return createResp.JSON202.Id, nil
+	return createResp.JSON200.Id, nil
 }
 
 func (r *ResourceItemSpec) syncVariables(ctx Context) error {

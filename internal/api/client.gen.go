@@ -810,12 +810,6 @@ type ResourceProvider struct {
 	WorkspaceId openapi_types.UUID `json:"workspaceId"`
 }
 
-// ResourceProviderRequestAccepted defines model for ResourceProviderRequestAccepted.
-type ResourceProviderRequestAccepted struct {
-	Id      string `json:"id"`
-	Message string `json:"message"`
-}
-
 // ResourceProviderResource defines model for ResourceProviderResource.
 type ResourceProviderResource struct {
 	Config     map[string]interface{} `json:"config"`
@@ -828,6 +822,13 @@ type ResourceProviderResource struct {
 	Name       string                 `json:"name"`
 	UpdatedAt  *time.Time             `json:"updatedAt,omitempty"`
 	Version    string                 `json:"version"`
+}
+
+// ResourceProviderSetRequestAccepted defines model for ResourceProviderSetRequestAccepted.
+type ResourceProviderSetRequestAccepted struct {
+	BatchId *string `json:"batchId,omitempty"`
+	Method  string  `json:"method"`
+	Ok      bool    `json:"ok"`
 }
 
 // ResourceRequestAccepted defines model for ResourceRequestAccepted.
@@ -2675,6 +2676,18 @@ type ClientInterface interface {
 
 	RequestSystemUpsert(ctx context.Context, workspaceId string, systemId string, body RequestSystemUpsertJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// UnlinkDeploymentFromSystem request
+	UnlinkDeploymentFromSystem(ctx context.Context, workspaceId string, systemId string, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// LinkDeploymentToSystem request
+	LinkDeploymentToSystem(ctx context.Context, workspaceId string, systemId string, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UnlinkEnvironmentFromSystem request
+	UnlinkEnvironmentFromSystem(ctx context.Context, workspaceId string, systemId string, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// LinkEnvironmentToSystem request
+	LinkEnvironmentToSystem(ctx context.Context, workspaceId string, systemId string, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListWorkflows request
 	ListWorkflows(ctx context.Context, workspaceId string, params *ListWorkflowsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -3741,6 +3754,54 @@ func (c *Client) RequestSystemUpsertWithBody(ctx context.Context, workspaceId st
 
 func (c *Client) RequestSystemUpsert(ctx context.Context, workspaceId string, systemId string, body RequestSystemUpsertJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRequestSystemUpsertRequest(c.Server, workspaceId, systemId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UnlinkDeploymentFromSystem(ctx context.Context, workspaceId string, systemId string, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUnlinkDeploymentFromSystemRequest(c.Server, workspaceId, systemId, deploymentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) LinkDeploymentToSystem(ctx context.Context, workspaceId string, systemId string, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLinkDeploymentToSystemRequest(c.Server, workspaceId, systemId, deploymentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UnlinkEnvironmentFromSystem(ctx context.Context, workspaceId string, systemId string, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUnlinkEnvironmentFromSystemRequest(c.Server, workspaceId, systemId, environmentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) LinkEnvironmentToSystem(ctx context.Context, workspaceId string, systemId string, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLinkEnvironmentToSystemRequest(c.Server, workspaceId, systemId, environmentId)
 	if err != nil {
 		return nil, err
 	}
@@ -7308,6 +7369,198 @@ func NewRequestSystemUpsertRequestWithBody(server string, workspaceId string, sy
 	return req, nil
 }
 
+// NewUnlinkDeploymentFromSystemRequest generates requests for UnlinkDeploymentFromSystem
+func NewUnlinkDeploymentFromSystemRequest(server string, workspaceId string, systemId string, deploymentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "systemId", runtime.ParamLocationPath, systemId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/systems/%s/deployments/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewLinkDeploymentToSystemRequest generates requests for LinkDeploymentToSystem
+func NewLinkDeploymentToSystemRequest(server string, workspaceId string, systemId string, deploymentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "systemId", runtime.ParamLocationPath, systemId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "deploymentId", runtime.ParamLocationPath, deploymentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/systems/%s/deployments/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUnlinkEnvironmentFromSystemRequest generates requests for UnlinkEnvironmentFromSystem
+func NewUnlinkEnvironmentFromSystemRequest(server string, workspaceId string, systemId string, environmentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "systemId", runtime.ParamLocationPath, systemId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "environmentId", runtime.ParamLocationPath, environmentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/systems/%s/environments/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewLinkEnvironmentToSystemRequest generates requests for LinkEnvironmentToSystem
+func NewLinkEnvironmentToSystemRequest(server string, workspaceId string, systemId string, environmentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "systemId", runtime.ParamLocationPath, systemId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "environmentId", runtime.ParamLocationPath, environmentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/systems/%s/environments/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListWorkflowsRequest generates requests for ListWorkflows
 func NewListWorkflowsRequest(server string, workspaceId string, params *ListWorkflowsParams) (*http.Request, error) {
 	var err error
@@ -7846,6 +8099,18 @@ type ClientWithResponsesInterface interface {
 	RequestSystemUpsertWithBodyWithResponse(ctx context.Context, workspaceId string, systemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestSystemUpsertResponse, error)
 
 	RequestSystemUpsertWithResponse(ctx context.Context, workspaceId string, systemId string, body RequestSystemUpsertJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestSystemUpsertResponse, error)
+
+	// UnlinkDeploymentFromSystemWithResponse request
+	UnlinkDeploymentFromSystemWithResponse(ctx context.Context, workspaceId string, systemId string, deploymentId string, reqEditors ...RequestEditorFn) (*UnlinkDeploymentFromSystemResponse, error)
+
+	// LinkDeploymentToSystemWithResponse request
+	LinkDeploymentToSystemWithResponse(ctx context.Context, workspaceId string, systemId string, deploymentId string, reqEditors ...RequestEditorFn) (*LinkDeploymentToSystemResponse, error)
+
+	// UnlinkEnvironmentFromSystemWithResponse request
+	UnlinkEnvironmentFromSystemWithResponse(ctx context.Context, workspaceId string, systemId string, environmentId string, reqEditors ...RequestEditorFn) (*UnlinkEnvironmentFromSystemResponse, error)
+
+	// LinkEnvironmentToSystemWithResponse request
+	LinkEnvironmentToSystemWithResponse(ctx context.Context, workspaceId string, systemId string, environmentId string, reqEditors ...RequestEditorFn) (*LinkEnvironmentToSystemResponse, error)
 
 	// ListWorkflowsWithResponse request
 	ListWorkflowsWithResponse(ctx context.Context, workspaceId string, params *ListWorkflowsParams, reqEditors ...RequestEditorFn) (*ListWorkflowsResponse, error)
@@ -9164,7 +9429,7 @@ func (r GetReleaseResponse) StatusCode() int {
 type RequestResourceProviderUpsertResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON202      *ResourceProviderRequestAccepted
+	JSON200      *ResourceProvider
 	JSON400      *ErrorResponse
 }
 
@@ -9209,7 +9474,7 @@ func (r GetResourceProviderByNameResponse) StatusCode() int {
 type SetResourceProviderResourcesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON202      *ResourceProviderRequestAccepted
+	JSON202      *ResourceProviderSetRequestAccepted
 	JSON400      *ErrorResponse
 	JSON404      *ErrorResponse
 }
@@ -9546,6 +9811,102 @@ func (r RequestSystemUpsertResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r RequestSystemUpsertResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UnlinkDeploymentFromSystemResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *SystemRequestAccepted
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UnlinkDeploymentFromSystemResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UnlinkDeploymentFromSystemResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type LinkDeploymentToSystemResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *SystemRequestAccepted
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r LinkDeploymentToSystemResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r LinkDeploymentToSystemResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UnlinkEnvironmentFromSystemResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *SystemRequestAccepted
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UnlinkEnvironmentFromSystemResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UnlinkEnvironmentFromSystemResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type LinkEnvironmentToSystemResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *SystemRequestAccepted
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r LinkEnvironmentToSystemResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r LinkEnvironmentToSystemResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -10448,6 +10809,42 @@ func (c *ClientWithResponses) RequestSystemUpsertWithResponse(ctx context.Contex
 		return nil, err
 	}
 	return ParseRequestSystemUpsertResponse(rsp)
+}
+
+// UnlinkDeploymentFromSystemWithResponse request returning *UnlinkDeploymentFromSystemResponse
+func (c *ClientWithResponses) UnlinkDeploymentFromSystemWithResponse(ctx context.Context, workspaceId string, systemId string, deploymentId string, reqEditors ...RequestEditorFn) (*UnlinkDeploymentFromSystemResponse, error) {
+	rsp, err := c.UnlinkDeploymentFromSystem(ctx, workspaceId, systemId, deploymentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUnlinkDeploymentFromSystemResponse(rsp)
+}
+
+// LinkDeploymentToSystemWithResponse request returning *LinkDeploymentToSystemResponse
+func (c *ClientWithResponses) LinkDeploymentToSystemWithResponse(ctx context.Context, workspaceId string, systemId string, deploymentId string, reqEditors ...RequestEditorFn) (*LinkDeploymentToSystemResponse, error) {
+	rsp, err := c.LinkDeploymentToSystem(ctx, workspaceId, systemId, deploymentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLinkDeploymentToSystemResponse(rsp)
+}
+
+// UnlinkEnvironmentFromSystemWithResponse request returning *UnlinkEnvironmentFromSystemResponse
+func (c *ClientWithResponses) UnlinkEnvironmentFromSystemWithResponse(ctx context.Context, workspaceId string, systemId string, environmentId string, reqEditors ...RequestEditorFn) (*UnlinkEnvironmentFromSystemResponse, error) {
+	rsp, err := c.UnlinkEnvironmentFromSystem(ctx, workspaceId, systemId, environmentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUnlinkEnvironmentFromSystemResponse(rsp)
+}
+
+// LinkEnvironmentToSystemWithResponse request returning *LinkEnvironmentToSystemResponse
+func (c *ClientWithResponses) LinkEnvironmentToSystemWithResponse(ctx context.Context, workspaceId string, systemId string, environmentId string, reqEditors ...RequestEditorFn) (*LinkEnvironmentToSystemResponse, error) {
+	rsp, err := c.LinkEnvironmentToSystem(ctx, workspaceId, systemId, environmentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLinkEnvironmentToSystemResponse(rsp)
 }
 
 // ListWorkflowsWithResponse request returning *ListWorkflowsResponse
@@ -12511,12 +12908,12 @@ func ParseRequestResourceProviderUpsertResponse(rsp *http.Response) (*RequestRes
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest ResourceProviderRequestAccepted
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ResourceProvider
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON202 = &dest
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest ErrorResponse
@@ -12571,7 +12968,7 @@ func ParseSetResourceProviderResourcesResponse(rsp *http.Response) (*SetResource
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest ResourceProviderRequestAccepted
+		var dest ResourceProviderSetRequestAccepted
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -13044,6 +13441,166 @@ func ParseRequestSystemUpsertResponse(rsp *http.Response) (*RequestSystemUpsertR
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUnlinkDeploymentFromSystemResponse parses an HTTP response from a UnlinkDeploymentFromSystemWithResponse call
+func ParseUnlinkDeploymentFromSystemResponse(rsp *http.Response) (*UnlinkDeploymentFromSystemResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UnlinkDeploymentFromSystemResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest SystemRequestAccepted
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseLinkDeploymentToSystemResponse parses an HTTP response from a LinkDeploymentToSystemWithResponse call
+func ParseLinkDeploymentToSystemResponse(rsp *http.Response) (*LinkDeploymentToSystemResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &LinkDeploymentToSystemResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest SystemRequestAccepted
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUnlinkEnvironmentFromSystemResponse parses an HTTP response from a UnlinkEnvironmentFromSystemWithResponse call
+func ParseUnlinkEnvironmentFromSystemResponse(rsp *http.Response) (*UnlinkEnvironmentFromSystemResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UnlinkEnvironmentFromSystemResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest SystemRequestAccepted
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseLinkEnvironmentToSystemResponse parses an HTTP response from a LinkEnvironmentToSystemWithResponse call
+func ParseLinkEnvironmentToSystemResponse(rsp *http.Response) (*LinkEnvironmentToSystemResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &LinkEnvironmentToSystemResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest SystemRequestAccepted
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 

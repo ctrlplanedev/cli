@@ -100,8 +100,16 @@ func NewSyncKubernetesCmd() *cobra.Command {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
 
-			clusterResource, _ := ctrlplaneClient.GetResourceByIdentifierWithResponse(ctx, workspaceId, clusterIdentifier)
-			if clusterResource.JSON200 != nil {
+			clusterResource, err := ctrlplaneClient.GetResourceByIdentifierWithResponse(ctx, workspaceId, clusterIdentifier)
+			if err != nil {
+				log.Warn("Failed to get cluster resource")
+			}
+			if clusterResource.StatusCode() > 499 {
+				log.Warn("Failed to get cluster resource", "status", clusterResource.StatusCode(), "identifier", clusterIdentifier, "error", err)
+				return fmt.Errorf("error access ctrlplane api: %s", clusterResource.Status())
+			}
+			if clusterResource != nil && clusterResource.JSON200 != nil {
+				log.Info("Found cluster resource", "name", clusterResource.JSON200.Name)
 				clusterName = clusterResource.JSON200.Name
 			}
 
@@ -135,7 +143,7 @@ func NewSyncKubernetesCmd() *cobra.Command {
 				resources = append(resources, resource)
 			}
 
-			if clusterResource.JSON200 != nil {
+			if clusterResource != nil && clusterResource.JSON200 != nil {
 				for _, resource := range resources {
 					for key, value := range clusterResource.JSON200.Metadata {
 						if strings.HasPrefix(key, "tags/") {

@@ -66,11 +66,11 @@ func NewSyncTerraformCmd() *cobra.Command {
 				return fmt.Errorf("failed to upsert resource provider: %w", err)
 			}
 
-			if resp.JSON202 == nil {
+			if resp.JSON200 == nil {
 				return fmt.Errorf("failed to upsert resource provider: %s", resp.Body)
 			}
 
-			providerId := resp.JSON202.Id
+			providerId := resp.JSON200.Id
 			fmt.Println("Provider ID:", providerId)
 			workspaces, err := getWorkspacesInOrg(cmd.Context(), terraformClient, organization)
 			if err != nil {

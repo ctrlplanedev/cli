@@ -3,6 +3,7 @@ package resourceprovider
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/charmbracelet/log"
@@ -32,14 +33,14 @@ func New(client *api.ClientWithResponses, workspace string, name string) (*Resou
 		"status", resp.StatusCode,
 		"body", string(resp.Body))
 
-	if resp.JSON202 == nil {
+	if resp.JSON200 == nil {
 		log.Error("Invalid response from upserting resource provider",
 			"status", resp.StatusCode(),
 			"body", string(resp.Body))
 		return nil, fmt.Errorf("failed to upsert resource provider: %s", string(resp.Body))
 	}
 
-	provider := resp.JSON202
+	provider := resp.JSON200
 	log.Debug("Successfully created resource provider",
 		"id", provider.Id,
 		"name", name)
@@ -70,6 +71,11 @@ func (r *ResourceProvider) UpsertResource(ctx context.Context, resources []api.R
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to upsert resource: %w", err)
+	}
+	if upsertResp.StatusCode >= 400 {
+		defer upsertResp.Body.Close()
+		body, _ := io.ReadAll(upsertResp.Body)
+		return upsertResp, fmt.Errorf("failed to upsert resources (HTTP %d): %s", upsertResp.StatusCode, string(body))
 	}
 	return upsertResp, nil
 }

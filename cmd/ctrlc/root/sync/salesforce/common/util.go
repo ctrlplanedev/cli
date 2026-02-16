@@ -253,11 +253,11 @@ func UpsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderReso
 		return fmt.Errorf("failed to upsert resource provider: %w", err)
 	}
 
-	if providerResp.JSON202 == nil {
+	if providerResp.JSON200 == nil {
 		return fmt.Errorf("failed to upsert resource provider: %s", providerResp.Body)
 	}
 
-	providerId := providerResp.JSON202.Id
+	providerId := providerResp.JSON200.Id
 	log.Info("Upserting resources", "provider", providerName, "count", len(resources))
 
 	patchReq := api.SetResourceProviderResourcesJSONRequestBody{

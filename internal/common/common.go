@@ -34,6 +34,6 @@ func UpsertResources(ctx context.Context, resources []api.ResourceProviderResour
 		return fmt.Errorf("failed to upsert resources: %w", err)
 	}
 
-	log.Info("Response from upserting resources", "status", upsertResp.Status)
+	log.Info("Successfully upserted resources", "status", upsertResp.Status, "count", len(resources))
 	return nil
 }
