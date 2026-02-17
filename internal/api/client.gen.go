@@ -201,7 +201,6 @@ type CreateDeploymentRequest struct {
 	Name             string                  `json:"name"`
 	ResourceSelector *Selector               `json:"resourceSelector,omitempty"`
 	Slug             string                  `json:"slug"`
-	SystemIds        []string                `json:"systemIds"`
 }
 
 // CreateDeploymentVersionRequest defines model for CreateDeploymentVersionRequest.
@@ -221,7 +220,6 @@ type CreateEnvironmentRequest struct {
 	Metadata         *map[string]string `json:"metadata,omitempty"`
 	Name             string             `json:"name"`
 	ResourceSelector *Selector          `json:"resourceSelector,omitempty"`
-	SystemIds        []string           `json:"systemIds"`
 }
 
 // CreatePolicyRequest defines model for CreatePolicyRequest.
@@ -337,7 +335,6 @@ type Deployment struct {
 	Name             string                 `json:"name"`
 	ResourceSelector *Selector              `json:"resourceSelector,omitempty"`
 	Slug             string                 `json:"slug"`
-	SystemIds        []string               `json:"systemIds"`
 }
 
 // DeploymentAndSystems defines model for DeploymentAndSystems.
@@ -455,7 +452,6 @@ type Environment struct {
 	Metadata         *map[string]string `json:"metadata,omitempty"`
 	Name             string             `json:"name"`
 	ResourceSelector *Selector          `json:"resourceSelector,omitempty"`
-	SystemIds        []string           `json:"systemIds"`
 }
 
 // EnvironmentProgressionRule defines model for EnvironmentProgressionRule.
@@ -959,7 +955,6 @@ type UpsertDeploymentRequest struct {
 	Name             string                  `json:"name"`
 	ResourceSelector *Selector               `json:"resourceSelector,omitempty"`
 	Slug             string                  `json:"slug"`
-	SystemIds        []string                `json:"systemIds"`
 }
 
 // UpsertDeploymentVariableRequest defines model for UpsertDeploymentVariableRequest.
@@ -982,7 +977,6 @@ type UpsertEnvironmentRequest struct {
 	Metadata         *map[string]string `json:"metadata,omitempty"`
 	Name             string             `json:"name"`
 	ResourceSelector *Selector          `json:"resourceSelector,omitempty"`
-	SystemIds        []string           `json:"systemIds"`
 }
 
 // UpsertJobAgentRequest defines model for UpsertJobAgentRequest.
