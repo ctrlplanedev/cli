@@ -1040,7 +1040,7 @@ type UpsertSystemRequest struct {
 
 // UpsertUserApprovalRecordRequest defines model for UpsertUserApprovalRecordRequest.
 type UpsertUserApprovalRecordRequest struct {
-	EnvironmentIds *[]string      `json:"environmentIds,omitempty"`
+	EnvironmentIds []string       `json:"environmentIds"`
 	Reason         *string        `json:"reason,omitempty"`
 	Status         ApprovalStatus `json:"status"`
 }

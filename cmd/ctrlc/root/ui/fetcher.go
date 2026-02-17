@@ -302,12 +302,6 @@ func fetchDeploymentsForResource(client *api.ClientWithResponses, workspaceID st
 			}
 			// Join system IDs (now plural)
 			systemIds := ""
-			if len(dep.SystemIds) > 0 {
-				systemIds = dep.SystemIds[0]
-				for i := 1; i < len(dep.SystemIds); i++ {
-					systemIds += ", " + dep.SystemIds[i]
-				}
-			}
 			rows = append(rows, tableRow{
 				id:      dep.Id,
 				cols:    []string{dep.Name, dep.Slug, systemIds, desc},
