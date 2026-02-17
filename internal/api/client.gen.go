@@ -9429,7 +9429,7 @@ func (r GetReleaseResponse) StatusCode() int {
 type RequestResourceProviderUpsertResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *ResourceProvider
+	JSON202      *ResourceProvider
 	JSON400      *ErrorResponse
 }
 
@@ -12908,12 +12908,12 @@ func ParseRequestResourceProviderUpsertResponse(rsp *http.Response) (*RequestRes
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
 		var dest ResourceProvider
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON200 = &dest
+		response.JSON202 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest ErrorResponse

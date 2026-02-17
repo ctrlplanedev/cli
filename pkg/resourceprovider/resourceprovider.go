@@ -33,14 +33,14 @@ func New(client *api.ClientWithResponses, workspace string, name string) (*Resou
 		"status", resp.StatusCode,
 		"body", string(resp.Body))
 
-	if resp.JSON200 == nil {
+	if resp.JSON202 == nil {
 		log.Error("Invalid response from upserting resource provider",
 			"status", resp.StatusCode(),
 			"body", string(resp.Body))
 		return nil, fmt.Errorf("failed to upsert resource provider: %s", string(resp.Body))
 	}
 
-	provider := resp.JSON200
+	provider := resp.JSON202
 	log.Debug("Successfully created resource provider",
 		"id", provider.Id,
 		"name", name)
