@@ -5,5 +5,8 @@ test.bash
 .idea
 .vscode
 *.test.yaml
+.history
+result
+result-*
 
 switch.sh
