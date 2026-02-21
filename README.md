@@ -6,7 +6,7 @@ The official command-line interface for [Ctrlplane](https://ctrlplane.dev) - a m
 
 CtrlC (`ctrlc`) is a powerful CLI tool that enables you to:
 
-- 🔄 **Sync infrastructure resources** from multiple cloud providers and platforms into CtrlPlane
+- 🔄 **Sync infrastructure resources** from multiple cloud providers and platforms into Ctrlplane
 - 📦 **Manage deployments** across environments with declarative configuration
 - 🤖 **Run deployment agents** to execute jobs and workflows
 - 🔍 **Query and manage resources** via intuitive API commands
