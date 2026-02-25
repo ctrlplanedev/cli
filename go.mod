@@ -36,6 +36,7 @@ require (
 	github.com/loft-sh/vcluster v0.25.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/term v0.5.2
+	github.com/netbox-community/go-netbox/v4 v4.3.0
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.19.0
@@ -196,7 +197,6 @@ require (
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
-	github.com/netbox-community/go-netbox/v4 v4.3.0 // indirect
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
