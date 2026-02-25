@@ -126,9 +126,9 @@ func mapDevice(device netbox.DeviceWithConfigContext) api.ResourceProviderResour
 		"name":        device.GetName(),
 		"device_type": device.DeviceType.GetDisplay(),
 		"role":        device.Role.GetName(),
-		"site":        map[string]any{
+		"site": map[string]any{
 			"id":   site.Id,
-			"url": site.Url,
+			"url":  site.Url,
 			"slug": site.Slug,
 			"name": site.Name,
 		},
