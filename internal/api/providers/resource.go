@@ -147,10 +147,105 @@ func (r *ResourceItemSpec) getProviderID(ctx Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create resource provider: %w", err)
 	}
-	if createResp.StatusCode() != http.StatusOK {
+	if createResp.StatusCode() != http.StatusAccepted {
 		return "", fmt.Errorf("failed to create resource provider: %s", createResp.Status())
 	}
 	return createResp.JSON202.Id, nil
+}
+
+// BatchUpsertResources groups resources by provider and makes one
+// SetResourceProviderResources call per provider with all resources in that
+// group. This avoids the overwrite problem where sequential single-resource
+// calls replace the entire provider's resource set.
+func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
+	// Group by provider name
+	byProvider := make(map[string][]*ResourceItemSpec)
+	for _, spec := range specs {
+		providerName := spec.Provider
+		if providerName == "" {
+			providerName = "ctrlc-apply"
+		}
+		byProvider[providerName] = append(byProvider[providerName], spec)
+	}
+
+	var results []Result
+	for providerName, group := range byProvider {
+		// Resolve provider ID (create if needed) using the first spec
+		providerID, err := group[0].getProviderID(ctx)
+		if err != nil {
+			for _, spec := range group {
+				results = append(results, Result{
+					Type:  resourceTypeName,
+					Name:  spec.DisplayName,
+					Error: fmt.Errorf("failed to get provider %q: %w", providerName, err),
+				})
+			}
+			continue
+		}
+
+		// Build the batch resource list
+		apiResources := make([]api.ResourceProviderResource, 0, len(group))
+		for _, spec := range group {
+			metadata := spec.Metadata
+			if metadata == nil {
+				metadata = make(map[string]string)
+			}
+			config := spec.Config
+			if config == nil {
+				config = make(map[string]any)
+			}
+			apiResources = append(apiResources, api.ResourceProviderResource{
+				Identifier: spec.Identifier,
+				Name:       spec.DisplayName,
+				Kind:       spec.Kind,
+				Version:    spec.Version,
+				Config:     config,
+				Metadata:   metadata,
+			})
+		}
+
+		// Single API call for all resources under this provider
+		resp, err := ctx.APIClient().SetResourceProviderResourcesWithResponse(
+			ctx.Ctx(), ctx.WorkspaceIDValue(), providerID,
+			api.SetResourceProviderResourcesJSONRequestBody{Resources: apiResources},
+		)
+		if err != nil {
+			for _, spec := range group {
+				results = append(results, Result{
+					Type:  resourceTypeName,
+					Name:  spec.DisplayName,
+					Error: fmt.Errorf("failed to upsert resources: %w", err),
+				})
+			}
+			continue
+		}
+		if resp.StatusCode() != http.StatusAccepted {
+			for _, spec := range group {
+				results = append(results, Result{
+					Type:  resourceTypeName,
+					Name:  spec.DisplayName,
+					Error: fmt.Errorf("failed to upsert resources: %s", resp.Status()),
+				})
+			}
+			continue
+		}
+
+		// Sync variables individually (each resource may have different vars)
+		for _, spec := range group {
+			result := Result{
+				Type:   resourceTypeName,
+				Name:   spec.DisplayName,
+				ID:     spec.Identifier,
+				Action: "upserted",
+			}
+			if err := spec.syncVariables(ctx); err != nil {
+				result.Error = err
+			}
+			results = append(results, result)
+		}
+	}
+
+	return results
 }
 
 func (r *ResourceItemSpec) syncVariables(ctx Context) error {

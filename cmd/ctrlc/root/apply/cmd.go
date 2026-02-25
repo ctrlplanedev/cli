@@ -103,9 +103,32 @@ func runApply(ctx context.Context, filePatterns []string, selectorRaw string) er
 	log.Info("Applying resources", "count", len(specs), "files", len(files))
 
 	sortedSpecs := sortSpecsByOrder(specs)
-	results := providers.
-		DefaultProviderEngine.
-		BatchApply(applyCtx, sortedSpecs, providers.BatchApplyOptions{})
+
+	var resourceSpecs []*providers.ResourceItemSpec
+	var otherSpecs []providers.TypedSpec
+	for _, ts := range sortedSpecs {
+		if ts.Type == "Resource" {
+			if spec, ok := ts.Spec.(*providers.ResourceItemSpec); ok {
+				resourceSpecs = append(resourceSpecs, spec)
+				continue
+			}
+		}
+		otherSpecs = append(otherSpecs, ts)
+	}
+
+	var results []providers.Result
+
+	if len(resourceSpecs) > 0 {
+		resourceResults := providers.BatchUpsertResources(applyCtx, resourceSpecs)
+		results = append(results, resourceResults...)
+	}
+
+	if len(otherSpecs) > 0 {
+		otherResults := providers.
+			DefaultProviderEngine.
+			BatchApply(applyCtx, otherSpecs, providers.BatchApplyOptions{})
+		results = append(results, otherResults...)
+	}
 
 	printResults(results)
 
