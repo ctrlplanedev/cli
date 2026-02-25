@@ -171,7 +171,7 @@ func (r *ResourceItemSpec) syncVariables(ctx Context) error {
 			if varsResp.StatusCode() == 404 {
 				return fmt.Errorf("resource not found yet, retrying")
 			}
-			if varsResp.StatusCode() != 204 {
+			if varsResp.StatusCode() != 202 {
 				return retry.Unrecoverable(fmt.Errorf("failed to update resource variables: %s", string(varsResp.Body)))
 			}
 			return nil
