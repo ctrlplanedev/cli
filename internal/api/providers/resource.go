@@ -236,7 +236,7 @@ func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
 				Type:   resourceTypeName,
 				Name:   spec.DisplayName,
 				ID:     spec.Identifier,
-				Action: "updated",
+				Action: "upserted",
 			}
 			if err := spec.syncVariables(ctx); err != nil {
 				result.Error = err
