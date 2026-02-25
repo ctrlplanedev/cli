@@ -29,7 +29,8 @@ builds:
       - -X github.com/ctrlplanedev/cli/cmd/ctrlc/root/version.BuildDate={{.Date}}
 
 archives:
-  - format: tar.gz
+  - formats:
+      - tar.gz
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       ctrlc_
@@ -41,7 +42,8 @@ archives:
     # use zip for windows archives
     format_overrides:
       - goos: windows
-        format: zip
+        formats:
+          - zip
 
 changelog:
   sort: asc
