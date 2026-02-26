@@ -277,7 +277,7 @@ func syncResourceVariables(
 				if varsResp.StatusCode() == 404 {
 					return fmt.Errorf("resource '%s' not found yet, retrying", resource.Identifier)
 				}
-				if varsResp.StatusCode() != 204 {
+				if varsResp.StatusCode() >= 400 {
 					return retry.Unrecoverable(
 						fmt.Errorf("failed to update resource variables for '%s': %s", resource.Identifier, string(varsResp.Body)),
 					)
