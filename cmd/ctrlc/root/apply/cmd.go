@@ -20,6 +20,7 @@ import (
 func NewApplyCmd() *cobra.Command {
 	var filePatterns []string
 	var selectorRaw string
+	var providerName string
 
 	cmd := &cobra.Command{
 		Use:   "apply",
@@ -46,7 +47,11 @@ func NewApplyCmd() *cobra.Command {
 
 	cmd.Flags().StringArrayVarP(&filePatterns, "file", "f", nil, "Path or glob pattern to YAML files (can be specified multiple times, prefix with ! to exclude)")
 	cmd.Flags().StringVar(&selectorRaw, "selector", "", "Metadata selector in key=value format to apply to created resources")
+	cmd.Flags().StringVarP(&providerName, "provider", "p", "ctrlc-apply", "Name of the resource provider")
 	cmd.MarkFlagRequired("file")
+
+	viper.BindPFlag("provider", cmd.Flags().Lookup("provider"))
+	viper.BindEnv("provider", "CTRLPLANE_PROVIDER")
 
 	return cmd
 }
@@ -64,6 +69,7 @@ func runApply(ctx context.Context, filePatterns []string, selectorRaw string) er
 	apiURL := viper.GetString("url")
 	apiKey := viper.GetString("api-key")
 	workspace := viper.GetString("workspace")
+	providerName := viper.GetString("provider")
 
 	client, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
 	if err != nil {
@@ -109,6 +115,10 @@ func runApply(ctx context.Context, filePatterns []string, selectorRaw string) er
 	for _, ts := range sortedSpecs {
 		if ts.Type == "Resource" {
 			if spec, ok := ts.Spec.(*providers.ResourceItemSpec); ok {
+				if spec.Provider == "" {
+					log.Debug("Updating resource provider", "from", spec.Provider, "to", providerName)
+					spec.Provider = providerName
+				}
 				resourceSpecs = append(resourceSpecs, spec)
 				continue
 			}

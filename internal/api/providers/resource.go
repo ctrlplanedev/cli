@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/avast/retry-go"
+	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"gopkg.in/yaml.v3"
 )
@@ -163,6 +164,7 @@ func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
 	for _, spec := range specs {
 		providerName := spec.Provider
 		if providerName == "" {
+			log.Debug("Using ctrlc-apply providerName")
 			providerName = "ctrlc-apply"
 		}
 		byProvider[providerName] = append(byProvider[providerName], spec)
@@ -205,6 +207,7 @@ func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
 		}
 
 		// Single API call for all resources under this provider
+		log.Debug("Upserting resources", "workspaceID", ctx.WorkspaceIDValue(), "provider", providerName, "providerID", providerID)
 		resp, err := ctx.APIClient().SetResourceProviderResourcesWithResponse(
 			ctx.Ctx(), ctx.WorkspaceIDValue(), providerID,
 			api.SetResourceProviderResourcesJSONRequestBody{Resources: apiResources},
