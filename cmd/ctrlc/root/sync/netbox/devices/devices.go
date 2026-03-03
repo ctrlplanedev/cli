@@ -2,24 +2,28 @@ package devices
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
-	ctrlp "github.com/ctrlplanedev/cli/internal/common"
-	netbox "github.com/netbox-community/go-netbox/v4"
+	"github.com/ctrlplanedev/cli/internal/common"
 	"github.com/spf13/cobra"
 )
-
-const pageSize int32 = 100
 
 func NewSyncDevicesCmd() *cobra.Command {
 	var netboxURL string
 	var netboxToken string
 	var providerName string
+	var query string
+	var siteFilter []string
+	var roleFilter []string
+	var statusFilter []string
+	var statusExcludeFilter []string
+	var tagFilter []string
+	var tenantFilter []string
 
 	cmd := &cobra.Command{
 		Use:   "devices",
@@ -31,9 +35,17 @@ func NewSyncDevicesCmd() *cobra.Command {
 			ctx := context.Background()
 			log.Info("Syncing Netbox devices into Ctrlplane")
 
-			client := netbox.NewAPIClientFor(netboxURL, netboxToken)
+			filters := deviceFilters{
+				Query:         query,
+				Site:          siteFilter,
+				Role:          roleFilter,
+				Status:        statusFilter,
+				StatusExclude: statusExcludeFilter,
+				Tag:           tagFilter,
+				Tenant:        tenantFilter,
+			}
 
-			allDevices, err := fetchAllDevices(ctx, client)
+			allDevices, err := fetchAllDevicesDirect(ctx, netboxURL, netboxToken, filters)
 			if err != nil {
 				return fmt.Errorf("failed to list Netbox devices: %w", err)
 			}
@@ -49,111 +61,32 @@ func NewSyncDevicesCmd() *cobra.Command {
 				providerName = "netbox-devices"
 			}
 
-			return ctrlp.UpsertResources(ctx, resources, &providerName)
+			for _, resource := range resources {
+				b, err := json.MarshalIndent(resource, "", "  ")
+				if err != nil {
+					fmt.Printf("error marshaling resource: %v\n", err)
+					continue
+				}
+				fmt.Println(string(b))
+			}
+
+			return common.UpsertResources(ctx, resources, &providerName)
 		},
 	}
 
 	cmd.Flags().StringVar(&netboxURL, "netbox-url", os.Getenv("NETBOX_URL"), "Netbox instance URL")
 	cmd.Flags().StringVar(&netboxToken, "netbox-token", os.Getenv("NETBOX_TOKEN"), "Netbox API token")
 	cmd.Flags().StringVarP(&providerName, "provider", "p", "", "Resource provider name (default: netbox-devices)")
+	cmd.Flags().StringVar(&query, "q", "", "Search query for Netbox devices")
+	cmd.Flags().StringSliceVar(&siteFilter, "site", nil, "Filter by Netbox site slug/name (repeatable)")
+	cmd.Flags().StringSliceVar(&roleFilter, "role", nil, "Filter by Netbox device role slug/name (repeatable)")
+	cmd.Flags().StringSliceVar(&statusFilter, "status", nil, "Filter by Netbox status (repeatable)")
+	cmd.Flags().StringSliceVar(&statusExcludeFilter, "status-n", nil, "Exclude Netbox status values (repeatable)")
+	cmd.Flags().StringSliceVar(&tagFilter, "tag", nil, "Filter by Netbox tag slug (repeatable)")
+	cmd.Flags().StringSliceVar(&tenantFilter, "tenant", nil, "Filter by Netbox tenant slug/name (repeatable)")
 
 	cmd.MarkFlagRequired("netbox-url")
 	cmd.MarkFlagRequired("netbox-token")
 
 	return cmd
-}
-
-func fetchAllDevices(ctx context.Context, client *netbox.APIClient) ([]netbox.DeviceWithConfigContext, error) {
-	var all []netbox.DeviceWithConfigContext
-	var offset int32
-	page := 1
-
-	for {
-		log.Info("Fetching Netbox devices page", "page", page, "offset", offset, "limit", pageSize)
-		res, _, err := client.DcimAPI.
-			DcimDevicesList(ctx).
-			Limit(pageSize).
-			Offset(offset).
-			Execute()
-		if err != nil {
-			log.Error(err, "Failed to fetch Netbox devices page", "page", page, "offset", offset)
-			return nil, err
-		}
-
-		log.Info("Fetched devices from Netbox page", "page", page, "count", len(res.Results), "total", res.Count)
-		all = append(all, res.Results...)
-
-		if int32(len(all)) >= res.Count {
-			log.Info("All Netbox devices fetched", "total_count", len(all))
-			break
-		}
-		offset += pageSize
-		page++
-	}
-
-	return all, nil
-}
-
-func mapDevice(device netbox.DeviceWithConfigContext) api.ResourceProviderResource {
-	metadata := map[string]string{}
-
-	metadata["netbox/id"] = strconv.Itoa(int(device.Id))
-	metadata["netbox/site"] = device.GetSite().Name
-
-	if device.Status != nil {
-		metadata["netbox/status"] = string(device.Status.GetValue())
-	}
-	if rack, ok := device.GetRackOk(); ok && rack != nil {
-		metadata["netbox/rack"] = rack.GetName()
-	}
-	if tenant, ok := device.GetTenantOk(); ok && tenant != nil {
-		metadata["netbox/tenant"] = tenant.GetName()
-	}
-	if role := device.Role; role.Name != "" {
-		metadata["netbox/role"] = role.Name
-	}
-	if platform, ok := device.GetPlatformOk(); ok && platform != nil {
-		metadata["netbox/platform"] = platform.GetName()
-	}
-
-	for _, tag := range device.Tags {
-		metadata[fmt.Sprintf("netbox/tag/%s", tag.Slug)] = "true"
-	}
-
-	site := device.GetSite()
-	config := map[string]any{
-		"id":          device.Id,
-		"name":        device.GetName(),
-		"device_type": device.DeviceType.GetDisplay(),
-		"role":        device.Role.GetName(),
-		"site": map[string]any{
-			"id":   site.Id,
-			"url":  site.Url,
-			"slug": site.Slug,
-			"name": site.Name,
-		},
-	}
-	if device.Serial != nil {
-		config["serial"] = *device.Serial
-	}
-	if pip, ok := device.GetPrimaryIpOk(); ok && pip != nil {
-		config["primaryIp"] = pip.GetAddress()
-	}
-	if platform, ok := device.GetPlatformOk(); ok && platform != nil {
-		config["platform"] = platform.GetName()
-	}
-
-	name := device.GetName()
-	if name == "" {
-		name = device.Display
-	}
-
-	return api.ResourceProviderResource{
-		Version:    "netbox/device/v1",
-		Kind:       "Device",
-		Name:       name,
-		Identifier: strconv.Itoa(int(device.Id)),
-		Config:     config,
-		Metadata:   metadata,
-	}
 }
