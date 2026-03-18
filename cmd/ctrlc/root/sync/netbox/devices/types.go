@@ -48,17 +48,17 @@ type netboxPrimaryIP struct {
 }
 
 type netboxDeviceType struct {
-	Id          int32                `json:"id"`
-	Url         string               `json:"url"`
-	Display     string               `json:"display"`
-	Manufacturer netboxNamedRef      `json:"manufacturer"`
-	Model       string               `json:"model"`
-	Slug        string               `json:"slug"`
-	Description *string              `json:"description"`
-	DeviceCount int32                `json:"device_count"`
+	Id           int32          `json:"id"`
+	Url          string         `json:"url"`
+	Display      string         `json:"display"`
+	Manufacturer netboxNamedRef `json:"manufacturer"`
+	Model        string         `json:"model"`
+	Slug         string         `json:"slug"`
+	Description  *string        `json:"description"`
+	DeviceCount  int32          `json:"device_count"`
 }
 
-type netboxCustomASN struct {
+type netboxCustomASN struct { //nolint:unused
 	ASN         int64  `json:"asn"`
 	Description string `json:"description"`
 	Display     string `json:"display"`
