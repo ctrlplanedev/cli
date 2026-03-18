@@ -3,7 +3,6 @@ package kubernetes
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
@@ -11,65 +10,13 @@ import (
 	ctrlp "github.com/ctrlplanedev/cli/internal/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
-
-func processNamespace(_ context.Context, clusterName string, namespace corev1.Namespace) api.ResourceProviderResource {
-	metadata := map[string]string{}
-	for key, value := range namespace.Labels {
-		metadata[fmt.Sprintf("tags/%s", key)] = value
-	}
-
-	metadata["kubernetes/namespace"] = namespace.Name
-	metadata["namespace/id"] = string(namespace.UID)
-	metadata["namespace/api-version"] = namespace.APIVersion
-	metadata["namespace/status"] = string(namespace.Status.Phase)
-
-	return api.ResourceProviderResource{
-		Version:    "ctrlplane.dev/kubernetes/namespace/v1",
-		Kind:       "KubernetesNamespace",
-		Name:       fmt.Sprintf("%s/%s", clusterName, namespace.Name),
-		Identifier: string(namespace.UID),
-		Config: map[string]any{
-			"id":     string(namespace.UID),
-			"name":   namespace.Name,
-			"status": namespace.Status.Phase,
-		},
-		Metadata: metadata,
-	}
-}
-
-func processDeployment(_ context.Context, clusterName string, deployment appsv1.Deployment) api.ResourceProviderResource {
-	metadata := map[string]string{}
-	for key, value := range deployment.Labels {
-		metadata[fmt.Sprintf("tags/%s", key)] = value
-	}
-	metadata["deployment/name"] = deployment.Name
-	metadata["deployment/id"] = string(deployment.UID)
-	metadata["deployment/api-version"] = deployment.APIVersion
-	metadata["deployment/namespace"] = deployment.Namespace
-
-	return api.ResourceProviderResource{
-		Version:    "ctrlplane.dev/kubernetes/deployment/v1",
-		Kind:       "KubernetesDeployment",
-		Name:       fmt.Sprintf("%s/%s/%s", clusterName, deployment.Namespace, deployment.Name),
-		Identifier: string(deployment.UID),
-		Config: map[string]any{
-			"id":        string(deployment.UID),
-			"name":      deployment.Name,
-			"namespace": deployment.Namespace,
-		},
-		Metadata: metadata,
-	}
-}
 
 func NewSyncKubernetesCmd() *cobra.Command {
 	var clusterIdentifier string
 	var providerName string
 	var clusterName string
+	var selectors ResourceTypes
 
 	cmd := &cobra.Command{
 		Use:   "kubernetes",
@@ -89,6 +36,10 @@ func NewSyncKubernetesCmd() *cobra.Command {
 				return err
 			}
 
+			if clusterName == "" {
+				clusterName = configClusterName
+			}
+
 			log.Info("Connected to cluster", "name", clusterName)
 
 			apiURL := viper.GetString("url")
@@ -99,62 +50,10 @@ func NewSyncKubernetesCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
-
-			clusterResource, err := ctrlplaneClient.GetResourceByIdentifierWithResponse(ctx, workspaceId, clusterIdentifier)
-			if err != nil {
-				log.Warn("Failed to get cluster resource")
-			}
-			if clusterResource.StatusCode() > 499 {
-				log.Warn("Failed to get cluster resource", "status", clusterResource.StatusCode(), "identifier", clusterIdentifier, "error", err)
-				return fmt.Errorf("error access ctrlplane api: %s", clusterResource.Status())
-			}
-			if clusterResource != nil && clusterResource.JSON200 != nil {
-				log.Info("Found cluster resource", "name", clusterResource.JSON200.Name)
-				clusterName = clusterResource.JSON200.Name
-			}
-
-			if clusterName == "" {
-				clusterName = configClusterName
-			}
-
-			clientset, err := kubernetes.NewForConfig(config)
+			sync := newSync(clusterIdentifier, workspaceId, ctrlplaneClient, config, clusterName)
+			resources, err := sync.process(cmd.Context(), selectors)
 			if err != nil {
 				return err
-			}
-
-			namespaces, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
-			if err != nil {
-				return err
-			}
-
-			resources := []api.ResourceProviderResource{}
-			for _, namespace := range namespaces.Items {
-				resource := processNamespace(context.Background(), clusterName, namespace)
-				resources = append(resources, resource)
-			}
-
-			deployments, err := clientset.AppsV1().Deployments(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
-			if err != nil {
-				return err
-			}
-
-			for _, deployment := range deployments.Items {
-				resource := processDeployment(context.Background(), clusterName, deployment)
-				resources = append(resources, resource)
-			}
-
-			if clusterResource != nil && clusterResource.JSON200 != nil {
-				for _, resource := range resources {
-					for key, value := range clusterResource.JSON200.Metadata {
-						if strings.HasPrefix(key, "tags/") {
-							continue
-						}
-						if _, exists := resource.Metadata[key]; !exists {
-							resource.Metadata[key] = value
-						}
-					}
-					resource.Metadata["kubernetes/name"] = clusterResource.JSON200.Name
-				}
 			}
 
 			return ctrlp.UpsertResources(ctx, resources, &providerName)
@@ -163,6 +62,7 @@ func NewSyncKubernetesCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&providerName, "provider", "p", "", "Name of the resource provider")
 	cmd.Flags().StringVarP(&clusterIdentifier, "cluster-identifier", "c", "", "The identifier of the parent cluster in ctrlplane (if not provided, will use the CLUSTER_IDENTIFIER environment variable)")
 	cmd.Flags().StringVarP(&clusterName, "cluster-name", "n", "", "The name of the cluster")
+	cmd.Flags().VarP(&selectors, "selector", "s", "Select resources to sync [nodes|deployments|namespaces] if left blank all resources are synced")
 
 	return cmd
 }
