@@ -1,7 +1,6 @@
 package kubernetes
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/MakeNowJust/heredoc/v2"
@@ -25,7 +24,7 @@ func NewSyncKubernetesCmd() *cobra.Command {
 			$ ctrlc sync kubernetes --cluster-identifier 1234567890 --cluster-name my-cluster
 		`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
+			ctx := cmd.Context()
 			log.Info("Syncing Kubernetes resources on a cluster")
 			if clusterIdentifier == "" {
 				clusterIdentifier = viper.GetString("cluster-identifier")
@@ -51,7 +50,7 @@ func NewSyncKubernetesCmd() *cobra.Command {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
 			sync := newSync(clusterIdentifier, workspaceId, ctrlplaneClient, config, clusterName)
-			resources, err := sync.process(cmd.Context(), selectors)
+			resources, err := sync.process(ctx, selectors)
 			if err != nil {
 				return err
 			}
