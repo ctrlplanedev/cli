@@ -105,6 +105,9 @@ func processNamespace(_ context.Context, clusterName string, namespace corev1.Na
 
 func processNode(_ context.Context, clusterName string, node corev1.Node) api.ResourceProviderResource {
 	metadata := make(map[string]string)
+	for key, value := range node.Labels {
+		metadata[fmt.Sprintf("tags/%s", key)] = value
+	}
 	metadata["kubernetes/uid"] = string(node.UID)
 	metadata["kubernetes/created-at"] = node.CreationTimestamp.String()
 	// Get node ready status
