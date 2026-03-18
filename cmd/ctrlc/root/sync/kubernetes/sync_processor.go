@@ -24,7 +24,7 @@ type syncConfig struct {
 }
 
 func (s *syncConfig) FetchNodes(ctx context.Context, clientset *kubernetes.Clientset) error {
-	nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+	nodes, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
