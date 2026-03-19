@@ -91,6 +91,14 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 					return
 				}
 
+				// List and process clusters for this region
+				clusterResources, err := processClusters(ctx, rdsClient, regionName)
+				if err != nil {
+					log.Error("Failed to process clusters", "region", regionName, "error", err)
+				} else {
+					resources = append(resources, clusterResources...)
+				}
+
 				if len(resources) > 0 {
 					mu.Lock()
 					allResources = append(allResources, resources...)
@@ -243,6 +251,182 @@ func processInstance(ctx context.Context, instance *types.DBInstance, region str
 		},
 		Metadata: metadata,
 	}, nil
+}
+
+func processClusters(ctx context.Context, rdsClient *rds.Client, region string) ([]api.ResourceProviderResource, error) {
+	var resources []api.ResourceProviderResource
+	var marker *string
+
+	for {
+		resp, err := rdsClient.DescribeDBClusters(ctx, &rds.DescribeDBClustersInput{
+			Marker: marker,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list RDS clusters: %w", err)
+		}
+
+		for _, cluster := range resp.DBClusters {
+			resource, err := processCluster(&cluster, region)
+			if err != nil {
+				log.Error("Failed to process RDS cluster", "identifier", *cluster.DBClusterIdentifier, "error", err)
+				continue
+			}
+			resources = append(resources, resource)
+		}
+
+		if resp.Marker == nil {
+			break
+		}
+		marker = resp.Marker
+	}
+
+	log.Info("Found RDS clusters", "region", region, "count", len(resources))
+	return resources, nil
+}
+
+func processCluster(cluster *types.DBCluster, region string) (api.ResourceProviderResource, error) {
+	port := int32(5432)
+	if cluster.Port != nil && *cluster.Port != 0 {
+		port = *cluster.Port
+	}
+
+	host := ""
+	if cluster.Endpoint != nil {
+		host = *cluster.Endpoint
+	}
+
+	identifier := ""
+	if cluster.DBClusterArn != nil {
+		identifier = *cluster.DBClusterArn
+	} else if cluster.DBClusterIdentifier != nil {
+		identifier = fmt.Sprintf("arn:aws:rds:%s::%s", region, *cluster.DBClusterIdentifier)
+	}
+
+	consoleUrl := fmt.Sprintf("https://%s.console.aws.amazon.com/rds/home?region=%s#database:id=%s;is-cluster=true",
+		region, region, *cluster.DBClusterIdentifier)
+
+	metadata := buildClusterMetadata(cluster, region, host, int(port), consoleUrl)
+
+	dbType := getNormalizedDBType(*cluster.Engine)
+
+	awsClusterConfig := map[string]any{
+		"engine":        *cluster.Engine,
+		"engineVersion": *cluster.EngineVersion,
+		"region":        region,
+		"status":        *cluster.Status,
+		"dbType":        dbType,
+		"multiAZ":       cluster.MultiAZ,
+	}
+	if cluster.KmsKeyId != nil {
+		awsClusterConfig["kmsKeyId"] = *cluster.KmsKeyId
+	}
+	if cluster.MasterUsername != nil {
+		awsClusterConfig["masterUsername"] = *cluster.MasterUsername
+	}
+	if cluster.MasterUserSecret != nil {
+		secret := map[string]any{
+			"secretArn":    getStringPtrValue(cluster.MasterUserSecret.SecretArn),
+			"secretStatus": getStringPtrValue(cluster.MasterUserSecret.SecretStatus),
+		}
+		if cluster.MasterUserSecret.KmsKeyId != nil {
+			secret["kmsKeyId"] = *cluster.MasterUserSecret.KmsKeyId
+		}
+		awsClusterConfig["masterUserSecret"] = secret
+	}
+
+	return api.ResourceProviderResource{
+		Version:    "ctrlplane.dev/database/v1",
+		Kind:       "AmazonRelationalDatabaseCluster",
+		Name:       *cluster.DBClusterIdentifier,
+		Identifier: identifier,
+		Config: map[string]any{
+			"name":                         *cluster.DBClusterIdentifier,
+			"host":                         host,
+			"port":                         port,
+			"ssl":                          true,
+			"awsRelationalDatabaseCluster": awsClusterConfig,
+		},
+		Metadata: metadata,
+	}, nil
+}
+
+func buildClusterMetadata(cluster *types.DBCluster, region, host string, port int, consoleUrl string) map[string]string {
+	dbType := getNormalizedDBType(*cluster.Engine)
+	major, minor, patch, prerelease := parseEngineVersion(*cluster.EngineVersion)
+
+	multiAZ := false
+	if cluster.MultiAZ != nil {
+		multiAZ = *cluster.MultiAZ
+	}
+
+	metadata := map[string]string{
+		kinds.DBMetadataType:    dbType,
+		kinds.DBMetadataName:    *cluster.DBClusterIdentifier,
+		kinds.DBMetadataRegion:  region,
+		kinds.DBMetadataState:   *cluster.Status,
+		kinds.DBMetadataVersion: *cluster.EngineVersion,
+		kinds.DBMetadataHost:    host,
+		kinds.DBMetadataPort:    strconv.Itoa(port),
+		kinds.DBMetadataSSL:     "true",
+		kinds.DBMetadataMultiAZ: strconv.FormatBool(multiAZ),
+
+		kinds.DBMetadataVersionMajor:      major,
+		kinds.DBMetadataVersionMinor:      minor,
+		kinds.DBMetadataVersionPatch:      patch,
+		kinds.DBMetadataVersionPrerelease: prerelease,
+
+		"aws/region":        region,
+		"aws/resource-type": "rds-cluster",
+		"aws/status":        *cluster.Status,
+		"aws/console-url":   consoleUrl,
+		"aws/engine":        *cluster.Engine,
+		"aws/db-type":       dbType,
+		"aws/is-aurora":     strconv.FormatBool(strings.Contains(strings.ToLower(*cluster.Engine), "aurora")),
+		"aws/cluster-member-count": strconv.Itoa(len(cluster.DBClusterMembers)),
+
+		"compute/multi-az": strconv.FormatBool(multiAZ),
+
+		kinds.CtrlplaneMetadataLinks: fmt.Sprintf("{ \"AWS Console\": \"%s\" }", consoleUrl),
+	}
+
+	if cluster.ReaderEndpoint != nil {
+		metadata["network/reader-endpoint"] = *cluster.ReaderEndpoint
+	}
+	if cluster.DBSubnetGroup != nil {
+		metadata["network/subnet-group"] = *cluster.DBSubnetGroup
+	}
+
+	if cluster.AllocatedStorage != nil && *cluster.AllocatedStorage != 0 {
+		metadata["compute/storage-allocated-gb"] = strconv.FormatInt(int64(*cluster.AllocatedStorage), 10)
+	}
+	if cluster.StorageType != nil {
+		metadata["compute/storage-type"] = *cluster.StorageType
+	}
+	if cluster.Iops != nil {
+		metadata["compute/storage-iops"] = strconv.FormatInt(int64(*cluster.Iops), 10)
+	}
+
+	if cluster.BackupRetentionPeriod != nil && *cluster.BackupRetentionPeriod != 0 {
+		metadata[kinds.DBMetadataBackupRetention] = strconv.FormatInt(int64(*cluster.BackupRetentionPeriod), 10)
+	}
+	if cluster.PreferredBackupWindow != nil {
+		metadata[kinds.DBMetadataBackupWindow] = *cluster.PreferredBackupWindow
+	}
+	if cluster.LatestRestorableTime != nil {
+		metadata["backup/latest-restorable"] = cluster.LatestRestorableTime.String()
+	}
+
+	if cluster.PreferredMaintenanceWindow != nil {
+		metadata["maintenance/window"] = *cluster.PreferredMaintenanceWindow
+	}
+
+	for _, tag := range cluster.TagList {
+		if tag.Key != nil && tag.Value != nil {
+			metadata[fmt.Sprintf("tags/%s", *tag.Key)] = *tag.Value
+		}
+	}
+
+	return metadata
 }
 
 // Helper function to safely get string value from pointer
