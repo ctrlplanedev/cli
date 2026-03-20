@@ -331,6 +331,10 @@ func processCluster(cluster *types.DBCluster, region string) (api.ResourceProvid
 		if cluster.MasterUserSecret.KmsKeyId != nil {
 			secret["kmsKeyId"] = *cluster.MasterUserSecret.KmsKeyId
 		}
+		if cluster.MasterUserSecret.SecretArn != nil {
+			parts := strings.Split(*cluster.MasterUserSecret.SecretArn, ":")
+			secret["secretName"] = parts[len(parts)-1]
+		}
 		awsClusterConfig["masterUserSecret"] = secret
 	}
 
