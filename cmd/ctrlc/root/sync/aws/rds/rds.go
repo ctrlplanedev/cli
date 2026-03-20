@@ -72,7 +72,7 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 				defer wg.Done()
 
 				// Initialize AWS client for this region
-				rdsClient, err := initRDSClient(ctx, regionName)
+				rdsClient, accountID, err := initRDSClient(ctx, regionName)
 				if err != nil {
 					log.Error("Failed to initialize RDS client", "region", regionName, "error", err)
 					mu.Lock()
@@ -92,7 +92,7 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 				}
 
 				// List and process clusters for this region
-				clusterResources, err := processClusters(ctx, rdsClient, regionName)
+				clusterResources, err := processClusters(ctx, rdsClient, regionName, accountID)
 				if err != nil {
 					log.Error("Failed to process clusters", "region", regionName, "error", err)
 				} else {
@@ -149,14 +149,19 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 	}
 }
 
-func initRDSClient(ctx context.Context, region string) (*rds.Client, error) {
-	// Use common package to initialize AWS config
+func initRDSClient(ctx context.Context, region string) (*rds.Client, string, error) {
 	cfg, err := common.InitAWSConfig(ctx, region)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return rds.NewFromConfig(cfg), nil
+	accountID, err := common.GetAccountID(ctx, cfg)
+	if err != nil {
+		log.Warn("Failed to get AWS account ID", "region", region, "error", err)
+		accountID = ""
+	}
+
+	return rds.NewFromConfig(cfg), accountID, nil
 }
 
 func processInstances(ctx context.Context, rdsClient *rds.Client, region string) ([]api.ResourceProviderResource, error) {
@@ -253,7 +258,7 @@ func processInstance(ctx context.Context, instance *types.DBInstance, region str
 	}, nil
 }
 
-func processClusters(ctx context.Context, rdsClient *rds.Client, region string) ([]api.ResourceProviderResource, error) {
+func processClusters(ctx context.Context, rdsClient *rds.Client, region string, accountID string) ([]api.ResourceProviderResource, error) {
 	var resources []api.ResourceProviderResource
 	var marker *string
 
@@ -266,7 +271,7 @@ func processClusters(ctx context.Context, rdsClient *rds.Client, region string) 
 		}
 
 		for _, cluster := range resp.DBClusters {
-			resource, err := processCluster(&cluster, region)
+			resource, err := processCluster(&cluster, region, accountID)
 			if err != nil {
 				log.Error("Failed to process RDS cluster", "identifier", *cluster.DBClusterIdentifier, "error", err)
 				continue
@@ -284,7 +289,7 @@ func processClusters(ctx context.Context, rdsClient *rds.Client, region string) 
 	return resources, nil
 }
 
-func processCluster(cluster *types.DBCluster, region string) (api.ResourceProviderResource, error) {
+func processCluster(cluster *types.DBCluster, region string, accountID string) (api.ResourceProviderResource, error) {
 	port := int32(5432)
 	if cluster.Port != nil && *cluster.Port != 0 {
 		port = *cluster.Port
@@ -305,7 +310,7 @@ func processCluster(cluster *types.DBCluster, region string) (api.ResourceProvid
 	consoleUrl := fmt.Sprintf("https://%s.console.aws.amazon.com/rds/home?region=%s#database:id=%s;is-cluster=true",
 		region, region, *cluster.DBClusterIdentifier)
 
-	metadata := buildClusterMetadata(cluster, region, host, int(port), consoleUrl)
+	metadata := buildClusterMetadata(cluster, region, accountID, host, int(port), consoleUrl)
 
 	dbType := getNormalizedDBType(*cluster.Engine)
 
@@ -354,7 +359,7 @@ func processCluster(cluster *types.DBCluster, region string) (api.ResourceProvid
 	}, nil
 }
 
-func buildClusterMetadata(cluster *types.DBCluster, region, host string, port int, consoleUrl string) map[string]string {
+func buildClusterMetadata(cluster *types.DBCluster, region, accountID, host string, port int, consoleUrl string) map[string]string {
 	dbType := getNormalizedDBType(*cluster.Engine)
 	major, minor, patch, prerelease := parseEngineVersion(*cluster.EngineVersion)
 
@@ -379,6 +384,7 @@ func buildClusterMetadata(cluster *types.DBCluster, region, host string, port in
 		kinds.DBMetadataVersionPatch:      patch,
 		kinds.DBMetadataVersionPrerelease: prerelease,
 
+		"aws/account":       accountID,
 		"aws/region":        region,
 		"aws/resource-type": "rds-cluster",
 		"aws/status":        *cluster.Status,
