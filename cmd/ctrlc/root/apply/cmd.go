@@ -115,8 +115,6 @@ func runApply(ctx context.Context, filePatterns []string, selectorRaw string) er
 	for _, ts := range sortedSpecs {
 		if ts.Type == "Resource" {
 			if spec, ok := ts.Spec.(*providers.ResourceItemSpec); ok {
-				// Only assign the CLI provider flag if the resource doesn't already
-				// have a provider set and a provider was explicitly supplied.
 				if spec.Provider == "" && providerName != "" {
 					log.Debug("Assigning provider to resource", "provider", providerName)
 					spec.Provider = providerName

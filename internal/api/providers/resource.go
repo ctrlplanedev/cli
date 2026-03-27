@@ -161,7 +161,6 @@ func (r *ResourceItemSpec) getProviderID(ctx Context) (string, error) {
 // Resources with no provider are upserted individually via the regular
 // resource upsert endpoint (PATCH /resources/identifier/{identifier}).
 func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
-	// Split out resources with no provider — these use the direct upsert endpoint
 	var noProviderSpecs []*ResourceItemSpec
 	byProvider := make(map[string][]*ResourceItemSpec)
 	for _, spec := range specs {
@@ -175,13 +174,11 @@ func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
 
 	var results []Result
 
-	// Handle resources with no provider using the direct upsert endpoint
 	for _, spec := range noProviderSpecs {
 		results = append(results, spec.upsertWithoutProvider(ctx))
 	}
 
 	for providerName, group := range byProvider {
-		// Resolve provider ID (create if needed) using the first spec
 		providerID, err := group[0].getProviderID(ctx)
 		if err != nil {
 			for _, spec := range group {
@@ -194,7 +191,6 @@ func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
 			continue
 		}
 
-		// Build the batch resource list
 		apiResources := make([]api.ResourceProviderResource, 0, len(group))
 		for _, spec := range group {
 			metadata := spec.Metadata
@@ -215,7 +211,6 @@ func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
 			})
 		}
 
-		// Single API call for all resources under this provider
 		log.Debug("Upserting resources", "workspaceID", ctx.WorkspaceIDValue(), "provider", providerName, "providerID", providerID)
 		resp, err := ctx.APIClient().SetResourceProviderResourcesWithResponse(
 			ctx.Ctx(), ctx.WorkspaceIDValue(), providerID,
@@ -242,7 +237,6 @@ func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
 			continue
 		}
 
-		// Sync variables individually (each resource may have different vars)
 		for _, spec := range group {
 			result := Result{
 				Type:   resourceTypeName,
