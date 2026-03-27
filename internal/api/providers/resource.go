@@ -158,19 +158,69 @@ func (r *ResourceItemSpec) getProviderID(ctx Context) (string, error) {
 // SetResourceProviderResources call per provider with all resources in that
 // group. This avoids the overwrite problem where sequential single-resource
 // calls replace the entire provider's resource set.
+// Resources with no provider are upserted individually via the regular
+// resource upsert endpoint (PATCH /resources/identifier/{identifier}).
 func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
-	// Group by provider name
+	// Split out resources with no provider — these use the direct upsert endpoint
+	var noProviderSpecs []*ResourceItemSpec
 	byProvider := make(map[string][]*ResourceItemSpec)
 	for _, spec := range specs {
 		providerName := spec.Provider
 		if providerName == "" {
-			log.Debug("Using ctrlc-apply providerName")
-			providerName = "ctrlc-apply"
+			noProviderSpecs = append(noProviderSpecs, spec)
+			continue
 		}
 		byProvider[providerName] = append(byProvider[providerName], spec)
 	}
 
 	var results []Result
+
+	// Handle resources with no provider using the direct upsert endpoint
+	for _, spec := range noProviderSpecs {
+		result := Result{
+			Type: resourceTypeName,
+			Name: spec.DisplayName,
+		}
+
+		metadata := spec.Metadata
+		if metadata == nil {
+			metadata = make(map[string]string)
+		}
+		config := spec.Config
+		if config == nil {
+			config = make(map[string]any)
+		}
+
+		log.Debug("Upserting resource directly (no provider)", "identifier", spec.Identifier)
+		resp, err := ctx.APIClient().UpsertResourceByIdentifierWithResponse(
+			ctx.Ctx(), ctx.WorkspaceIDValue(), spec.Identifier,
+			api.UpsertResourceByIdentifierJSONBody{
+				Name:     spec.DisplayName,
+				Kind:     spec.Kind,
+				Version:  spec.Version,
+				Config:   config,
+				Metadata: metadata,
+			},
+		)
+		if err != nil {
+			result.Error = fmt.Errorf("failed to upsert resource: %w", err)
+			results = append(results, result)
+			continue
+		}
+		if resp.StatusCode() != http.StatusAccepted {
+			result.Error = fmt.Errorf("failed to upsert resource: %s", resp.HTTPResponse.Status)
+			results = append(results, result)
+			continue
+		}
+
+		result.ID = spec.Identifier
+		result.Action = "upserted"
+		if err := spec.syncVariables(ctx); err != nil {
+			result.Error = err
+		}
+		results = append(results, result)
+	}
+
 	for providerName, group := range byProvider {
 		// Resolve provider ID (create if needed) using the first spec
 		providerID, err := group[0].getProviderID(ctx)
