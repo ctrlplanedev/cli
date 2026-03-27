@@ -177,48 +177,7 @@ func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
 
 	// Handle resources with no provider using the direct upsert endpoint
 	for _, spec := range noProviderSpecs {
-		result := Result{
-			Type: resourceTypeName,
-			Name: spec.DisplayName,
-		}
-
-		metadata := spec.Metadata
-		if metadata == nil {
-			metadata = make(map[string]string)
-		}
-		config := spec.Config
-		if config == nil {
-			config = make(map[string]any)
-		}
-
-		log.Debug("Upserting resource directly (no provider)", "identifier", spec.Identifier)
-		resp, err := ctx.APIClient().UpsertResourceByIdentifierWithResponse(
-			ctx.Ctx(), ctx.WorkspaceIDValue(), spec.Identifier,
-			api.UpsertResourceByIdentifierJSONBody{
-				Name:     spec.DisplayName,
-				Kind:     spec.Kind,
-				Version:  spec.Version,
-				Config:   config,
-				Metadata: metadata,
-			},
-		)
-		if err != nil {
-			result.Error = fmt.Errorf("failed to upsert resource: %w", err)
-			results = append(results, result)
-			continue
-		}
-		if resp.StatusCode() != http.StatusAccepted {
-			result.Error = fmt.Errorf("failed to upsert resource: %s", resp.HTTPResponse.Status)
-			results = append(results, result)
-			continue
-		}
-
-		result.ID = spec.Identifier
-		result.Action = "upserted"
-		if err := spec.syncVariables(ctx); err != nil {
-			result.Error = err
-		}
-		results = append(results, result)
+		results = append(results, spec.upsertWithoutProvider(ctx))
 	}
 
 	for providerName, group := range byProvider {
@@ -299,6 +258,49 @@ func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
 	}
 
 	return results
+}
+
+func (r *ResourceItemSpec) upsertWithoutProvider(ctx Context) Result {
+	result := Result{
+		Type: resourceTypeName,
+		Name: r.DisplayName,
+	}
+
+	metadata := r.Metadata
+	if metadata == nil {
+		metadata = make(map[string]string)
+	}
+	config := r.Config
+	if config == nil {
+		config = make(map[string]any)
+	}
+
+	log.Debug("Upserting resource directly (no provider)", "identifier", r.Identifier)
+	resp, err := ctx.APIClient().UpsertResourceByIdentifierWithResponse(
+		ctx.Ctx(), ctx.WorkspaceIDValue(), r.Identifier,
+		api.UpsertResourceByIdentifierJSONRequestBody{
+			Name:     r.DisplayName,
+			Kind:     r.Kind,
+			Version:  r.Version,
+			Config:   &config,
+			Metadata: &metadata,
+		},
+	)
+	if err != nil {
+		result.Error = fmt.Errorf("failed to upsert resource: %w", err)
+		return result
+	}
+	if resp.StatusCode() != http.StatusAccepted {
+		result.Error = fmt.Errorf("failed to upsert resource: %s", resp.HTTPResponse.Status)
+		return result
+	}
+
+	result.ID = r.Identifier
+	result.Action = "upserted"
+	if err := r.syncVariables(ctx); err != nil {
+		result.Error = err
+	}
+	return result
 }
 
 func (r *ResourceItemSpec) syncVariables(ctx Context) error {
