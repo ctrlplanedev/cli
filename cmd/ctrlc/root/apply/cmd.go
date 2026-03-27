@@ -47,7 +47,7 @@ func NewApplyCmd() *cobra.Command {
 
 	cmd.Flags().StringArrayVarP(&filePatterns, "file", "f", nil, "Path or glob pattern to YAML files (can be specified multiple times, prefix with ! to exclude)")
 	cmd.Flags().StringVar(&selectorRaw, "selector", "", "Metadata selector in key=value format to apply to created resources")
-	cmd.Flags().StringVarP(&providerName, "provider", "p", "ctrlc-apply", "Name of the resource provider")
+	cmd.Flags().StringVarP(&providerName, "provider", "p", "", "Name of the resource provider (if omitted, resources are upserted directly without a provider)")
 	cmd.MarkFlagRequired("file")
 
 	viper.BindPFlag("provider", cmd.Flags().Lookup("provider"))
@@ -115,8 +115,8 @@ func runApply(ctx context.Context, filePatterns []string, selectorRaw string) er
 	for _, ts := range sortedSpecs {
 		if ts.Type == "Resource" {
 			if spec, ok := ts.Spec.(*providers.ResourceItemSpec); ok {
-				if spec.Provider == "" {
-					log.Debug("Updating resource provider", "from", spec.Provider, "to", providerName)
+				if spec.Provider == "" && providerName != "" {
+					log.Debug("Assigning provider to resource", "provider", providerName)
 					spec.Provider = providerName
 				}
 				resourceSpecs = append(resourceSpecs, spec)

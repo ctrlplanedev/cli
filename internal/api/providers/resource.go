@@ -158,21 +158,27 @@ func (r *ResourceItemSpec) getProviderID(ctx Context) (string, error) {
 // SetResourceProviderResources call per provider with all resources in that
 // group. This avoids the overwrite problem where sequential single-resource
 // calls replace the entire provider's resource set.
+// Resources with no provider are upserted individually via the regular
+// resource upsert endpoint (PATCH /resources/identifier/{identifier}).
 func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
-	// Group by provider name
+	var noProviderSpecs []*ResourceItemSpec
 	byProvider := make(map[string][]*ResourceItemSpec)
 	for _, spec := range specs {
 		providerName := spec.Provider
 		if providerName == "" {
-			log.Debug("Using ctrlc-apply providerName")
-			providerName = "ctrlc-apply"
+			noProviderSpecs = append(noProviderSpecs, spec)
+			continue
 		}
 		byProvider[providerName] = append(byProvider[providerName], spec)
 	}
 
 	var results []Result
+
+	for _, spec := range noProviderSpecs {
+		results = append(results, spec.upsertWithoutProvider(ctx))
+	}
+
 	for providerName, group := range byProvider {
-		// Resolve provider ID (create if needed) using the first spec
 		providerID, err := group[0].getProviderID(ctx)
 		if err != nil {
 			for _, spec := range group {
@@ -185,7 +191,6 @@ func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
 			continue
 		}
 
-		// Build the batch resource list
 		apiResources := make([]api.ResourceProviderResource, 0, len(group))
 		for _, spec := range group {
 			metadata := spec.Metadata
@@ -206,7 +211,6 @@ func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
 			})
 		}
 
-		// Single API call for all resources under this provider
 		log.Debug("Upserting resources", "workspaceID", ctx.WorkspaceIDValue(), "provider", providerName, "providerID", providerID)
 		resp, err := ctx.APIClient().SetResourceProviderResourcesWithResponse(
 			ctx.Ctx(), ctx.WorkspaceIDValue(), providerID,
@@ -233,7 +237,6 @@ func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
 			continue
 		}
 
-		// Sync variables individually (each resource may have different vars)
 		for _, spec := range group {
 			result := Result{
 				Type:   resourceTypeName,
@@ -249,6 +252,49 @@ func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
 	}
 
 	return results
+}
+
+func (r *ResourceItemSpec) upsertWithoutProvider(ctx Context) Result {
+	result := Result{
+		Type: resourceTypeName,
+		Name: r.DisplayName,
+	}
+
+	metadata := r.Metadata
+	if metadata == nil {
+		metadata = make(map[string]string)
+	}
+	config := r.Config
+	if config == nil {
+		config = make(map[string]any)
+	}
+
+	log.Debug("Upserting resource directly (no provider)", "identifier", r.Identifier)
+	resp, err := ctx.APIClient().UpsertResourceByIdentifierWithResponse(
+		ctx.Ctx(), ctx.WorkspaceIDValue(), r.Identifier,
+		api.UpsertResourceByIdentifierJSONRequestBody{
+			Name:     r.DisplayName,
+			Kind:     r.Kind,
+			Version:  r.Version,
+			Config:   &config,
+			Metadata: &metadata,
+		},
+	)
+	if err != nil {
+		result.Error = fmt.Errorf("failed to upsert resource: %w", err)
+		return result
+	}
+	if resp.StatusCode() != http.StatusAccepted {
+		result.Error = fmt.Errorf("failed to upsert resource: %s", resp.HTTPResponse.Status)
+		return result
+	}
+
+	result.ID = r.Identifier
+	result.Action = "upserted"
+	if err := r.syncVariables(ctx); err != nil {
+		result.Error = err
+	}
+	return result
 }
 
 func (r *ResourceItemSpec) syncVariables(ctx Context) error {
