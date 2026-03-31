@@ -118,6 +118,13 @@ const (
 	Prometheus PrometheusMetricProviderType = "prometheus"
 )
 
+// Defines values for ReleaseTargetStateResponseLatestJobVerificationsStatus.
+const (
+	ReleaseTargetStateResponseLatestJobVerificationsStatusFailed  ReleaseTargetStateResponseLatestJobVerificationsStatus = "failed"
+	ReleaseTargetStateResponseLatestJobVerificationsStatusPassed  ReleaseTargetStateResponseLatestJobVerificationsStatus = "passed"
+	ReleaseTargetStateResponseLatestJobVerificationsStatusRunning ReleaseTargetStateResponseLatestJobVerificationsStatus = "running"
+)
+
 // Defines values for RetryRuleBackoffStrategy.
 const (
 	RetryRuleBackoffStrategyExponential RetryRuleBackoffStrategy = "exponential"
@@ -132,6 +139,13 @@ const (
 // Defines values for TerraformCloudRunMetricProviderType.
 const (
 	TerraformCloudRun TerraformCloudRunMetricProviderType = "terraformCloudRun"
+)
+
+// Defines values for VerificationMeasurementStatus.
+const (
+	VerificationMeasurementStatusFailed       VerificationMeasurementStatus = "failed"
+	VerificationMeasurementStatusInconclusive VerificationMeasurementStatus = "inconclusive"
+	VerificationMeasurementStatusPassed       VerificationMeasurementStatus = "passed"
 )
 
 // Defines values for VerificationRuleTriggerOn.
@@ -279,23 +293,22 @@ type CreateSystemRequest struct {
 
 // CreateWorkflow defines model for CreateWorkflow.
 type CreateWorkflow struct {
-	Inputs []WorkflowInput             `json:"inputs"`
-	Jobs   []CreateWorkflowJobTemplate `json:"jobs"`
-	Name   string                      `json:"name"`
+	Inputs    []WorkflowInput          `json:"inputs"`
+	JobAgents []CreateWorkflowJobAgent `json:"jobAgents"`
+	Name      string                   `json:"name"`
 }
 
-// CreateWorkflowJobTemplate defines model for CreateWorkflowJobTemplate.
-type CreateWorkflowJobTemplate struct {
+// CreateWorkflowJobAgent defines model for CreateWorkflowJobAgent.
+type CreateWorkflowJobAgent struct {
 	// Config Configuration for the job agent
 	Config map[string]interface{} `json:"config"`
-
-	// If CEL expression to determine if the job should run
-	If     *string            `json:"if,omitempty"`
-	Matrix *WorkflowJobMatrix `json:"matrix,omitempty"`
-	Name   string             `json:"name"`
+	Name   string                 `json:"name"`
 
 	// Ref Reference to the job agent
 	Ref string `json:"ref"`
+
+	// Selector CEL expression to determine if the job agent should dispatch a job
+	Selector string `json:"selector"`
 }
 
 // CreateWorkspaceRequest defines model for CreateWorkspaceRequest.
@@ -844,6 +857,28 @@ type ReleaseTargetState struct {
 	LatestJob      *Job     `json:"latestJob,omitempty"`
 }
 
+// ReleaseTargetStateResponse defines model for ReleaseTargetStateResponse.
+type ReleaseTargetStateResponse struct {
+	CurrentRelease *Release `json:"currentRelease,omitempty"`
+	DesiredRelease *Release `json:"desiredRelease,omitempty"`
+	LatestJob      *struct {
+		Job           Job `json:"job"`
+		Verifications []struct {
+			CreatedAt time.Time                  `json:"createdAt"`
+			Id        string                     `json:"id"`
+			JobId     string                     `json:"jobId"`
+			Message   *string                    `json:"message,omitempty"`
+			Metrics   []VerificationMetricStatus `json:"metrics"`
+
+			// Status Computed aggregate status of this verification
+			Status ReleaseTargetStateResponseLatestJobVerificationsStatus `json:"status"`
+		} `json:"verifications"`
+	} `json:"latestJob,omitempty"`
+}
+
+// ReleaseTargetStateResponseLatestJobVerificationsStatus Computed aggregate status of this verification
+type ReleaseTargetStateResponseLatestJobVerificationsStatus string
+
 // ReleaseTargetWithState defines model for ReleaseTargetWithState.
 type ReleaseTargetWithState struct {
 	ReleaseTarget ReleaseTarget      `json:"releaseTarget"`
@@ -1032,9 +1067,9 @@ type UpdateDeploymentVersionRequest struct {
 
 // UpdateWorkflow defines model for UpdateWorkflow.
 type UpdateWorkflow struct {
-	Inputs []WorkflowInput             `json:"inputs"`
-	Jobs   []CreateWorkflowJobTemplate `json:"jobs"`
-	Name   string                      `json:"name"`
+	Inputs    []WorkflowInput          `json:"inputs"`
+	JobAgents []CreateWorkflowJobAgent `json:"jobAgents"`
+	Name      string                   `json:"name"`
 }
 
 // UpdateWorkspaceRequest defines model for UpdateWorkspaceRequest.
@@ -1181,6 +1216,24 @@ type Value struct {
 	union json.RawMessage
 }
 
+// VerificationMeasurement defines model for VerificationMeasurement.
+type VerificationMeasurement struct {
+	// Data Raw measurement data
+	Data *map[string]interface{} `json:"data,omitempty"`
+
+	// MeasuredAt When measurement was taken
+	MeasuredAt time.Time `json:"measuredAt"`
+
+	// Message Measurement result message
+	Message *string `json:"message,omitempty"`
+
+	// Status Status of a verification measurement
+	Status VerificationMeasurementStatus `json:"status"`
+}
+
+// VerificationMeasurementStatus Status of a verification measurement
+type VerificationMeasurementStatus string
+
 // VerificationMetricSpec defines model for VerificationMetricSpec.
 type VerificationMetricSpec struct {
 	// Count Number of measurements to take
@@ -1194,6 +1247,34 @@ type VerificationMetricSpec struct {
 
 	// IntervalSeconds Interval between measurements in seconds
 	IntervalSeconds int32 `json:"intervalSeconds"`
+
+	// Name Name of the verification metric
+	Name     string         `json:"name"`
+	Provider MetricProvider `json:"provider"`
+
+	// SuccessCondition CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
+	SuccessCondition string `json:"successCondition"`
+
+	// SuccessThreshold Minimum number of consecutive successful measurements required to consider the metric successful
+	SuccessThreshold *int `json:"successThreshold,omitempty"`
+}
+
+// VerificationMetricStatus defines model for VerificationMetricStatus.
+type VerificationMetricStatus struct {
+	// Count Number of measurements to take
+	Count int `json:"count"`
+
+	// FailureCondition CEL expression to evaluate measurement failure (e.g., "result.statusCode == 500"), if not provided, a failure is just the opposite of the success condition
+	FailureCondition *string `json:"failureCondition,omitempty"`
+
+	// FailureThreshold Stop after this many consecutive failures (0 = no limit)
+	FailureThreshold *int `json:"failureThreshold,omitempty"`
+
+	// IntervalSeconds Interval between measurements in seconds
+	IntervalSeconds int32 `json:"intervalSeconds"`
+
+	// Measurements Individual verification measurements taken for this metric
+	Measurements []VerificationMeasurement `json:"measurements"`
 
 	// Name Name of the verification metric
 	Name     string         `json:"name"`
@@ -1235,10 +1316,10 @@ type VersionSelectorRule struct {
 
 // Workflow defines model for Workflow.
 type Workflow struct {
-	Id     string                `json:"id"`
-	Inputs []WorkflowInput       `json:"inputs"`
-	Jobs   []WorkflowJobTemplate `json:"jobs"`
-	Name   string                `json:"name"`
+	Id        string             `json:"id"`
+	Inputs    []WorkflowInput    `json:"inputs"`
+	JobAgents []WorkflowJobAgent `json:"jobAgents"`
+	Name      string             `json:"name"`
 }
 
 // WorkflowArrayInput defines model for WorkflowArrayInput.
@@ -1273,33 +1354,17 @@ type WorkflowJob struct {
 	WorkflowId string `json:"workflowId"`
 }
 
-// WorkflowJobMatrix defines model for WorkflowJobMatrix.
-type WorkflowJobMatrix map[string]WorkflowJobMatrix_AdditionalProperties
-
-// WorkflowJobMatrix0 defines model for .
-type WorkflowJobMatrix0 = []map[string]interface{}
-
-// WorkflowJobMatrix1 defines model for .
-type WorkflowJobMatrix1 = string
-
-// WorkflowJobMatrix_AdditionalProperties defines model for WorkflowJobMatrix.AdditionalProperties.
-type WorkflowJobMatrix_AdditionalProperties struct {
-	union json.RawMessage
-}
-
-// WorkflowJobTemplate defines model for WorkflowJobTemplate.
-type WorkflowJobTemplate struct {
+// WorkflowJobAgent defines model for WorkflowJobAgent.
+type WorkflowJobAgent struct {
 	// Config Configuration for the job agent
 	Config map[string]interface{} `json:"config"`
-	Id     string                 `json:"id"`
-
-	// If CEL expression to determine if the job should run
-	If     *string            `json:"if,omitempty"`
-	Matrix *WorkflowJobMatrix `json:"matrix,omitempty"`
-	Name   string             `json:"name"`
+	Name   string                 `json:"name"`
 
 	// Ref Reference to the job agent
 	Ref string `json:"ref"`
+
+	// Selector CEL expression to determine if the job agent should dispatch a job
+	Selector string `json:"selector"`
 }
 
 // WorkflowManualArrayInput defines model for WorkflowManualArrayInput.
@@ -2288,68 +2353,6 @@ func (t WorkflowInput) MarshalJSON() ([]byte, error) {
 }
 
 func (t *WorkflowInput) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsWorkflowJobMatrix0 returns the union data inside the WorkflowJobMatrix_AdditionalProperties as a WorkflowJobMatrix0
-func (t WorkflowJobMatrix_AdditionalProperties) AsWorkflowJobMatrix0() (WorkflowJobMatrix0, error) {
-	var body WorkflowJobMatrix0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromWorkflowJobMatrix0 overwrites any union data inside the WorkflowJobMatrix_AdditionalProperties as the provided WorkflowJobMatrix0
-func (t *WorkflowJobMatrix_AdditionalProperties) FromWorkflowJobMatrix0(v WorkflowJobMatrix0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeWorkflowJobMatrix0 performs a merge with any union data inside the WorkflowJobMatrix_AdditionalProperties, using the provided WorkflowJobMatrix0
-func (t *WorkflowJobMatrix_AdditionalProperties) MergeWorkflowJobMatrix0(v WorkflowJobMatrix0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsWorkflowJobMatrix1 returns the union data inside the WorkflowJobMatrix_AdditionalProperties as a WorkflowJobMatrix1
-func (t WorkflowJobMatrix_AdditionalProperties) AsWorkflowJobMatrix1() (WorkflowJobMatrix1, error) {
-	var body WorkflowJobMatrix1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromWorkflowJobMatrix1 overwrites any union data inside the WorkflowJobMatrix_AdditionalProperties as the provided WorkflowJobMatrix1
-func (t *WorkflowJobMatrix_AdditionalProperties) FromWorkflowJobMatrix1(v WorkflowJobMatrix1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeWorkflowJobMatrix1 performs a merge with any union data inside the WorkflowJobMatrix_AdditionalProperties, using the provided WorkflowJobMatrix1
-func (t *WorkflowJobMatrix_AdditionalProperties) MergeWorkflowJobMatrix1(v WorkflowJobMatrix1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t WorkflowJobMatrix_AdditionalProperties) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *WorkflowJobMatrix_AdditionalProperties) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -10080,7 +10083,7 @@ func (r GetJobsForReleaseTargetResponse) StatusCode() int {
 type GetReleaseTargetStateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *ReleaseTargetState
+	JSON200      *ReleaseTargetStateResponse
 	JSON400      *ErrorResponse
 	JSON404      *ErrorResponse
 }
@@ -10780,7 +10783,7 @@ func (r ListWorkflowsResponse) StatusCode() int {
 type CreateWorkflowResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON202      *Workflow
+	JSON201      *Workflow
 	JSON400      *ErrorResponse
 }
 
@@ -13941,7 +13944,7 @@ func ParseGetReleaseTargetStateResponse(rsp *http.Response) (*GetReleaseTargetSt
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ReleaseTargetState
+		var dest ReleaseTargetStateResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -14988,12 +14991,12 @@ func ParseCreateWorkflowResponse(rsp *http.Response) (*CreateWorkflowResponse, e
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
 		var dest Workflow
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON202 = &dest
+		response.JSON201 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest ErrorResponse

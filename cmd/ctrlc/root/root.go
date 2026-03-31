@@ -12,6 +12,7 @@ import (
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/sync"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/ui"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/version"
+	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/workflow"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -59,6 +60,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(run.NewRunCmd())
 	cmd.AddCommand(ui.NewUICmd())
 	cmd.AddCommand(version.NewVersionCmd())
+	cmd.AddCommand(workflow.NewWorkflowCmd())
 
 	return cmd
 }
