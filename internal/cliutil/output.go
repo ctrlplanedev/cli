@@ -185,11 +185,13 @@ func HandleAnyOutput(cmd *cobra.Command, result interface{}, format string) erro
 		if err != nil {
 			return fmt.Errorf("failed to marshal to YAML: %w", err)
 		}
-	default:
+	case "json":
 		output, err = json.MarshalIndent(result, "", "  ")
 		if err != nil {
 			return fmt.Errorf("failed to marshal to JSON: %w", err)
 		}
+	default:
+		return fmt.Errorf("unsupported output format: %s", format)
 	}
 
 	fmt.Fprintln(cmd.OutOrStdout(), string(output))

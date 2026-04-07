@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -124,10 +125,24 @@ func (s *APIResourceService) DeleteByIdentifier(ctx context.Context, identifier 
 	if err != nil {
 		return nil, fmt.Errorf("failed to delete resource: %w", err)
 	}
-	if resp.JSON202 == nil {
-		log.Debug("DeleteByIdentifier response error", "status", resp.Status(), "body", string(resp.Body), "duration", elapsed)
-		return nil, fmt.Errorf("unexpected response status: %s", resp.Status())
+
+	// The generated client expects 202 but the API actually returns 200.
+	// Handle both cases.
+	if resp.JSON202 != nil {
+		log.Debug("DeleteByIdentifier response", "status", resp.Status(), "duration", elapsed)
+		return resp.JSON202, nil
 	}
-	log.Debug("DeleteByIdentifier response", "status", resp.Status(), "duration", elapsed)
-	return resp.JSON202, nil
+
+	statusCode := resp.HTTPResponse.StatusCode
+	if statusCode == 200 {
+		var result api.ResourceRequestAccepted
+		if err := json.Unmarshal(resp.Body, &result); err != nil {
+			return nil, fmt.Errorf("failed to parse delete response: %w", err)
+		}
+		log.Debug("DeleteByIdentifier response", "status", resp.Status(), "duration", elapsed)
+		return &result, nil
+	}
+
+	log.Debug("DeleteByIdentifier response error", "status", resp.Status(), "body", string(resp.Body), "duration", elapsed)
+	return nil, fmt.Errorf("unexpected response status: %s", resp.Status())
 }
