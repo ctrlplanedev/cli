@@ -11,6 +11,9 @@ build:
 install:
 	go install -ldflags "$(LDFLAGS)" ./cmd/ctrlc
 
+update-openapi:
+	go generate ./...
+
 test:
 	go test -v ./...
 
