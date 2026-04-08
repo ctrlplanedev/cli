@@ -33,7 +33,6 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/hashicorp/go-tfe v1.73.1
-	github.com/itchyny/gojq v0.12.19
 	github.com/k-capehart/go-salesforce/v2 v2.5.2
 	github.com/loft-sh/vcluster v0.25.0
 	github.com/mitchellh/go-homedir v1.1.0
@@ -162,7 +161,6 @@ require (
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/invopop/yaml v0.3.1 // indirect
-	github.com/itchyny/timefmt-go v0.1.8 // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect

@@ -89,29 +89,6 @@ func (s *APIResourceService) Search(ctx context.Context, filters api.ListResourc
 	return allItems, nil
 }
 
-func (s *APIResourceService) SearchTotal(ctx context.Context, filters api.ListResourcesFilters) (int, error) {
-	log.Debug("SearchTotal", "workspaceID", s.WorkspaceID)
-	limit := 1
-	offset := 0
-	body := filters
-	body.Limit = &limit
-	body.Offset = &offset
-
-	start := time.Now()
-	resp, err := s.Client.SearchResourcesWithResponse(ctx, s.WorkspaceID, body)
-	elapsed := time.Since(start)
-	if err != nil {
-		return 0, fmt.Errorf("failed to get search resource count: %w", err)
-	}
-	if resp.JSON200 == nil {
-		log.Debug("SearchTotal response error", "status", resp.Status(), "body", string(resp.Body), "duration", elapsed)
-		return 0, fmt.Errorf("unexpected response status: %s", resp.Status())
-	}
-
-	log.Debug("SearchTotal result", "total", resp.JSON200.Total, "duration", elapsed)
-	return resp.JSON200.Total, nil
-}
-
 func (s *APIResourceService) DeleteByIdentifier(ctx context.Context, identifier string) (*api.ResourceRequestAccepted, error) {
 	log.Debug("DeleteByIdentifier", "workspaceID", s.WorkspaceID, "identifier", identifier)
 	start := time.Now()
