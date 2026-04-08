@@ -26,4 +26,4 @@ lint:
 format:
 	go fmt ./...
 
-.PHONY: build install test clean lint format
+.PHONY: build install test clean lint format update-openapi
