@@ -173,6 +173,31 @@ func (w *GitHubOutputWriter) Close() error {
 	return err
 }
 
+// HandleAnyOutput marshals any JSON-serializable value as json or yaml and
+// writes it to the command's output.
+func HandleAnyOutput(cmd *cobra.Command, result interface{}, format string) error {
+	var output []byte
+	var err error
+
+	switch format {
+	case "yaml":
+		output, err = yaml.Marshal(result)
+		if err != nil {
+			return fmt.Errorf("failed to marshal to YAML: %w", err)
+		}
+	case "json":
+		output, err = json.MarshalIndent(result, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal to JSON: %w", err)
+		}
+	default:
+		return fmt.Errorf("unsupported output format: %s", format)
+	}
+
+	fmt.Fprintln(cmd.OutOrStdout(), string(output))
+	return nil
+}
+
 // GetEnv fetches the value of an environment variable or returns a default
 // value.
 func GetEnv(key string, defaultValue string) string {
