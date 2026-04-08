@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"net/url"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
 	"github.com/ctrlplanedev/cli/internal/resources"
 	"github.com/itchyny/gojq"
@@ -16,7 +17,10 @@ import (
 )
 
 func NewResourcesCmd() *cobra.Command {
-	var cel string
+	var kinds []string
+	var metadata []string
+	var versions []string
+	var providerIDs []string
 	var jq string
 	var autoAccept bool
 	var output string
@@ -24,14 +28,14 @@ func NewResourcesCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "resources",
 		Short: "Get resources",
-		Long:  `Get resources with optional server-side CEL filtering or client-side jq filtering.`,
+		Long:  `Get resources with optional filtering or client-side jq filtering.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmdStart := time.Now()
 			defer func() {
 				log.Debug("get resources completed", "duration", time.Since(cmdStart))
 			}()
 
-			log.Debug("resources command", "cel", cel, "jq", jq, "autoAccept", autoAccept)
+			log.Debug("resources command", "kinds", kinds, "metadata", metadata, "versions", versions, "providerIDs", providerIDs, "jq", jq, "autoAccept", autoAccept)
 
 			if jq != "" {
 				if _, err := gojq.Parse(jq); err != nil {
@@ -44,17 +48,13 @@ func NewResourcesCmd() *cobra.Command {
 				return err
 			}
 
+			filters := buildFilters(kinds, metadata, versions, providerIDs)
+
 			if jq != "" {
-				return handleJQ(cmd, svc, jq, autoAccept, output)
+				return handleJQ(cmd, svc, filters, jq, autoAccept, output)
 			}
 
-			var celPtr *string
-			if cel != "" {
-				encoded := url.QueryEscape(cel)
-				celPtr = &encoded
-			}
-
-			items, err := svc.List(cmd.Context(), celPtr)
+			items, err := svc.Search(cmd.Context(), filters)
 			if err != nil {
 				return err
 			}
@@ -63,17 +63,45 @@ func NewResourcesCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&cel, "cel", "", "Server-side CEL filter expression")
+	cmd.Flags().StringSliceVarP(&kinds, "kind", "k", nil, "Filter by resource kind (repeatable)")
+	cmd.Flags().StringSliceVarP(&metadata, "metadata", "m", nil, "Filter by metadata key=value (repeatable)")
+	cmd.Flags().StringSliceVarP(&versions, "version", "v", nil, "Filter by resource version (repeatable)")
+	cmd.Flags().StringSliceVarP(&providerIDs, "provider-id", "p", nil, "Filter by provider ID (repeatable)")
 	cmd.Flags().StringVar(&jq, "jq", "", "Client-side jq filter expression (fetches all resources)")
 	cmd.Flags().BoolVar(&autoAccept, "auto-accept", false, "Skip confirmation prompt when using --jq")
 	cmd.Flags().StringVarP(&output, "output", "o", "json", "Output format (json or yaml)")
-	cmd.MarkFlagsMutuallyExclusive("cel", "jq")
 
 	return cmd
 }
 
-func handleJQ(cmd *cobra.Command, svc *resources.APIResourceService, jqExpr string, autoAccept bool, output string) error {
-	total, err := svc.GetTotal(cmd.Context())
+func buildFilters(kinds, metadata, versions, providerIDs []string) api.ListResourcesFilters {
+	filters := api.ListResourcesFilters{}
+
+	if len(kinds) > 0 {
+		filters.Kinds = &kinds
+	}
+	if len(versions) > 0 {
+		filters.Versions = &versions
+	}
+	if len(providerIDs) > 0 {
+		filters.ProviderIds = &providerIDs
+	}
+	if len(metadata) > 0 {
+		m := make(map[string]string)
+		for _, kv := range metadata {
+			parts := strings.SplitN(kv, "=", 2)
+			if len(parts) == 2 {
+				m[parts[0]] = parts[1]
+			}
+		}
+		filters.Metadata = &m
+	}
+
+	return filters
+}
+
+func handleJQ(cmd *cobra.Command, svc *resources.APIResourceService, filters api.ListResourcesFilters, jqExpr string, autoAccept bool, output string) error {
+	total, err := svc.SearchTotal(cmd.Context(), filters)
 	if err != nil {
 		return err
 	}
@@ -92,7 +120,7 @@ func handleJQ(cmd *cobra.Command, svc *resources.APIResourceService, jqExpr stri
 		}
 	}
 
-	items, err := svc.List(cmd.Context(), nil)
+	items, err := svc.Search(cmd.Context(), filters)
 	if err != nil {
 		return err
 	}

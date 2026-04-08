@@ -11,7 +11,7 @@ import (
 // enabling easy swapping when API changes happen or (more) straightforward test mocking.
 type ResourceService interface {
 	GetByIdentifier(ctx context.Context, identifier string) (*api.Resource, error)
-	List(ctx context.Context, cel *string) ([]api.Resource, error)
-	GetTotal(ctx context.Context) (int, error)
+	Search(ctx context.Context, filters api.ListResourcesFilters) ([]api.Resource, error)
+	SearchTotal(ctx context.Context, filters api.ListResourcesFilters) (int, error)
 	DeleteByIdentifier(ctx context.Context, identifier string) (*api.ResourceRequestAccepted, error)
 }

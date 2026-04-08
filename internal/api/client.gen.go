@@ -108,6 +108,20 @@ const (
 	Successful          JobStatus = "successful"
 )
 
+// Defines values for ListResourcesFiltersOrder.
+const (
+	ListResourcesFiltersOrderAsc  ListResourcesFiltersOrder = "asc"
+	ListResourcesFiltersOrderDesc ListResourcesFiltersOrder = "desc"
+)
+
+// Defines values for ListResourcesFiltersSortBy.
+const (
+	CreatedAt ListResourcesFiltersSortBy = "createdAt"
+	Kind      ListResourcesFiltersSortBy = "kind"
+	Name      ListResourcesFiltersSortBy = "name"
+	UpdatedAt ListResourcesFiltersSortBy = "updatedAt"
+)
+
 // Defines values for NullValue.
 const (
 	True NullValue = true
@@ -116,6 +130,13 @@ const (
 // Defines values for PrometheusMetricProviderType.
 const (
 	Prometheus PrometheusMetricProviderType = "prometheus"
+)
+
+// Defines values for ReleaseTargetStateResponseLatestJobVerificationsStatus.
+const (
+	ReleaseTargetStateResponseLatestJobVerificationsStatusFailed  ReleaseTargetStateResponseLatestJobVerificationsStatus = "failed"
+	ReleaseTargetStateResponseLatestJobVerificationsStatusPassed  ReleaseTargetStateResponseLatestJobVerificationsStatus = "passed"
+	ReleaseTargetStateResponseLatestJobVerificationsStatusRunning ReleaseTargetStateResponseLatestJobVerificationsStatus = "running"
 )
 
 // Defines values for RetryRuleBackoffStrategy.
@@ -132,6 +153,13 @@ const (
 // Defines values for TerraformCloudRunMetricProviderType.
 const (
 	TerraformCloudRun TerraformCloudRunMetricProviderType = "terraformCloudRun"
+)
+
+// Defines values for VerificationMeasurementStatus.
+const (
+	VerificationMeasurementStatusFailed       VerificationMeasurementStatus = "failed"
+	VerificationMeasurementStatusInconclusive VerificationMeasurementStatus = "inconclusive"
+	VerificationMeasurementStatusPassed       VerificationMeasurementStatus = "passed"
 )
 
 // Defines values for VerificationRuleTriggerOn.
@@ -179,6 +207,12 @@ const (
 	String WorkflowStringInputType = "string"
 )
 
+// Defines values for ListDeploymentVersionsParamsOrder.
+const (
+	ListDeploymentVersionsParamsOrderAsc  ListDeploymentVersionsParamsOrder = "asc"
+	ListDeploymentVersionsParamsOrderDesc ListDeploymentVersionsParamsOrder = "desc"
+)
+
 // AnyApprovalRule defines model for AnyApprovalRule.
 type AnyApprovalRule struct {
 	MinApprovals int32 `json:"minApprovals"`
@@ -202,9 +236,12 @@ type CreateDeploymentRequest struct {
 	Description    *string                 `json:"description,omitempty"`
 	JobAgentConfig *map[string]interface{} `json:"jobAgentConfig,omitempty"`
 	JobAgentId     *string                 `json:"jobAgentId,omitempty"`
-	JobAgents      *[]DeploymentJobAgent   `json:"jobAgents,omitempty"`
-	Metadata       *map[string]string      `json:"metadata,omitempty"`
-	Name           string                  `json:"name"`
+
+	// JobAgentSelector CEL expression to match job agents. Defaults to jobAgent.id == "<jobAgentId>" if not provided.
+	JobAgentSelector *string               `json:"jobAgentSelector,omitempty"`
+	JobAgents        *[]DeploymentJobAgent `json:"jobAgents,omitempty"`
+	Metadata         *map[string]string    `json:"metadata,omitempty"`
+	Name             string                `json:"name"`
 
 	// ResourceSelector CEL expression to determine if the deployment should be used
 	ResourceSelector *string `json:"resourceSelector,omitempty"`
@@ -277,25 +314,35 @@ type CreateSystemRequest struct {
 	Slug        *string            `json:"slug,omitempty"`
 }
 
-// CreateWorkflow defines model for CreateWorkflow.
-type CreateWorkflow struct {
-	Inputs []WorkflowInput             `json:"inputs"`
-	Jobs   []CreateWorkflowJobTemplate `json:"jobs"`
-	Name   string                      `json:"name"`
+// CreateVariableSet defines model for CreateVariableSet.
+type CreateVariableSet struct {
+	Description *string `json:"description,omitempty"`
+	Name        string  `json:"name"`
+	Priority    *int    `json:"priority,omitempty"`
+
+	// Selector A CEL expression to select which release targets this variable set applies to
+	Selector  string                `json:"selector"`
+	Variables []VariableSetVariable `json:"variables"`
 }
 
-// CreateWorkflowJobTemplate defines model for CreateWorkflowJobTemplate.
-type CreateWorkflowJobTemplate struct {
+// CreateWorkflow defines model for CreateWorkflow.
+type CreateWorkflow struct {
+	Inputs    []WorkflowInput          `json:"inputs"`
+	JobAgents []CreateWorkflowJobAgent `json:"jobAgents"`
+	Name      string                   `json:"name"`
+}
+
+// CreateWorkflowJobAgent defines model for CreateWorkflowJobAgent.
+type CreateWorkflowJobAgent struct {
 	// Config Configuration for the job agent
 	Config map[string]interface{} `json:"config"`
-
-	// If CEL expression to determine if the job should run
-	If     *string            `json:"if,omitempty"`
-	Matrix *WorkflowJobMatrix `json:"matrix,omitempty"`
-	Name   string             `json:"name"`
+	Name   string                 `json:"name"`
 
 	// Ref Reference to the job agent
 	Ref string `json:"ref"`
+
+	// Selector CEL expression to determine if the job agent should dispatch a job
+	Selector string `json:"selector"`
 }
 
 // CreateWorkspaceRequest defines model for CreateWorkspaceRequest.
@@ -344,9 +391,12 @@ type Deployment struct {
 	Id             string                 `json:"id"`
 	JobAgentConfig map[string]interface{} `json:"jobAgentConfig"`
 	JobAgentId     *string                `json:"jobAgentId,omitempty"`
-	JobAgents      *[]DeploymentJobAgent  `json:"jobAgents,omitempty"`
-	Metadata       *map[string]string     `json:"metadata,omitempty"`
-	Name           string                 `json:"name"`
+
+	// JobAgentSelector CEL expression to match job agents
+	JobAgentSelector *string               `json:"jobAgentSelector,omitempty"`
+	JobAgents        *[]DeploymentJobAgent `json:"jobAgents,omitempty"`
+	Metadata         *map[string]string    `json:"metadata,omitempty"`
+	Name             string                `json:"name"`
 
 	// ResourceSelector CEL expression to determine if the deployment should be used
 	ResourceSelector *string `json:"resourceSelector,omitempty"`
@@ -682,6 +732,30 @@ type JobWithRelease struct {
 	Resource    *Resource    `json:"resource,omitempty"`
 }
 
+// ListResourcesFilters defines model for ListResourcesFilters.
+type ListResourcesFilters struct {
+	Identifiers *[]string `json:"identifiers,omitempty"`
+	Kinds       *[]string `json:"kinds,omitempty"`
+	Limit       *int      `json:"limit,omitempty"`
+
+	// Metadata Exact metadata key/value matches
+	Metadata    *map[string]string         `json:"metadata,omitempty"`
+	Offset      *int                       `json:"offset,omitempty"`
+	Order       *ListResourcesFiltersOrder `json:"order,omitempty"`
+	ProviderIds *[]string                  `json:"providerIds,omitempty"`
+
+	// Query Text search on name or identifier
+	Query    *string                     `json:"query,omitempty"`
+	SortBy   *ListResourcesFiltersSortBy `json:"sortBy,omitempty"`
+	Versions *[]string                   `json:"versions,omitempty"`
+}
+
+// ListResourcesFiltersOrder defines model for ListResourcesFilters.Order.
+type ListResourcesFiltersOrder string
+
+// ListResourcesFiltersSortBy defines model for ListResourcesFilters.SortBy.
+type ListResourcesFiltersSortBy string
+
 // LiteralValue defines model for LiteralValue.
 type LiteralValue struct {
 	union json.RawMessage
@@ -843,6 +917,28 @@ type ReleaseTargetState struct {
 	DesiredRelease *Release `json:"desiredRelease,omitempty"`
 	LatestJob      *Job     `json:"latestJob,omitempty"`
 }
+
+// ReleaseTargetStateResponse defines model for ReleaseTargetStateResponse.
+type ReleaseTargetStateResponse struct {
+	CurrentRelease *Release `json:"currentRelease,omitempty"`
+	DesiredRelease *Release `json:"desiredRelease,omitempty"`
+	LatestJob      *struct {
+		Job           Job `json:"job"`
+		Verifications []struct {
+			CreatedAt time.Time                  `json:"createdAt"`
+			Id        string                     `json:"id"`
+			JobId     string                     `json:"jobId"`
+			Message   *string                    `json:"message,omitempty"`
+			Metrics   []VerificationMetricStatus `json:"metrics"`
+
+			// Status Computed aggregate status of this verification
+			Status ReleaseTargetStateResponseLatestJobVerificationsStatus `json:"status"`
+		} `json:"verifications"`
+	} `json:"latestJob,omitempty"`
+}
+
+// ReleaseTargetStateResponseLatestJobVerificationsStatus Computed aggregate status of this verification
+type ReleaseTargetStateResponseLatestJobVerificationsStatus string
 
 // ReleaseTargetWithState defines model for ReleaseTargetWithState.
 type ReleaseTargetWithState struct {
@@ -1030,11 +1126,20 @@ type UpdateDeploymentVersionRequest struct {
 	Tag            *string                  `json:"tag,omitempty"`
 }
 
+// UpdateVariableSet defines model for UpdateVariableSet.
+type UpdateVariableSet struct {
+	Description *string                `json:"description,omitempty"`
+	Name        *string                `json:"name,omitempty"`
+	Priority    *int                   `json:"priority,omitempty"`
+	Selector    *string                `json:"selector,omitempty"`
+	Variables   *[]VariableSetVariable `json:"variables,omitempty"`
+}
+
 // UpdateWorkflow defines model for UpdateWorkflow.
 type UpdateWorkflow struct {
-	Inputs []WorkflowInput             `json:"inputs"`
-	Jobs   []CreateWorkflowJobTemplate `json:"jobs"`
-	Name   string                      `json:"name"`
+	Inputs    []WorkflowInput          `json:"inputs"`
+	JobAgents []CreateWorkflowJobAgent `json:"jobAgents"`
+	Name      string                   `json:"name"`
 }
 
 // UpdateWorkspaceRequest defines model for UpdateWorkspaceRequest.
@@ -1051,9 +1156,12 @@ type UpsertDeploymentRequest struct {
 	Description    *string                 `json:"description,omitempty"`
 	JobAgentConfig *map[string]interface{} `json:"jobAgentConfig,omitempty"`
 	JobAgentId     *string                 `json:"jobAgentId,omitempty"`
-	JobAgents      *[]DeploymentJobAgent   `json:"jobAgents,omitempty"`
-	Metadata       *map[string]string      `json:"metadata,omitempty"`
-	Name           string                  `json:"name"`
+
+	// JobAgentSelector CEL expression to match job agents. Defaults to jobAgent.id == "<jobAgentId>" if not provided.
+	JobAgentSelector *string               `json:"jobAgentSelector,omitempty"`
+	JobAgents        *[]DeploymentJobAgent `json:"jobAgents,omitempty"`
+	Metadata         *map[string]string    `json:"metadata,omitempty"`
+	Name             string                `json:"name"`
 
 	// ResourceSelector CEL expression to determine if the deployment should be used
 	ResourceSelector *string `json:"resourceSelector,omitempty"`
@@ -1181,6 +1289,57 @@ type Value struct {
 	union json.RawMessage
 }
 
+// VariableSet defines model for VariableSet.
+type VariableSet struct {
+	CreatedAt   time.Time          `json:"createdAt"`
+	Description string             `json:"description"`
+	Id          openapi_types.UUID `json:"id"`
+	Name        string             `json:"name"`
+	Priority    int                `json:"priority"`
+
+	// Selector A CEL expression to select which release targets this variable set applies to
+	Selector  string    `json:"selector"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// VariableSetVariable defines model for VariableSetVariable.
+type VariableSetVariable struct {
+	Key   string `json:"key"`
+	Value Value  `json:"value"`
+}
+
+// VariableSetWithVariables defines model for VariableSetWithVariables.
+type VariableSetWithVariables struct {
+	CreatedAt   time.Time          `json:"createdAt"`
+	Description string             `json:"description"`
+	Id          openapi_types.UUID `json:"id"`
+	Name        string             `json:"name"`
+	Priority    int                `json:"priority"`
+
+	// Selector A CEL expression to select which release targets this variable set applies to
+	Selector  string                `json:"selector"`
+	UpdatedAt time.Time             `json:"updatedAt"`
+	Variables []VariableSetVariable `json:"variables"`
+}
+
+// VerificationMeasurement defines model for VerificationMeasurement.
+type VerificationMeasurement struct {
+	// Data Raw measurement data
+	Data *map[string]interface{} `json:"data,omitempty"`
+
+	// MeasuredAt When measurement was taken
+	MeasuredAt time.Time `json:"measuredAt"`
+
+	// Message Measurement result message
+	Message *string `json:"message,omitempty"`
+
+	// Status Status of a verification measurement
+	Status VerificationMeasurementStatus `json:"status"`
+}
+
+// VerificationMeasurementStatus Status of a verification measurement
+type VerificationMeasurementStatus string
+
 // VerificationMetricSpec defines model for VerificationMetricSpec.
 type VerificationMetricSpec struct {
 	// Count Number of measurements to take
@@ -1194,6 +1353,34 @@ type VerificationMetricSpec struct {
 
 	// IntervalSeconds Interval between measurements in seconds
 	IntervalSeconds int32 `json:"intervalSeconds"`
+
+	// Name Name of the verification metric
+	Name     string         `json:"name"`
+	Provider MetricProvider `json:"provider"`
+
+	// SuccessCondition CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
+	SuccessCondition string `json:"successCondition"`
+
+	// SuccessThreshold Minimum number of consecutive successful measurements required to consider the metric successful
+	SuccessThreshold *int `json:"successThreshold,omitempty"`
+}
+
+// VerificationMetricStatus defines model for VerificationMetricStatus.
+type VerificationMetricStatus struct {
+	// Count Number of measurements to take
+	Count int `json:"count"`
+
+	// FailureCondition CEL expression to evaluate measurement failure (e.g., "result.statusCode == 500"), if not provided, a failure is just the opposite of the success condition
+	FailureCondition *string `json:"failureCondition,omitempty"`
+
+	// FailureThreshold Stop after this many consecutive failures (0 = no limit)
+	FailureThreshold *int `json:"failureThreshold,omitempty"`
+
+	// IntervalSeconds Interval between measurements in seconds
+	IntervalSeconds int32 `json:"intervalSeconds"`
+
+	// Measurements Individual verification measurements taken for this metric
+	Measurements []VerificationMeasurement `json:"measurements"`
 
 	// Name Name of the verification metric
 	Name     string         `json:"name"`
@@ -1235,10 +1422,10 @@ type VersionSelectorRule struct {
 
 // Workflow defines model for Workflow.
 type Workflow struct {
-	Id     string                `json:"id"`
-	Inputs []WorkflowInput       `json:"inputs"`
-	Jobs   []WorkflowJobTemplate `json:"jobs"`
-	Name   string                `json:"name"`
+	Id        string             `json:"id"`
+	Inputs    []WorkflowInput    `json:"inputs"`
+	JobAgents []WorkflowJobAgent `json:"jobAgents"`
+	Name      string             `json:"name"`
 }
 
 // WorkflowArrayInput defines model for WorkflowArrayInput.
@@ -1273,33 +1460,17 @@ type WorkflowJob struct {
 	WorkflowId string `json:"workflowId"`
 }
 
-// WorkflowJobMatrix defines model for WorkflowJobMatrix.
-type WorkflowJobMatrix map[string]WorkflowJobMatrix_AdditionalProperties
-
-// WorkflowJobMatrix0 defines model for .
-type WorkflowJobMatrix0 = []map[string]interface{}
-
-// WorkflowJobMatrix1 defines model for .
-type WorkflowJobMatrix1 = string
-
-// WorkflowJobMatrix_AdditionalProperties defines model for WorkflowJobMatrix.AdditionalProperties.
-type WorkflowJobMatrix_AdditionalProperties struct {
-	union json.RawMessage
-}
-
-// WorkflowJobTemplate defines model for WorkflowJobTemplate.
-type WorkflowJobTemplate struct {
+// WorkflowJobAgent defines model for WorkflowJobAgent.
+type WorkflowJobAgent struct {
 	// Config Configuration for the job agent
 	Config map[string]interface{} `json:"config"`
-	Id     string                 `json:"id"`
-
-	// If CEL expression to determine if the job should run
-	If     *string            `json:"if,omitempty"`
-	Matrix *WorkflowJobMatrix `json:"matrix,omitempty"`
-	Name   string             `json:"name"`
+	Name   string                 `json:"name"`
 
 	// Ref Reference to the job agent
 	Ref string `json:"ref"`
+
+	// Selector CEL expression to determine if the job agent should dispatch a job
+	Selector string `json:"selector"`
 }
 
 // WorkflowManualArrayInput defines model for WorkflowManualArrayInput.
@@ -1419,7 +1590,13 @@ type ListDeploymentVersionsParams struct {
 
 	// Offset Number of items to skip
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Order Sort order for results
+	Order *ListDeploymentVersionsParamsOrder `form:"order,omitempty" json:"order,omitempty"`
 }
+
+// ListDeploymentVersionsParamsOrder defines parameters for ListDeploymentVersions.
+type ListDeploymentVersionsParamsOrder string
 
 // ListEnvironmentsParams defines parameters for ListEnvironments.
 type ListEnvironmentsParams struct {
@@ -1555,6 +1732,15 @@ type ListSystemsParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ListVariableSetsParams defines parameters for ListVariableSets.
+type ListVariableSetsParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ListWorkflowsParams defines parameters for ListWorkflows.
 type ListWorkflowsParams struct {
 	// Limit Maximum number of items to return
@@ -1642,11 +1828,20 @@ type UpsertResourceByIdentifierJSONRequestBody = UpsertResourceRequest
 // RequestResourceVariablesUpdateJSONRequestBody defines body for RequestResourceVariablesUpdate for application/json ContentType.
 type RequestResourceVariablesUpdateJSONRequestBody RequestResourceVariablesUpdateJSONBody
 
+// SearchResourcesJSONRequestBody defines body for SearchResources for application/json ContentType.
+type SearchResourcesJSONRequestBody = ListResourcesFilters
+
 // RequestSystemCreationJSONRequestBody defines body for RequestSystemCreation for application/json ContentType.
 type RequestSystemCreationJSONRequestBody = CreateSystemRequest
 
 // RequestSystemUpsertJSONRequestBody defines body for RequestSystemUpsert for application/json ContentType.
 type RequestSystemUpsertJSONRequestBody = UpsertSystemRequest
+
+// CreateVariableSetJSONRequestBody defines body for CreateVariableSet for application/json ContentType.
+type CreateVariableSetJSONRequestBody = CreateVariableSet
+
+// UpdateVariableSetJSONRequestBody defines body for UpdateVariableSet for application/json ContentType.
+type UpdateVariableSetJSONRequestBody = UpdateVariableSet
 
 // CreateWorkflowJSONRequestBody defines body for CreateWorkflow for application/json ContentType.
 type CreateWorkflowJSONRequestBody = CreateWorkflow
@@ -2292,68 +2487,6 @@ func (t *WorkflowInput) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-// AsWorkflowJobMatrix0 returns the union data inside the WorkflowJobMatrix_AdditionalProperties as a WorkflowJobMatrix0
-func (t WorkflowJobMatrix_AdditionalProperties) AsWorkflowJobMatrix0() (WorkflowJobMatrix0, error) {
-	var body WorkflowJobMatrix0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromWorkflowJobMatrix0 overwrites any union data inside the WorkflowJobMatrix_AdditionalProperties as the provided WorkflowJobMatrix0
-func (t *WorkflowJobMatrix_AdditionalProperties) FromWorkflowJobMatrix0(v WorkflowJobMatrix0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeWorkflowJobMatrix0 performs a merge with any union data inside the WorkflowJobMatrix_AdditionalProperties, using the provided WorkflowJobMatrix0
-func (t *WorkflowJobMatrix_AdditionalProperties) MergeWorkflowJobMatrix0(v WorkflowJobMatrix0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsWorkflowJobMatrix1 returns the union data inside the WorkflowJobMatrix_AdditionalProperties as a WorkflowJobMatrix1
-func (t WorkflowJobMatrix_AdditionalProperties) AsWorkflowJobMatrix1() (WorkflowJobMatrix1, error) {
-	var body WorkflowJobMatrix1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromWorkflowJobMatrix1 overwrites any union data inside the WorkflowJobMatrix_AdditionalProperties as the provided WorkflowJobMatrix1
-func (t *WorkflowJobMatrix_AdditionalProperties) FromWorkflowJobMatrix1(v WorkflowJobMatrix1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeWorkflowJobMatrix1 performs a merge with any union data inside the WorkflowJobMatrix_AdditionalProperties, using the provided WorkflowJobMatrix1
-func (t *WorkflowJobMatrix_AdditionalProperties) MergeWorkflowJobMatrix1(v WorkflowJobMatrix1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t WorkflowJobMatrix_AdditionalProperties) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *WorkflowJobMatrix_AdditionalProperties) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
 
@@ -2670,6 +2803,11 @@ type ClientInterface interface {
 
 	RequestResourceVariablesUpdate(ctx context.Context, workspaceId string, identifier string, body RequestResourceVariablesUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// SearchResourcesWithBody request with any body
+	SearchResourcesWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SearchResources(ctx context.Context, workspaceId string, body SearchResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetReleaseTargetForResourceInDeployment request
 	GetReleaseTargetForResourceInDeployment(ctx context.Context, workspaceId string, resourceIdentifier string, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -2709,6 +2847,25 @@ type ClientInterface interface {
 
 	// LinkEnvironmentToSystem request
 	LinkEnvironmentToSystem(ctx context.Context, workspaceId string, systemId string, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListVariableSets request
+	ListVariableSets(ctx context.Context, workspaceId string, params *ListVariableSetsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateVariableSetWithBody request with any body
+	CreateVariableSetWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateVariableSet(ctx context.Context, workspaceId string, body CreateVariableSetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteVariableSet request
+	DeleteVariableSet(ctx context.Context, workspaceId string, variableSetId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetVariableSet request
+	GetVariableSet(ctx context.Context, workspaceId string, variableSetId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateVariableSetWithBody request with any body
+	UpdateVariableSetWithBody(ctx context.Context, workspaceId string, variableSetId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateVariableSet(ctx context.Context, workspaceId string, variableSetId string, body UpdateVariableSetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListWorkflows request
 	ListWorkflows(ctx context.Context, workspaceId string, params *ListWorkflowsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3803,6 +3960,30 @@ func (c *Client) RequestResourceVariablesUpdate(ctx context.Context, workspaceId
 	return c.Client.Do(req)
 }
 
+func (c *Client) SearchResourcesWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchResourcesRequestWithBody(c.Server, workspaceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SearchResources(ctx context.Context, workspaceId string, body SearchResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchResourcesRequest(c.Server, workspaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetReleaseTargetForResourceInDeployment(ctx context.Context, workspaceId string, resourceIdentifier string, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetReleaseTargetForResourceInDeploymentRequest(c.Server, workspaceId, resourceIdentifier, deploymentId)
 	if err != nil {
@@ -3961,6 +4142,90 @@ func (c *Client) GetEnvironmentSystemLink(ctx context.Context, workspaceId strin
 
 func (c *Client) LinkEnvironmentToSystem(ctx context.Context, workspaceId string, systemId string, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewLinkEnvironmentToSystemRequest(c.Server, workspaceId, systemId, environmentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListVariableSets(ctx context.Context, workspaceId string, params *ListVariableSetsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListVariableSetsRequest(c.Server, workspaceId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateVariableSetWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateVariableSetRequestWithBody(c.Server, workspaceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateVariableSet(ctx context.Context, workspaceId string, body CreateVariableSetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateVariableSetRequest(c.Server, workspaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteVariableSet(ctx context.Context, workspaceId string, variableSetId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteVariableSetRequest(c.Server, workspaceId, variableSetId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetVariableSet(ctx context.Context, workspaceId string, variableSetId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetVariableSetRequest(c.Server, workspaceId, variableSetId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateVariableSetWithBody(ctx context.Context, workspaceId string, variableSetId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateVariableSetRequestWithBody(c.Server, workspaceId, variableSetId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateVariableSet(ctx context.Context, workspaceId string, variableSetId string, body UpdateVariableSetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateVariableSetRequest(c.Server, workspaceId, variableSetId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5112,6 +5377,22 @@ func NewListDeploymentVersionsRequest(server string, workspaceId string, deploym
 		if params.Offset != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Order != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "order", runtime.ParamLocationQuery, *params.Order); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -7495,6 +7776,53 @@ func NewRequestResourceVariablesUpdateRequestWithBody(server string, workspaceId
 	return req, nil
 }
 
+// NewSearchResourcesRequest calls the generic SearchResources builder with application/json body
+func NewSearchResourcesRequest(server string, workspaceId string, body SearchResourcesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSearchResourcesRequestWithBody(server, workspaceId, "application/json", bodyReader)
+}
+
+// NewSearchResourcesRequestWithBody generates requests for SearchResources with any type of body
+func NewSearchResourcesRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/resources/search", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetReleaseTargetForResourceInDeploymentRequest generates requests for GetReleaseTargetForResourceInDeployment
 func NewGetReleaseTargetForResourceInDeploymentRequest(server string, workspaceId string, resourceIdentifier string, deploymentId string) (*http.Request, error) {
 	var err error
@@ -8082,6 +8410,261 @@ func NewLinkEnvironmentToSystemRequest(server string, workspaceId string, system
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewListVariableSetsRequest generates requests for ListVariableSets
+func NewListVariableSetsRequest(server string, workspaceId string, params *ListVariableSetsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/variable-sets", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateVariableSetRequest calls the generic CreateVariableSet builder with application/json body
+func NewCreateVariableSetRequest(server string, workspaceId string, body CreateVariableSetJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateVariableSetRequestWithBody(server, workspaceId, "application/json", bodyReader)
+}
+
+// NewCreateVariableSetRequestWithBody generates requests for CreateVariableSet with any type of body
+func NewCreateVariableSetRequestWithBody(server string, workspaceId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/variable-sets", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteVariableSetRequest generates requests for DeleteVariableSet
+func NewDeleteVariableSetRequest(server string, workspaceId string, variableSetId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "variableSetId", runtime.ParamLocationPath, variableSetId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/variable-sets/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetVariableSetRequest generates requests for GetVariableSet
+func NewGetVariableSetRequest(server string, workspaceId string, variableSetId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "variableSetId", runtime.ParamLocationPath, variableSetId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/variable-sets/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateVariableSetRequest calls the generic UpdateVariableSet builder with application/json body
+func NewUpdateVariableSetRequest(server string, workspaceId string, variableSetId string, body UpdateVariableSetJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateVariableSetRequestWithBody(server, workspaceId, variableSetId, "application/json", bodyReader)
+}
+
+// NewUpdateVariableSetRequestWithBody generates requests for UpdateVariableSet with any type of body
+func NewUpdateVariableSetRequestWithBody(server string, workspaceId string, variableSetId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "variableSetId", runtime.ParamLocationPath, variableSetId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/variable-sets/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -8681,6 +9264,11 @@ type ClientWithResponsesInterface interface {
 
 	RequestResourceVariablesUpdateWithResponse(ctx context.Context, workspaceId string, identifier string, body RequestResourceVariablesUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestResourceVariablesUpdateResponse, error)
 
+	// SearchResourcesWithBodyWithResponse request with any body
+	SearchResourcesWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchResourcesResponse, error)
+
+	SearchResourcesWithResponse(ctx context.Context, workspaceId string, body SearchResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchResourcesResponse, error)
+
 	// GetReleaseTargetForResourceInDeploymentWithResponse request
 	GetReleaseTargetForResourceInDeploymentWithResponse(ctx context.Context, workspaceId string, resourceIdentifier string, deploymentId string, reqEditors ...RequestEditorFn) (*GetReleaseTargetForResourceInDeploymentResponse, error)
 
@@ -8720,6 +9308,25 @@ type ClientWithResponsesInterface interface {
 
 	// LinkEnvironmentToSystemWithResponse request
 	LinkEnvironmentToSystemWithResponse(ctx context.Context, workspaceId string, systemId string, environmentId string, reqEditors ...RequestEditorFn) (*LinkEnvironmentToSystemResponse, error)
+
+	// ListVariableSetsWithResponse request
+	ListVariableSetsWithResponse(ctx context.Context, workspaceId string, params *ListVariableSetsParams, reqEditors ...RequestEditorFn) (*ListVariableSetsResponse, error)
+
+	// CreateVariableSetWithBodyWithResponse request with any body
+	CreateVariableSetWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateVariableSetResponse, error)
+
+	CreateVariableSetWithResponse(ctx context.Context, workspaceId string, body CreateVariableSetJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateVariableSetResponse, error)
+
+	// DeleteVariableSetWithResponse request
+	DeleteVariableSetWithResponse(ctx context.Context, workspaceId string, variableSetId string, reqEditors ...RequestEditorFn) (*DeleteVariableSetResponse, error)
+
+	// GetVariableSetWithResponse request
+	GetVariableSetWithResponse(ctx context.Context, workspaceId string, variableSetId string, reqEditors ...RequestEditorFn) (*GetVariableSetResponse, error)
+
+	// UpdateVariableSetWithBodyWithResponse request with any body
+	UpdateVariableSetWithBodyWithResponse(ctx context.Context, workspaceId string, variableSetId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateVariableSetResponse, error)
+
+	UpdateVariableSetWithResponse(ctx context.Context, workspaceId string, variableSetId string, body UpdateVariableSetJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateVariableSetResponse, error)
 
 	// ListWorkflowsWithResponse request
 	ListWorkflowsWithResponse(ctx context.Context, workspaceId string, params *ListWorkflowsParams, reqEditors ...RequestEditorFn) (*ListWorkflowsResponse, error)
@@ -10080,7 +10687,7 @@ func (r GetJobsForReleaseTargetResponse) StatusCode() int {
 type GetReleaseTargetStateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *ReleaseTargetState
+	JSON200      *ReleaseTargetStateResponse
 	JSON400      *ErrorResponse
 	JSON404      *ErrorResponse
 }
@@ -10450,6 +11057,40 @@ func (r RequestResourceVariablesUpdateResponse) StatusCode() int {
 	return 0
 }
 
+type SearchResourcesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Items []Resource `json:"items"`
+
+		// Limit Maximum number of items returned
+		Limit int `json:"limit"`
+
+		// Offset Number of items skipped
+		Offset int `json:"offset"`
+
+		// Total Total number of items available
+		Total int `json:"total"`
+	}
+	JSON400 *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r SearchResourcesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SearchResourcesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetReleaseTargetForResourceInDeploymentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -10743,6 +11384,135 @@ func (r LinkEnvironmentToSystemResponse) StatusCode() int {
 	return 0
 }
 
+type ListVariableSetsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Items []VariableSetWithVariables `json:"items"`
+
+		// Limit Maximum number of items returned
+		Limit int `json:"limit"`
+
+		// Offset Number of items skipped
+		Offset int `json:"offset"`
+
+		// Total Total number of items available
+		Total int `json:"total"`
+	}
+	JSON400 *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListVariableSetsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListVariableSetsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateVariableSetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *VariableSet
+	JSON400      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateVariableSetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateVariableSetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteVariableSetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *VariableSet
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteVariableSetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteVariableSetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetVariableSetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *VariableSetWithVariables
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetVariableSetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetVariableSetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateVariableSetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *VariableSet
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateVariableSetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateVariableSetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListWorkflowsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -10780,7 +11550,7 @@ func (r ListWorkflowsResponse) StatusCode() int {
 type CreateWorkflowResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON202      *Workflow
+	JSON201      *Workflow
 	JSON400      *ErrorResponse
 }
 
@@ -11673,6 +12443,23 @@ func (c *ClientWithResponses) RequestResourceVariablesUpdateWithResponse(ctx con
 	return ParseRequestResourceVariablesUpdateResponse(rsp)
 }
 
+// SearchResourcesWithBodyWithResponse request with arbitrary body returning *SearchResourcesResponse
+func (c *ClientWithResponses) SearchResourcesWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchResourcesResponse, error) {
+	rsp, err := c.SearchResourcesWithBody(ctx, workspaceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchResourcesResponse(rsp)
+}
+
+func (c *ClientWithResponses) SearchResourcesWithResponse(ctx context.Context, workspaceId string, body SearchResourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchResourcesResponse, error) {
+	rsp, err := c.SearchResources(ctx, workspaceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchResourcesResponse(rsp)
+}
+
 // GetReleaseTargetForResourceInDeploymentWithResponse request returning *GetReleaseTargetForResourceInDeploymentResponse
 func (c *ClientWithResponses) GetReleaseTargetForResourceInDeploymentWithResponse(ctx context.Context, workspaceId string, resourceIdentifier string, deploymentId string, reqEditors ...RequestEditorFn) (*GetReleaseTargetForResourceInDeploymentResponse, error) {
 	rsp, err := c.GetReleaseTargetForResourceInDeployment(ctx, workspaceId, resourceIdentifier, deploymentId, reqEditors...)
@@ -11795,6 +12582,67 @@ func (c *ClientWithResponses) LinkEnvironmentToSystemWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseLinkEnvironmentToSystemResponse(rsp)
+}
+
+// ListVariableSetsWithResponse request returning *ListVariableSetsResponse
+func (c *ClientWithResponses) ListVariableSetsWithResponse(ctx context.Context, workspaceId string, params *ListVariableSetsParams, reqEditors ...RequestEditorFn) (*ListVariableSetsResponse, error) {
+	rsp, err := c.ListVariableSets(ctx, workspaceId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListVariableSetsResponse(rsp)
+}
+
+// CreateVariableSetWithBodyWithResponse request with arbitrary body returning *CreateVariableSetResponse
+func (c *ClientWithResponses) CreateVariableSetWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateVariableSetResponse, error) {
+	rsp, err := c.CreateVariableSetWithBody(ctx, workspaceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateVariableSetResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateVariableSetWithResponse(ctx context.Context, workspaceId string, body CreateVariableSetJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateVariableSetResponse, error) {
+	rsp, err := c.CreateVariableSet(ctx, workspaceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateVariableSetResponse(rsp)
+}
+
+// DeleteVariableSetWithResponse request returning *DeleteVariableSetResponse
+func (c *ClientWithResponses) DeleteVariableSetWithResponse(ctx context.Context, workspaceId string, variableSetId string, reqEditors ...RequestEditorFn) (*DeleteVariableSetResponse, error) {
+	rsp, err := c.DeleteVariableSet(ctx, workspaceId, variableSetId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteVariableSetResponse(rsp)
+}
+
+// GetVariableSetWithResponse request returning *GetVariableSetResponse
+func (c *ClientWithResponses) GetVariableSetWithResponse(ctx context.Context, workspaceId string, variableSetId string, reqEditors ...RequestEditorFn) (*GetVariableSetResponse, error) {
+	rsp, err := c.GetVariableSet(ctx, workspaceId, variableSetId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetVariableSetResponse(rsp)
+}
+
+// UpdateVariableSetWithBodyWithResponse request with arbitrary body returning *UpdateVariableSetResponse
+func (c *ClientWithResponses) UpdateVariableSetWithBodyWithResponse(ctx context.Context, workspaceId string, variableSetId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateVariableSetResponse, error) {
+	rsp, err := c.UpdateVariableSetWithBody(ctx, workspaceId, variableSetId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateVariableSetResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateVariableSetWithResponse(ctx context.Context, workspaceId string, variableSetId string, body UpdateVariableSetJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateVariableSetResponse, error) {
+	rsp, err := c.UpdateVariableSet(ctx, workspaceId, variableSetId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateVariableSetResponse(rsp)
 }
 
 // ListWorkflowsWithResponse request returning *ListWorkflowsResponse
@@ -13941,7 +14789,7 @@ func ParseGetReleaseTargetStateResponse(rsp *http.Response) (*GetReleaseTargetSt
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ReleaseTargetState
+		var dest ReleaseTargetStateResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -14481,6 +15329,50 @@ func ParseRequestResourceVariablesUpdateResponse(rsp *http.Response) (*RequestRe
 	return response, nil
 }
 
+// ParseSearchResourcesResponse parses an HTTP response from a SearchResourcesWithResponse call
+func ParseSearchResourcesResponse(rsp *http.Response) (*SearchResourcesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SearchResourcesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Items []Resource `json:"items"`
+
+			// Limit Maximum number of items returned
+			Limit int `json:"limit"`
+
+			// Offset Number of items skipped
+			Offset int `json:"offset"`
+
+			// Total Total number of items available
+			Total int `json:"total"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetReleaseTargetForResourceInDeploymentResponse parses an HTTP response from a GetReleaseTargetForResourceInDeploymentWithResponse call
 func ParseGetReleaseTargetForResourceInDeploymentResponse(rsp *http.Response) (*GetReleaseTargetForResourceInDeploymentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -14930,6 +15822,203 @@ func ParseLinkEnvironmentToSystemResponse(rsp *http.Response) (*LinkEnvironmentT
 	return response, nil
 }
 
+// ParseListVariableSetsResponse parses an HTTP response from a ListVariableSetsWithResponse call
+func ParseListVariableSetsResponse(rsp *http.Response) (*ListVariableSetsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListVariableSetsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Items []VariableSetWithVariables `json:"items"`
+
+			// Limit Maximum number of items returned
+			Limit int `json:"limit"`
+
+			// Offset Number of items skipped
+			Offset int `json:"offset"`
+
+			// Total Total number of items available
+			Total int `json:"total"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateVariableSetResponse parses an HTTP response from a CreateVariableSetWithResponse call
+func ParseCreateVariableSetResponse(rsp *http.Response) (*CreateVariableSetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateVariableSetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest VariableSet
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteVariableSetResponse parses an HTTP response from a DeleteVariableSetWithResponse call
+func ParseDeleteVariableSetResponse(rsp *http.Response) (*DeleteVariableSetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteVariableSetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest VariableSet
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetVariableSetResponse parses an HTTP response from a GetVariableSetWithResponse call
+func ParseGetVariableSetResponse(rsp *http.Response) (*GetVariableSetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetVariableSetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest VariableSetWithVariables
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateVariableSetResponse parses an HTTP response from a UpdateVariableSetWithResponse call
+func ParseUpdateVariableSetResponse(rsp *http.Response) (*UpdateVariableSetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateVariableSetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest VariableSet
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListWorkflowsResponse parses an HTTP response from a ListWorkflowsWithResponse call
 func ParseListWorkflowsResponse(rsp *http.Response) (*ListWorkflowsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -14988,12 +16077,12 @@ func ParseCreateWorkflowResponse(rsp *http.Response) (*CreateWorkflowResponse, e
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
 		var dest Workflow
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON202 = &dest
+		response.JSON201 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest ErrorResponse

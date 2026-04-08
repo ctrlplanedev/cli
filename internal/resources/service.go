@@ -51,38 +51,32 @@ func (s *APIResourceService) GetByIdentifier(ctx context.Context, identifier str
 	return resp.JSON200, nil
 }
 
-func (s *APIResourceService) List(ctx context.Context, cel *string) ([]api.Resource, error) {
-	listStart := time.Now()
+func (s *APIResourceService) Search(ctx context.Context, filters api.ListResourcesFilters) ([]api.Resource, error) {
+	searchStart := time.Now()
 	var allItems []api.Resource
 	offset := 0
 	limit := pageSize
 
-	celStr := "<nil>"
-	if cel != nil {
-		celStr = *cel
-	}
-	log.Debug("List", "workspaceID", s.WorkspaceID, "cel", celStr, "pageSize", limit)
+	log.Debug("Search", "workspaceID", s.WorkspaceID, "filters", filters, "pageSize", limit)
 
 	for {
-		params := &api.GetAllResourcesParams{
-			Limit:  &limit,
-			Offset: &offset,
-			Cel:    cel,
-		}
+		body := filters
+		body.Limit = &limit
+		body.Offset = &offset
 
-		log.Debug("List request", "offset", offset, "limit", limit)
+		log.Debug("Search request", "offset", offset, "limit", limit)
 		start := time.Now()
-		resp, err := s.Client.GetAllResourcesWithResponse(ctx, s.WorkspaceID, params)
+		resp, err := s.Client.SearchResourcesWithResponse(ctx, s.WorkspaceID, body)
 		elapsed := time.Since(start)
 		if err != nil {
-			return nil, fmt.Errorf("failed to list resources: %w", err)
+			return nil, fmt.Errorf("failed to search resources: %w", err)
 		}
 		if resp.JSON200 == nil {
-			log.Debug("List response error", "status", resp.Status(), "body", string(resp.Body), "duration", elapsed)
+			log.Debug("Search response error", "status", resp.Status(), "body", string(resp.Body), "duration", elapsed)
 			return nil, fmt.Errorf("unexpected response status: %s", resp.Status())
 		}
 
-		log.Debug("List response", "items", len(resp.JSON200.Items), "total", resp.JSON200.Total, "offset", resp.JSON200.Offset, "duration", elapsed)
+		log.Debug("Search response", "items", len(resp.JSON200.Items), "total", resp.JSON200.Total, "offset", resp.JSON200.Offset, "duration", elapsed)
 		allItems = append(allItems, resp.JSON200.Items...)
 
 		if offset+limit >= resp.JSON200.Total {
@@ -91,29 +85,30 @@ func (s *APIResourceService) List(ctx context.Context, cel *string) ([]api.Resou
 		offset += limit
 	}
 
-	log.Debug("List complete", "totalFetched", len(allItems), "duration", time.Since(listStart))
+	log.Debug("Search complete", "totalFetched", len(allItems), "duration", time.Since(searchStart))
 	return allItems, nil
 }
 
-func (s *APIResourceService) GetTotal(ctx context.Context) (int, error) {
-	log.Debug("GetTotal", "workspaceID", s.WorkspaceID)
+func (s *APIResourceService) SearchTotal(ctx context.Context, filters api.ListResourcesFilters) (int, error) {
+	log.Debug("SearchTotal", "workspaceID", s.WorkspaceID)
 	limit := 1
-	params := &api.GetAllResourcesParams{
-		Limit: &limit,
-	}
+	offset := 0
+	body := filters
+	body.Limit = &limit
+	body.Offset = &offset
 
 	start := time.Now()
-	resp, err := s.Client.GetAllResourcesWithResponse(ctx, s.WorkspaceID, params)
+	resp, err := s.Client.SearchResourcesWithResponse(ctx, s.WorkspaceID, body)
 	elapsed := time.Since(start)
 	if err != nil {
-		return 0, fmt.Errorf("failed to get resource count: %w", err)
+		return 0, fmt.Errorf("failed to get search resource count: %w", err)
 	}
 	if resp.JSON200 == nil {
-		log.Debug("GetTotal response error", "status", resp.Status(), "body", string(resp.Body), "duration", elapsed)
+		log.Debug("SearchTotal response error", "status", resp.Status(), "body", string(resp.Body), "duration", elapsed)
 		return 0, fmt.Errorf("unexpected response status: %s", resp.Status())
 	}
 
-	log.Debug("GetTotal result", "total", resp.JSON200.Total, "duration", elapsed)
+	log.Debug("SearchTotal result", "total", resp.JSON200.Total, "duration", elapsed)
 	return resp.JSON200.Total, nil
 }
 
