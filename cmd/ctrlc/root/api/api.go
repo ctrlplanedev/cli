@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/api/get"
+	planCmd "github.com/ctrlplanedev/cli/cmd/ctrlc/root/api/plan"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/api/upsert"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -44,6 +45,7 @@ func NewAPICmd() *cobra.Command {
 	cmd.PersistentFlags().String("format", "json", "Output format. Accepts 'json', 'yaml', or 'github-action'")
 
 	cmd.AddCommand(get.NewGetCmd())
+	cmd.AddCommand(planCmd.NewPlanCmd())
 	cmd.AddCommand(upsert.NewUpsertCmd())
 
 	return cmd
