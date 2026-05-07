@@ -55,12 +55,12 @@ const (
 	DeploymentPlanStatusFailed    DeploymentPlanStatus = "failed"
 )
 
-// Defines values for DeploymentPlanTargetStatus.
+// Defines values for DeploymentPlanTargetResultStatus.
 const (
-	DeploymentPlanTargetStatusCompleted   DeploymentPlanTargetStatus = "completed"
-	DeploymentPlanTargetStatusComputing   DeploymentPlanTargetStatus = "computing"
-	DeploymentPlanTargetStatusErrored     DeploymentPlanTargetStatus = "errored"
-	DeploymentPlanTargetStatusUnsupported DeploymentPlanTargetStatus = "unsupported"
+	DeploymentPlanTargetResultStatusCompleted   DeploymentPlanTargetResultStatus = "completed"
+	DeploymentPlanTargetResultStatusComputing   DeploymentPlanTargetResultStatus = "computing"
+	DeploymentPlanTargetResultStatusErrored     DeploymentPlanTargetResultStatus = "errored"
+	DeploymentPlanTargetResultStatusUnsupported DeploymentPlanTargetResultStatus = "unsupported"
 )
 
 // Defines values for DeploymentVersionStatus.
@@ -235,13 +235,11 @@ type CreateDeploymentPlanRequest struct {
 type CreateDeploymentRequest struct {
 	Description    *string                 `json:"description,omitempty"`
 	JobAgentConfig *map[string]interface{} `json:"jobAgentConfig,omitempty"`
-	JobAgentId     *string                 `json:"jobAgentId,omitempty"`
 
-	// JobAgentSelector CEL expression to match job agents. Defaults to jobAgent.id == "<jobAgentId>" if not provided.
-	JobAgentSelector *string               `json:"jobAgentSelector,omitempty"`
-	JobAgents        *[]DeploymentJobAgent `json:"jobAgents,omitempty"`
-	Metadata         *map[string]string    `json:"metadata,omitempty"`
-	Name             string                `json:"name"`
+	// JobAgentSelector CEL expression to match job agents
+	JobAgentSelector *string            `json:"jobAgentSelector,omitempty"`
+	Metadata         *map[string]string `json:"metadata,omitempty"`
+	Name             string             `json:"name"`
 
 	// ResourceSelector CEL expression to determine if the deployment should be used
 	ResourceSelector *string `json:"resourceSelector,omitempty"`
@@ -250,8 +248,14 @@ type CreateDeploymentRequest struct {
 
 // CreateDeploymentVersionRequest defines model for CreateDeploymentVersionRequest.
 type CreateDeploymentVersionRequest struct {
-	Config         *map[string]interface{} `json:"config,omitempty"`
-	CreatedAt      *time.Time              `json:"createdAt,omitempty"`
+	Config    *map[string]interface{} `json:"config,omitempty"`
+	CreatedAt *time.Time              `json:"createdAt,omitempty"`
+
+	// Dependencies Map of dependency deployment ID to a CEL version selector evaluated against that deployment's current release on the same resource. Inserted atomically with the version so reconciliation cannot fire before edges are attached.
+	Dependencies *map[string]struct {
+		// VersionSelector CEL expression evaluated against the dependency deployment's current release version on the same resource.
+		VersionSelector string `json:"versionSelector"`
+	} `json:"dependencies,omitempty"`
 	JobAgentConfig *map[string]interface{} `json:"jobAgentConfig,omitempty"`
 	Metadata       *map[string]string      `json:"metadata,omitempty"`
 	Name           string                  `json:"name"`
@@ -291,6 +295,7 @@ type CreatePolicyRule struct {
 	DeploymentWindow       *DeploymentWindowRule       `json:"deploymentWindow,omitempty"`
 	EnvironmentProgression *EnvironmentProgressionRule `json:"environmentProgression,omitempty"`
 	GradualRollout         *GradualRolloutRule         `json:"gradualRollout,omitempty"`
+	PlanValidationOpa      *PlanValidationOpaRule      `json:"planValidationOpa,omitempty"`
 	Retry                  *RetryRule                  `json:"retry,omitempty"`
 	Verification           *VerificationRule           `json:"verification,omitempty"`
 	VersionCooldown        *VersionCooldownRule        `json:"versionCooldown,omitempty"`
@@ -390,13 +395,11 @@ type Deployment struct {
 	Description    *string                `json:"description,omitempty"`
 	Id             string                 `json:"id"`
 	JobAgentConfig map[string]interface{} `json:"jobAgentConfig"`
-	JobAgentId     *string                `json:"jobAgentId,omitempty"`
 
 	// JobAgentSelector CEL expression to match job agents
-	JobAgentSelector *string               `json:"jobAgentSelector,omitempty"`
-	JobAgents        *[]DeploymentJobAgent `json:"jobAgents,omitempty"`
-	Metadata         *map[string]string    `json:"metadata,omitempty"`
-	Name             string                `json:"name"`
+	JobAgentSelector string             `json:"jobAgentSelector"`
+	Metadata         *map[string]string `json:"metadata,omitempty"`
+	Name             string             `json:"name"`
 
 	// ResourceSelector CEL expression to determine if the deployment should be used
 	ResourceSelector *string `json:"resourceSelector,omitempty"`
@@ -411,17 +414,8 @@ type DeploymentAndSystems struct {
 
 // DeploymentDependencyRule defines model for DeploymentDependencyRule.
 type DeploymentDependencyRule struct {
-	// DependsOn CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed.
+	// DependsOn CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. The expression can reference both deployment properties (deployment.id, deployment.name, deployment.slug, deployment.metadata) and the currently deployed version properties (version.id, version.tag, version.name, version.status, version.metadata, version.createdAt). For example: deployment.name == 'db-migration' && version.tag.startsWith('v2.').
 	DependsOn string `json:"dependsOn"`
-}
-
-// DeploymentJobAgent defines model for DeploymentJobAgent.
-type DeploymentJobAgent struct {
-	Config JobAgentConfig `json:"config"`
-	Ref    string         `json:"ref"`
-
-	// Selector CEL expression to determine if the job agent should be used
-	Selector string `json:"selector"`
 }
 
 // DeploymentPlan defines model for DeploymentPlan.
@@ -446,24 +440,36 @@ type DeploymentPlanSummary struct {
 
 // DeploymentPlanTarget defines model for DeploymentPlanTarget.
 type DeploymentPlanTarget struct {
-	// ContentHash Hash of the rendered output for change detection
-	ContentHash *string `json:"contentHash,omitempty"`
+	EnvironmentId   string `json:"environmentId"`
+	EnvironmentName string `json:"environmentName"`
 
-	// Current Full rendered output of the currently deployed state
-	Current         *string `json:"current,omitempty"`
-	EnvironmentId   string  `json:"environmentId"`
-	EnvironmentName string  `json:"environmentName"`
-	HasChanges      *bool   `json:"hasChanges"`
-
-	// Proposed Full rendered output of the proposed version
-	Proposed     *string                    `json:"proposed,omitempty"`
-	ResourceId   string                     `json:"resourceId"`
-	ResourceName string                     `json:"resourceName"`
-	Status       DeploymentPlanTargetStatus `json:"status"`
+	// HasChanges True if any result for this target has changes
+	HasChanges   bool                         `json:"hasChanges"`
+	ResourceId   string                       `json:"resourceId"`
+	ResourceName string                       `json:"resourceName"`
+	Results      []DeploymentPlanTargetResult `json:"results"`
 }
 
-// DeploymentPlanTargetStatus defines model for DeploymentPlanTarget.Status.
-type DeploymentPlanTargetStatus string
+// DeploymentPlanTargetResult defines model for DeploymentPlanTargetResult.
+type DeploymentPlanTargetResult struct {
+	// ContentHash Hash of the rendered output for change detection
+	ContentHash string `json:"contentHash"`
+
+	// Current Full rendered output of the currently deployed state
+	Current    string `json:"current"`
+	HasChanges bool   `json:"hasChanges"`
+	Id         string `json:"id"`
+
+	// Message Agent message (e.g. error explanation or summary)
+	Message string `json:"message"`
+
+	// Proposed Full rendered output of the proposed version
+	Proposed string                           `json:"proposed"`
+	Status   DeploymentPlanTargetResultStatus `json:"status"`
+}
+
+// DeploymentPlanTargetResultStatus defines model for DeploymentPlanTargetResult.Status.
+type DeploymentPlanTargetResultStatus string
 
 // DeploymentPlanVersion defines model for DeploymentPlanVersion.
 type DeploymentPlanVersion struct {
@@ -486,11 +492,10 @@ type DeploymentRequestAccepted struct {
 
 // DeploymentVariable defines model for DeploymentVariable.
 type DeploymentVariable struct {
-	DefaultValue *LiteralValue `json:"defaultValue,omitempty"`
-	DeploymentId string        `json:"deploymentId"`
-	Description  *string       `json:"description,omitempty"`
-	Id           string        `json:"id"`
-	Key          string        `json:"key"`
+	DeploymentId string  `json:"deploymentId"`
+	Description  *string `json:"description,omitempty"`
+	Id           string  `json:"id"`
+	Key          string  `json:"key"`
 }
 
 // DeploymentVariableRequestAccepted defines model for DeploymentVariableRequestAccepted.
@@ -534,6 +539,15 @@ type DeploymentVersion struct {
 	Name           string                  `json:"name"`
 	Status         DeploymentVersionStatus `json:"status"`
 	Tag            string                  `json:"tag"`
+}
+
+// DeploymentVersionDependency defines model for DeploymentVersionDependency.
+type DeploymentVersionDependency struct {
+	DependencyDeploymentId string `json:"dependencyDeploymentId"`
+	DeploymentVersionId    string `json:"deploymentVersionId"`
+
+	// VersionSelector CEL expression evaluated against the dependency deployment's current release version on the same resource.
+	VersionSelector string `json:"versionSelector"`
 }
 
 // DeploymentVersionStatus defines model for DeploymentVersionStatus.
@@ -596,10 +610,13 @@ type EnvironmentProgressionRule struct {
 	// MaximumAgeHours Maximum age of dependency deployment before blocking progression (prevents stale promotions)
 	MaximumAgeHours *int32 `json:"maximumAgeHours,omitempty"`
 
-	// MinimumSockTimeMinutes Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
-	MinimumSockTimeMinutes   *int32       `json:"minimumSockTimeMinutes,omitempty"`
-	MinimumSuccessPercentage *float32     `json:"minimumSuccessPercentage,omitempty"`
-	SuccessStatuses          *[]JobStatus `json:"successStatuses,omitempty"`
+	// MinimumSoakTimeMinutes Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed. Defaults to 0 if not provided.
+	MinimumSoakTimeMinutes   *int32   `json:"minimumSoakTimeMinutes,omitempty"`
+	MinimumSuccessPercentage *float32 `json:"minimumSuccessPercentage,omitempty"`
+
+	// RequireVerificationPassed If true, jobs must also have passed verification to count toward the success percentage
+	RequireVerificationPassed *bool        `json:"requireVerificationPassed,omitempty"`
+	SuccessStatuses           *[]JobStatus `json:"successStatuses,omitempty"`
 }
 
 // EnvironmentRequestAccepted defines model for EnvironmentRequestAccepted.
@@ -777,6 +794,17 @@ type ObjectValue struct {
 	Object map[string]interface{} `json:"object"`
 }
 
+// PlanValidationOpaRule defines model for PlanValidationOpaRule.
+type PlanValidationOpaRule struct {
+	Description *string `json:"description,omitempty"`
+
+	// Name Human-readable rule name; used in check output to identify which rule produced a violation.
+	Name string `json:"name"`
+
+	// Rego Rego v1 source code. Must define a `deny` rule set following the Conftest convention (deny contains msg if { ... }).
+	Rego string `json:"rego"`
+}
+
 // Policy defines model for Policy.
 type Policy struct {
 	CreatedAt   string  `json:"createdAt"`
@@ -804,6 +832,7 @@ type PolicyRule struct {
 	EnvironmentProgression *EnvironmentProgressionRule `json:"environmentProgression,omitempty"`
 	GradualRollout         *GradualRolloutRule         `json:"gradualRollout,omitempty"`
 	Id                     string                      `json:"id"`
+	PlanValidationOpa      *PlanValidationOpaRule      `json:"planValidationOpa,omitempty"`
 	PolicyId               string                      `json:"policyId"`
 	Retry                  *RetryRule                  `json:"retry,omitempty"`
 	Verification           *VerificationRule           `json:"verification,omitempty"`
@@ -1155,13 +1184,11 @@ type UpdateWorkspaceRequest struct {
 type UpsertDeploymentRequest struct {
 	Description    *string                 `json:"description,omitempty"`
 	JobAgentConfig *map[string]interface{} `json:"jobAgentConfig,omitempty"`
-	JobAgentId     *string                 `json:"jobAgentId,omitempty"`
 
-	// JobAgentSelector CEL expression to match job agents. Defaults to jobAgent.id == "<jobAgentId>" if not provided.
-	JobAgentSelector *string               `json:"jobAgentSelector,omitempty"`
-	JobAgents        *[]DeploymentJobAgent `json:"jobAgents,omitempty"`
-	Metadata         *map[string]string    `json:"metadata,omitempty"`
-	Name             string                `json:"name"`
+	// JobAgentSelector CEL expression to match job agents
+	JobAgentSelector *string            `json:"jobAgentSelector,omitempty"`
+	Metadata         *map[string]string `json:"metadata,omitempty"`
+	Name             string             `json:"name"`
 
 	// ResourceSelector CEL expression to determine if the deployment should be used
 	ResourceSelector *string `json:"resourceSelector,omitempty"`
@@ -1170,10 +1197,9 @@ type UpsertDeploymentRequest struct {
 
 // UpsertDeploymentVariableRequest defines model for UpsertDeploymentVariableRequest.
 type UpsertDeploymentVariableRequest struct {
-	DefaultValue *LiteralValue `json:"defaultValue,omitempty"`
-	DeploymentId string        `json:"deploymentId"`
-	Description  *string       `json:"description,omitempty"`
-	Key          string        `json:"key"`
+	DeploymentId string  `json:"deploymentId"`
+	Description  *string `json:"description,omitempty"`
+	Key          string  `json:"key"`
 }
 
 // UpsertDeploymentVariableValueRequest defines model for UpsertDeploymentVariableValueRequest.
@@ -1184,6 +1210,12 @@ type UpsertDeploymentVariableValueRequest struct {
 	// ResourceSelector A CEL expression to select which resources this value applies to
 	ResourceSelector *string `json:"resourceSelector,omitempty"`
 	Value            Value   `json:"value"`
+}
+
+// UpsertDeploymentVersionDependencyRequest defines model for UpsertDeploymentVersionDependencyRequest.
+type UpsertDeploymentVersionDependencyRequest struct {
+	// VersionSelector CEL expression evaluated against the dependency deployment's current release version on the same resource.
+	VersionSelector string `json:"versionSelector"`
 }
 
 // UpsertEnvironmentRequest defines model for UpsertEnvironmentRequest.
@@ -1228,6 +1260,7 @@ type UpsertPolicyRule struct {
 	EnvironmentProgression *EnvironmentProgressionRule `json:"environmentProgression,omitempty"`
 	GradualRollout         *GradualRolloutRule         `json:"gradualRollout,omitempty"`
 	Id                     *string                     `json:"id,omitempty"`
+	PlanValidationOpa      *PlanValidationOpaRule      `json:"planValidationOpa,omitempty"`
 	PolicyId               *string                     `json:"policyId,omitempty"`
 	Retry                  *RetryRule                  `json:"retry,omitempty"`
 	Verification           *VerificationRule           `json:"verification,omitempty"`
@@ -1572,6 +1605,9 @@ type ListDeploymentsParams struct {
 
 	// Offset Number of items to skip
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Cel CEL expression to filter the results
+	Cel *string `form:"cel,omitempty" json:"cel,omitempty"`
 }
 
 // ListDeploymentVariablesByDeploymentParams defines parameters for ListDeploymentVariablesByDeployment.
@@ -1593,6 +1629,9 @@ type ListDeploymentVersionsParams struct {
 
 	// Order Sort order for results
 	Order *ListDeploymentVersionsParamsOrder `form:"order,omitempty" json:"order,omitempty"`
+
+	// Cel CEL expression to filter the results
+	Cel *string `form:"cel,omitempty" json:"cel,omitempty"`
 }
 
 // ListDeploymentVersionsParamsOrder defines parameters for ListDeploymentVersions.
@@ -1767,6 +1806,9 @@ type RequestDeploymentVariableValueUpsertJSONRequestBody = UpsertDeploymentVaria
 
 // RequestDeploymentVariableUpdateJSONRequestBody defines body for RequestDeploymentVariableUpdate for application/json ContentType.
 type RequestDeploymentVariableUpdateJSONRequestBody = UpsertDeploymentVariableRequest
+
+// RequestDeploymentVersionDependencyUpsertJSONRequestBody defines body for RequestDeploymentVersionDependencyUpsert for application/json ContentType.
+type RequestDeploymentVersionDependencyUpsertJSONRequestBody = UpsertDeploymentVersionDependencyRequest
 
 // RequestUserApprovalRecordUpsertJSONRequestBody defines body for RequestUserApprovalRecordUpsert for application/json ContentType.
 type RequestUserApprovalRecordUpsertJSONRequestBody = UpsertUserApprovalRecordRequest
@@ -2604,6 +2646,17 @@ type ClientInterface interface {
 
 	RequestDeploymentVariableUpdate(ctx context.Context, workspaceId string, variableId string, body RequestDeploymentVariableUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListDeploymentVersionDependencies request
+	ListDeploymentVersionDependencies(ctx context.Context, workspaceId string, deploymentVersionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RequestDeploymentVersionDependencyDeletion request
+	RequestDeploymentVersionDependencyDeletion(ctx context.Context, workspaceId string, deploymentVersionId string, dependencyDeploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RequestDeploymentVersionDependencyUpsertWithBody request with any body
+	RequestDeploymentVersionDependencyUpsertWithBody(ctx context.Context, workspaceId string, deploymentVersionId string, dependencyDeploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RequestDeploymentVersionDependencyUpsert(ctx context.Context, workspaceId string, deploymentVersionId string, dependencyDeploymentId string, body RequestDeploymentVersionDependencyUpsertJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// RequestUserApprovalRecordUpsertWithBody request with any body
 	RequestUserApprovalRecordUpsertWithBody(ctx context.Context, workspaceId string, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -2616,6 +2669,9 @@ type ClientInterface interface {
 	RequestDeploymentCreationWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	RequestDeploymentCreation(ctx context.Context, workspaceId string, body RequestDeploymentCreationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetDeploymentByName request
+	GetDeploymentByName(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RequestDeploymentDeletion request
 	RequestDeploymentDeletion(ctx context.Context, workspaceId string, deploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2659,6 +2715,9 @@ type ClientInterface interface {
 	RequestEnvironmentCreationWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	RequestEnvironmentCreation(ctx context.Context, workspaceId string, body RequestEnvironmentCreationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetEnvironmentByName request
+	GetEnvironmentByName(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RequestEnvironmentDeletion request
 	RequestEnvironmentDeletion(ctx context.Context, workspaceId string, environmentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3084,6 +3143,54 @@ func (c *Client) RequestDeploymentVariableUpdate(ctx context.Context, workspaceI
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListDeploymentVersionDependencies(ctx context.Context, workspaceId string, deploymentVersionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListDeploymentVersionDependenciesRequest(c.Server, workspaceId, deploymentVersionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RequestDeploymentVersionDependencyDeletion(ctx context.Context, workspaceId string, deploymentVersionId string, dependencyDeploymentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRequestDeploymentVersionDependencyDeletionRequest(c.Server, workspaceId, deploymentVersionId, dependencyDeploymentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RequestDeploymentVersionDependencyUpsertWithBody(ctx context.Context, workspaceId string, deploymentVersionId string, dependencyDeploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRequestDeploymentVersionDependencyUpsertRequestWithBody(c.Server, workspaceId, deploymentVersionId, dependencyDeploymentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RequestDeploymentVersionDependencyUpsert(ctx context.Context, workspaceId string, deploymentVersionId string, dependencyDeploymentId string, body RequestDeploymentVersionDependencyUpsertJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRequestDeploymentVersionDependencyUpsertRequest(c.Server, workspaceId, deploymentVersionId, dependencyDeploymentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) RequestUserApprovalRecordUpsertWithBody(ctx context.Context, workspaceId string, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRequestUserApprovalRecordUpsertRequestWithBody(c.Server, workspaceId, deploymentVersionId, contentType, body)
 	if err != nil {
@@ -3134,6 +3241,18 @@ func (c *Client) RequestDeploymentCreationWithBody(ctx context.Context, workspac
 
 func (c *Client) RequestDeploymentCreation(ctx context.Context, workspaceId string, body RequestDeploymentCreationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRequestDeploymentCreationRequest(c.Server, workspaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetDeploymentByName(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDeploymentByNameRequest(c.Server, workspaceId, name)
 	if err != nil {
 		return nil, err
 	}
@@ -3326,6 +3445,18 @@ func (c *Client) RequestEnvironmentCreationWithBody(ctx context.Context, workspa
 
 func (c *Client) RequestEnvironmentCreation(ctx context.Context, workspaceId string, body RequestEnvironmentCreationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRequestEnvironmentCreationRequest(c.Server, workspaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetEnvironmentByName(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEnvironmentByNameRequest(c.Server, workspaceId, name)
 	if err != nil {
 		return nil, err
 	}
@@ -4832,6 +4963,156 @@ func NewRequestDeploymentVariableUpdateRequestWithBody(server string, workspaceI
 	return req, nil
 }
 
+// NewListDeploymentVersionDependenciesRequest generates requests for ListDeploymentVersionDependencies
+func NewListDeploymentVersionDependenciesRequest(server string, workspaceId string, deploymentVersionId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/deployment-versions/%s/dependencies", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRequestDeploymentVersionDependencyDeletionRequest generates requests for RequestDeploymentVersionDependencyDeletion
+func NewRequestDeploymentVersionDependencyDeletionRequest(server string, workspaceId string, deploymentVersionId string, dependencyDeploymentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "dependencyDeploymentId", runtime.ParamLocationPath, dependencyDeploymentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/deployment-versions/%s/dependencies/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRequestDeploymentVersionDependencyUpsertRequest calls the generic RequestDeploymentVersionDependencyUpsert builder with application/json body
+func NewRequestDeploymentVersionDependencyUpsertRequest(server string, workspaceId string, deploymentVersionId string, dependencyDeploymentId string, body RequestDeploymentVersionDependencyUpsertJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRequestDeploymentVersionDependencyUpsertRequestWithBody(server, workspaceId, deploymentVersionId, dependencyDeploymentId, "application/json", bodyReader)
+}
+
+// NewRequestDeploymentVersionDependencyUpsertRequestWithBody generates requests for RequestDeploymentVersionDependencyUpsert with any type of body
+func NewRequestDeploymentVersionDependencyUpsertRequestWithBody(server string, workspaceId string, deploymentVersionId string, dependencyDeploymentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "deploymentVersionId", runtime.ParamLocationPath, deploymentVersionId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "dependencyDeploymentId", runtime.ParamLocationPath, dependencyDeploymentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/deployment-versions/%s/dependencies/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewRequestUserApprovalRecordUpsertRequest calls the generic RequestUserApprovalRecordUpsert builder with application/json body
 func NewRequestUserApprovalRecordUpsertRequest(server string, workspaceId string, deploymentVersionId string, body RequestUserApprovalRecordUpsertJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -4947,6 +5228,22 @@ func NewListDeploymentsRequest(server string, workspaceId string, params *ListDe
 
 		}
 
+		if params.Cel != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "cel", runtime.ParamLocationQuery, *params.Cel); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		queryURL.RawQuery = queryValues.Encode()
 	}
 
@@ -5001,6 +5298,47 @@ func NewRequestDeploymentCreationRequestWithBody(server string, workspaceId stri
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetDeploymentByNameRequest generates requests for GetDeploymentByName
+func NewGetDeploymentByNameRequest(server string, workspaceId string, name string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/deployments/name/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -5406,6 +5744,22 @@ func NewListDeploymentVersionsRequest(server string, workspaceId string, deploym
 
 		}
 
+		if params.Cel != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "cel", runtime.ParamLocationQuery, *params.Cel); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		queryURL.RawQuery = queryValues.Encode()
 	}
 
@@ -5640,6 +5994,47 @@ func NewRequestEnvironmentCreationRequestWithBody(server string, workspaceId str
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetEnvironmentByNameRequest generates requests for GetEnvironmentByName
+func NewGetEnvironmentByNameRequest(server string, workspaceId string, name string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/environments/name/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -9065,6 +9460,17 @@ type ClientWithResponsesInterface interface {
 
 	RequestDeploymentVariableUpdateWithResponse(ctx context.Context, workspaceId string, variableId string, body RequestDeploymentVariableUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestDeploymentVariableUpdateResponse, error)
 
+	// ListDeploymentVersionDependenciesWithResponse request
+	ListDeploymentVersionDependenciesWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, reqEditors ...RequestEditorFn) (*ListDeploymentVersionDependenciesResponse, error)
+
+	// RequestDeploymentVersionDependencyDeletionWithResponse request
+	RequestDeploymentVersionDependencyDeletionWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, dependencyDeploymentId string, reqEditors ...RequestEditorFn) (*RequestDeploymentVersionDependencyDeletionResponse, error)
+
+	// RequestDeploymentVersionDependencyUpsertWithBodyWithResponse request with any body
+	RequestDeploymentVersionDependencyUpsertWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, dependencyDeploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestDeploymentVersionDependencyUpsertResponse, error)
+
+	RequestDeploymentVersionDependencyUpsertWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, dependencyDeploymentId string, body RequestDeploymentVersionDependencyUpsertJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestDeploymentVersionDependencyUpsertResponse, error)
+
 	// RequestUserApprovalRecordUpsertWithBodyWithResponse request with any body
 	RequestUserApprovalRecordUpsertWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestUserApprovalRecordUpsertResponse, error)
 
@@ -9077,6 +9483,9 @@ type ClientWithResponsesInterface interface {
 	RequestDeploymentCreationWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestDeploymentCreationResponse, error)
 
 	RequestDeploymentCreationWithResponse(ctx context.Context, workspaceId string, body RequestDeploymentCreationJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestDeploymentCreationResponse, error)
+
+	// GetDeploymentByNameWithResponse request
+	GetDeploymentByNameWithResponse(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*GetDeploymentByNameResponse, error)
 
 	// RequestDeploymentDeletionWithResponse request
 	RequestDeploymentDeletionWithResponse(ctx context.Context, workspaceId string, deploymentId string, reqEditors ...RequestEditorFn) (*RequestDeploymentDeletionResponse, error)
@@ -9120,6 +9529,9 @@ type ClientWithResponsesInterface interface {
 	RequestEnvironmentCreationWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestEnvironmentCreationResponse, error)
 
 	RequestEnvironmentCreationWithResponse(ctx context.Context, workspaceId string, body RequestEnvironmentCreationJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestEnvironmentCreationResponse, error)
+
+	// GetEnvironmentByNameWithResponse request
+	GetEnvironmentByNameWithResponse(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*GetEnvironmentByNameResponse, error)
 
 	// RequestEnvironmentDeletionWithResponse request
 	RequestEnvironmentDeletionWithResponse(ctx context.Context, workspaceId string, environmentId string, reqEditors ...RequestEditorFn) (*RequestEnvironmentDeletionResponse, error)
@@ -9648,6 +10060,77 @@ func (r RequestDeploymentVariableUpdateResponse) StatusCode() int {
 	return 0
 }
 
+type ListDeploymentVersionDependenciesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]DeploymentVersionDependency
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListDeploymentVersionDependenciesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListDeploymentVersionDependenciesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RequestDeploymentVersionDependencyDeletionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *DeploymentRequestAccepted
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RequestDeploymentVersionDependencyDeletionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RequestDeploymentVersionDependencyDeletionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RequestDeploymentVersionDependencyUpsertResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *DeploymentRequestAccepted
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RequestDeploymentVersionDependencyUpsertResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RequestDeploymentVersionDependencyUpsertResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type RequestUserApprovalRecordUpsertResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -9709,6 +10192,8 @@ type RequestDeploymentCreationResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON202      *DeploymentRequestAccepted
+	JSON400      *ErrorResponse
+	JSON409      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9721,6 +10206,30 @@ func (r RequestDeploymentCreationResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r RequestDeploymentCreationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetDeploymentByNameResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DeploymentWithVariablesAndSystems
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDeploymentByNameResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDeploymentByNameResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -9779,6 +10288,8 @@ type RequestDeploymentUpsertResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON202      *DeploymentRequestAccepted
+	JSON400      *ErrorResponse
+	JSON409      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9917,8 +10428,9 @@ func (r ListDeploymentVersionsResponse) StatusCode() int {
 type CreateDeploymentVersionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON202      *DeploymentVersion
+	JSON200      *DeploymentVersion
 	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9997,6 +10509,8 @@ type RequestEnvironmentCreationResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON202      *EnvironmentRequestAccepted
+	JSON400      *ErrorResponse
+	JSON409      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10009,6 +10523,30 @@ func (r RequestEnvironmentCreationResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r RequestEnvironmentCreationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetEnvironmentByNameResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *EnvironmentWithSystems
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetEnvironmentByNameResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetEnvironmentByNameResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -10069,6 +10607,7 @@ type RequestEnvironmentUpsertResponse struct {
 	JSON202      *EnvironmentRequestAccepted
 	JSON400      *ErrorResponse
 	JSON404      *ErrorResponse
+	JSON409      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -11806,6 +12345,41 @@ func (c *ClientWithResponses) RequestDeploymentVariableUpdateWithResponse(ctx co
 	return ParseRequestDeploymentVariableUpdateResponse(rsp)
 }
 
+// ListDeploymentVersionDependenciesWithResponse request returning *ListDeploymentVersionDependenciesResponse
+func (c *ClientWithResponses) ListDeploymentVersionDependenciesWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, reqEditors ...RequestEditorFn) (*ListDeploymentVersionDependenciesResponse, error) {
+	rsp, err := c.ListDeploymentVersionDependencies(ctx, workspaceId, deploymentVersionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListDeploymentVersionDependenciesResponse(rsp)
+}
+
+// RequestDeploymentVersionDependencyDeletionWithResponse request returning *RequestDeploymentVersionDependencyDeletionResponse
+func (c *ClientWithResponses) RequestDeploymentVersionDependencyDeletionWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, dependencyDeploymentId string, reqEditors ...RequestEditorFn) (*RequestDeploymentVersionDependencyDeletionResponse, error) {
+	rsp, err := c.RequestDeploymentVersionDependencyDeletion(ctx, workspaceId, deploymentVersionId, dependencyDeploymentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRequestDeploymentVersionDependencyDeletionResponse(rsp)
+}
+
+// RequestDeploymentVersionDependencyUpsertWithBodyWithResponse request with arbitrary body returning *RequestDeploymentVersionDependencyUpsertResponse
+func (c *ClientWithResponses) RequestDeploymentVersionDependencyUpsertWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, dependencyDeploymentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestDeploymentVersionDependencyUpsertResponse, error) {
+	rsp, err := c.RequestDeploymentVersionDependencyUpsertWithBody(ctx, workspaceId, deploymentVersionId, dependencyDeploymentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRequestDeploymentVersionDependencyUpsertResponse(rsp)
+}
+
+func (c *ClientWithResponses) RequestDeploymentVersionDependencyUpsertWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, dependencyDeploymentId string, body RequestDeploymentVersionDependencyUpsertJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestDeploymentVersionDependencyUpsertResponse, error) {
+	rsp, err := c.RequestDeploymentVersionDependencyUpsert(ctx, workspaceId, deploymentVersionId, dependencyDeploymentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRequestDeploymentVersionDependencyUpsertResponse(rsp)
+}
+
 // RequestUserApprovalRecordUpsertWithBodyWithResponse request with arbitrary body returning *RequestUserApprovalRecordUpsertResponse
 func (c *ClientWithResponses) RequestUserApprovalRecordUpsertWithBodyWithResponse(ctx context.Context, workspaceId string, deploymentVersionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestUserApprovalRecordUpsertResponse, error) {
 	rsp, err := c.RequestUserApprovalRecordUpsertWithBody(ctx, workspaceId, deploymentVersionId, contentType, body, reqEditors...)
@@ -11847,6 +12421,15 @@ func (c *ClientWithResponses) RequestDeploymentCreationWithResponse(ctx context.
 		return nil, err
 	}
 	return ParseRequestDeploymentCreationResponse(rsp)
+}
+
+// GetDeploymentByNameWithResponse request returning *GetDeploymentByNameResponse
+func (c *ClientWithResponses) GetDeploymentByNameWithResponse(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*GetDeploymentByNameResponse, error) {
+	rsp, err := c.GetDeploymentByName(ctx, workspaceId, name, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDeploymentByNameResponse(rsp)
 }
 
 // RequestDeploymentDeletionWithResponse request returning *RequestDeploymentDeletionResponse
@@ -11986,6 +12569,15 @@ func (c *ClientWithResponses) RequestEnvironmentCreationWithResponse(ctx context
 		return nil, err
 	}
 	return ParseRequestEnvironmentCreationResponse(rsp)
+}
+
+// GetEnvironmentByNameWithResponse request returning *GetEnvironmentByNameResponse
+func (c *ClientWithResponses) GetEnvironmentByNameWithResponse(ctx context.Context, workspaceId string, name string, reqEditors ...RequestEditorFn) (*GetEnvironmentByNameResponse, error) {
+	rsp, err := c.GetEnvironmentByName(ctx, workspaceId, name, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetEnvironmentByNameResponse(rsp)
 }
 
 // RequestEnvironmentDeletionWithResponse request returning *RequestEnvironmentDeletionResponse
@@ -13252,6 +13844,119 @@ func ParseRequestDeploymentVariableUpdateResponse(rsp *http.Response) (*RequestD
 	return response, nil
 }
 
+// ParseListDeploymentVersionDependenciesResponse parses an HTTP response from a ListDeploymentVersionDependenciesWithResponse call
+func ParseListDeploymentVersionDependenciesResponse(rsp *http.Response) (*ListDeploymentVersionDependenciesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListDeploymentVersionDependenciesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []DeploymentVersionDependency
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRequestDeploymentVersionDependencyDeletionResponse parses an HTTP response from a RequestDeploymentVersionDependencyDeletionWithResponse call
+func ParseRequestDeploymentVersionDependencyDeletionResponse(rsp *http.Response) (*RequestDeploymentVersionDependencyDeletionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RequestDeploymentVersionDependencyDeletionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest DeploymentRequestAccepted
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRequestDeploymentVersionDependencyUpsertResponse parses an HTTP response from a RequestDeploymentVersionDependencyUpsertWithResponse call
+func ParseRequestDeploymentVersionDependencyUpsertResponse(rsp *http.Response) (*RequestDeploymentVersionDependencyUpsertResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RequestDeploymentVersionDependencyUpsertResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest DeploymentRequestAccepted
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseRequestUserApprovalRecordUpsertResponse parses an HTTP response from a RequestUserApprovalRecordUpsertWithResponse call
 func ParseRequestUserApprovalRecordUpsertResponse(rsp *http.Response) (*RequestUserApprovalRecordUpsertResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -13349,6 +14054,60 @@ func ParseRequestDeploymentCreationResponse(rsp *http.Response) (*RequestDeploym
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetDeploymentByNameResponse parses an HTTP response from a GetDeploymentByNameWithResponse call
+func ParseGetDeploymentByNameResponse(rsp *http.Response) (*GetDeploymentByNameResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDeploymentByNameResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DeploymentWithVariablesAndSystems
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -13455,6 +14214,20 @@ func ParseRequestDeploymentUpsertResponse(rsp *http.Response) (*RequestDeploymen
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 
@@ -13650,12 +14423,12 @@ func ParseCreateDeploymentVersionResponse(rsp *http.Response) (*CreateDeployment
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest DeploymentVersion
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON202 = &dest
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest ErrorResponse
@@ -13663,6 +14436,13 @@ func ParseCreateDeploymentVersionResponse(rsp *http.Response) (*CreateDeployment
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -13759,6 +14539,60 @@ func ParseRequestEnvironmentCreationResponse(rsp *http.Response) (*RequestEnviro
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetEnvironmentByNameResponse parses an HTTP response from a GetEnvironmentByNameWithResponse call
+func ParseGetEnvironmentByNameResponse(rsp *http.Response) (*GetEnvironmentByNameResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetEnvironmentByNameResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EnvironmentWithSystems
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -13879,6 +14713,13 @@ func ParseRequestEnvironmentUpsertResponse(rsp *http.Response) (*RequestEnvironm
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 

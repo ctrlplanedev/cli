@@ -1,6 +1,7 @@
 package get
 
 import (
+	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/api/get/deployment"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/api/get/release"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/api/get/releasetargets"
 	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/api/get/resources"
@@ -20,6 +21,7 @@ func NewGetCmd() *cobra.Command {
 	cmd.AddCommand(resources.NewResourcesCmd())
 	cmd.AddCommand(release.NewReleaseCmd())
 	cmd.AddCommand(releasetargets.NewReleaseTargetsCmd())
+	cmd.AddCommand(deployment.NewDeploymentCmd())
 
 	return cmd
 }
