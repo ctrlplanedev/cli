@@ -553,6 +553,25 @@ type DeploymentVersionDependency struct {
 // DeploymentVersionStatus defines model for DeploymentVersionStatus.
 type DeploymentVersionStatus string
 
+// DeploymentVersionWithDependencies defines model for DeploymentVersionWithDependencies.
+type DeploymentVersionWithDependencies struct {
+	Config    map[string]interface{} `json:"config"`
+	CreatedAt time.Time              `json:"createdAt"`
+
+	// Dependencies Map of dependency deployment ID to its CEL version selector evaluated against that deployment's current release on the same resource.
+	Dependencies map[string]struct {
+		VersionSelector string `json:"versionSelector"`
+	} `json:"dependencies"`
+	DeploymentId   string                  `json:"deploymentId"`
+	Id             string                  `json:"id"`
+	JobAgentConfig map[string]interface{}  `json:"jobAgentConfig"`
+	Message        *string                 `json:"message,omitempty"`
+	Metadata       *map[string]string      `json:"metadata,omitempty"`
+	Name           string                  `json:"name"`
+	Status         DeploymentVersionStatus `json:"status"`
+	Tag            string                  `json:"tag"`
+}
+
 // DeploymentWindowRule defines model for DeploymentWindowRule.
 type DeploymentWindowRule struct {
 	// AllowWindow If true, deployments are only allowed during the window. If false, deployments are blocked during the window (deny window)
@@ -10394,7 +10413,7 @@ type ListDeploymentVersionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Items []DeploymentVersion `json:"items"`
+		Items []DeploymentVersionWithDependencies `json:"items"`
 
 		// Limit Maximum number of items returned
 		Limit int `json:"limit"`
@@ -14374,7 +14393,7 @@ func ParseListDeploymentVersionsResponse(rsp *http.Response) (*ListDeploymentVer
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Items []DeploymentVersion `json:"items"`
+			Items []DeploymentVersionWithDependencies `json:"items"`
 
 			// Limit Maximum number of items returned
 			Limit int `json:"limit"`
