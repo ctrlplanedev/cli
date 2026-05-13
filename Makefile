@@ -11,6 +11,9 @@ build:
 install:
 	go install -ldflags "$(LDFLAGS)" ./cmd/ctrlc
 
+update-openapi:
+	go generate ./...
+
 test:
 	go test -v ./...
 
@@ -23,4 +26,4 @@ lint:
 format:
 	go fmt ./...
 
-.PHONY: build install test clean lint format
+.PHONY: build install test clean lint format update-openapi

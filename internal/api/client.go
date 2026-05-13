@@ -3,9 +3,11 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/ctrlplanedev/cli/cmd/ctrlc/root/version"
 	"github.com/google/uuid"
 )
 
@@ -15,6 +17,7 @@ func NewAPIKeyClientWithResponses(server string, apiKey string) (*ClientWithResp
 	return NewClientWithResponses(server+"/api",
 		WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
 			req.Header.Set("X-API-Key", apiKey)
+			req.Header.Set("User-Agent", fmt.Sprintf("ctrlc/%s", version.Version))
 			return nil
 		}),
 	)

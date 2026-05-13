@@ -1,7 +1,10 @@
 .env
 test.bash
+ctrlc.sh
+test_scan.sh
 
 /bin
+/dist
 .idea
 .vscode
 *.test.yaml
