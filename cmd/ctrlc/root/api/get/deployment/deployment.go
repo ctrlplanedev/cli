@@ -25,7 +25,10 @@ func NewDeploymentCmd() *cobra.Command {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
 
-			workspaceID := client.GetWorkspaceID(cmd.Context(), workspace)
+			workspaceID, err := client.GetWorkspaceID(cmd.Context(), workspace)
+			if err != nil {
+				return err
+			}
 			resp, err := client.GetDeploymentByName(cmd.Context(), workspaceID.String(), name)
 			if err != nil {
 				return fmt.Errorf("failed to get deployment: %w", err)

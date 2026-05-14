@@ -50,7 +50,10 @@ func NewPlanVersionCmd() *cobra.Command {
 				metadata["ctrlplane/links"] = string(linksJSON)
 			}
 
-			workspaceID := client.GetWorkspaceID(cmd.Context(), workspace)
+			workspaceID, err := client.GetWorkspaceID(cmd.Context(), workspace)
+			if err != nil {
+				return err
+			}
 
 			config := cliutil.ConvertConfigArrayToNestedMap(configArray)
 

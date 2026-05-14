@@ -93,7 +93,10 @@ func NewUpsertDeploymentVersionCmd() *cobra.Command {
 				stat = &s
 			}
 
-			workspaceID := client.GetWorkspaceID(cmd.Context(), workspace)
+			workspaceID, err := client.GetWorkspaceID(cmd.Context(), workspace)
+			if err != nil {
+				return err
+			}
 
 			config := cliutil.ConvertConfigArrayToNestedMap(configArray)
 

@@ -101,7 +101,11 @@ func NewSyncPipeCmd() *cobra.Command {
 				return fmt.Errorf("failed to upsert resources: %w", err)
 			}
 
-			workspaceID := ctrlplaneClient.GetWorkspaceID(ctx, workspace).String()
+			workspaceUUID, err := ctrlplaneClient.GetWorkspaceID(ctx, workspace)
+			if err != nil {
+				return err
+			}
+			workspaceID := workspaceUUID.String()
 			if err := syncResourceVariables(ctx, ctrlplaneClient, workspaceID, resourceInputs); err != nil {
 				return err
 			}

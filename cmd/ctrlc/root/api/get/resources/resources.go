@@ -29,7 +29,10 @@ func NewResourcesCmd() *cobra.Command {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
 
-			workspaceID := client.GetWorkspaceID(cmd.Context(), workspace)
+			workspaceID, err := client.GetWorkspaceID(cmd.Context(), workspace)
+			if err != nil {
+				return err
+			}
 
 			params := &api.GetAllResourcesParams{}
 			if limit > 0 {
