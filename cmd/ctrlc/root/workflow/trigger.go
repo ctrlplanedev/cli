@@ -38,6 +38,9 @@ func NewTriggerCmd() *cobra.Command {
 				if !found {
 					return fmt.Errorf("invalid input format %q, expected key=value", input)
 				}
+				if key == "" {
+					return fmt.Errorf("invalid input format %q, empty key, expected key=value", input)
+				}
 				inputs[key] = value
 			}
 

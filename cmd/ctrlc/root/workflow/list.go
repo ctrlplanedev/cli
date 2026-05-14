@@ -27,7 +27,17 @@ func NewListCmd() *cobra.Command {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
 
-			workspaceID := client.GetWorkspaceID(cmd.Context(), workspace)
+			workspaceID, err := client.GetWorkspaceID(cmd.Context(), workspace)
+			if err != nil {
+				return err
+			}
+
+			if limit < 0 {
+				return fmt.Errorf("invalid --limit %d, must be non-negative", limit)
+			}
+			if offset < 0 {
+				return fmt.Errorf("invalid --offset %d, must be non-negative", offset)
+			}
 
 			params := &api.ListWorkflowsParams{}
 			if limit > 0 {
