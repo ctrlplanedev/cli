@@ -26,7 +26,10 @@ func NewAPIResourceService(ctx context.Context, apiURL, apiKey, workspace string
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	workspaceID := client.GetWorkspaceID(ctx, workspace)
+	workspaceID, err := client.GetWorkspaceID(ctx, workspace)
+	if err != nil {
+		return nil, err
+	}
 	log.Debug("resolved workspace", "input", workspace, "workspaceID", workspaceID.String())
 
 	return &APIResourceService{

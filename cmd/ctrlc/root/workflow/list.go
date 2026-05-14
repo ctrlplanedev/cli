@@ -1,8 +1,7 @@
-package resources
+package workflow
 
 import (
 	"fmt"
-	"net/url"
 
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
@@ -10,15 +9,14 @@ import (
 	"github.com/spf13/viper"
 )
 
-func NewResourcesCmd() *cobra.Command {
-	var query string
+func NewListCmd() *cobra.Command {
 	var limit int
 	var offset int
 
 	cmd := &cobra.Command{
-		Use:   "resources",
-		Short: "Get resources",
-		Long:  `Commands for getting resources.`,
+		Use:   "list",
+		Short: "List workflows",
+		Long:  `List all workflows in the workspace.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			apiURL := viper.GetString("url")
 			apiKey := viper.GetString("api-key")
@@ -34,32 +32,32 @@ func NewResourcesCmd() *cobra.Command {
 				return err
 			}
 
-			params := &api.GetAllResourcesParams{}
+			if limit < 0 {
+				return fmt.Errorf("invalid --limit %d, must be non-negative", limit)
+			}
+			if offset < 0 {
+				return fmt.Errorf("invalid --offset %d, must be non-negative", offset)
+			}
+
+			params := &api.ListWorkflowsParams{}
 			if limit > 0 {
 				params.Limit = &limit
 			}
 			if offset > 0 {
 				params.Offset = &offset
 			}
-			if query != "" {
-				q := url.QueryEscape(query)
-				params.Cel = &q
-			}
 
-			resp, err := client.GetAllResources(cmd.Context(), workspaceID.String(), params)
+			resp, err := client.ListWorkflows(cmd.Context(), workspaceID.String(), params)
 			if err != nil {
-				return fmt.Errorf("failed to get resources: %w", err)
+				return fmt.Errorf("failed to list workflows: %w", err)
 			}
 
 			return cliutil.HandleResponseOutput(cmd, resp)
 		},
 	}
 
-	cmd.Flags().StringVarP(&query, "query", "q", "", "CEL filter")
 	cmd.Flags().IntVarP(&limit, "limit", "l", 50, "Limit the number of results")
 	cmd.Flags().IntVarP(&offset, "offset", "o", 0, "Offset the results")
-
-	cmd.MarkFlagRequired("workspace")
 
 	return cmd
 }

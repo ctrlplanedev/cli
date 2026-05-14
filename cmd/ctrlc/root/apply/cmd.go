@@ -11,7 +11,6 @@ import (
 	"github.com/ctrlplanedev/cli/internal/api/providers"
 	"github.com/ctrlplanedev/cli/internal/api/resolver"
 	"github.com/fatih/color"
-	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -76,9 +75,9 @@ func runApply(ctx context.Context, filePatterns []string, selectorRaw string) er
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	workspaceID := client.GetWorkspaceID(ctx, workspace)
-	if workspaceID == uuid.Nil {
-		return fmt.Errorf("workspace not found: %s", workspace)
+	workspaceID, err := client.GetWorkspaceID(ctx, workspace)
+	if err != nil {
+		return err
 	}
 
 	resolver := resolver.NewAPIResolver(client, workspaceID)

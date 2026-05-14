@@ -25,9 +25,9 @@ func NewAPIResolver(client *api.ClientWithResponses, workspaceID uuid.UUID) *API
 }
 
 func NewAPIResolverFromWorkspace(ctx context.Context, client *api.ClientWithResponses, workspace string) (*APIResolver, error) {
-	workspaceID := client.GetWorkspaceID(ctx, workspace)
-	if workspaceID == uuid.Nil {
-		return nil, fmt.Errorf("workspace not found: %s", workspace)
+	workspaceID, err := client.GetWorkspaceID(ctx, workspace)
+	if err != nil {
+		return nil, err
 	}
 	return NewAPIResolver(client, workspaceID), nil
 }

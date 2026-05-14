@@ -36,9 +36,9 @@ func NewUICmd() *cobra.Command {
 			}
 
 			// Resolve workspace slug to UUID
-			workspaceID := client.GetWorkspaceID(cmd.Context(), workspace)
-			if workspaceID.String() == "00000000-0000-0000-0000-000000000000" {
-				return fmt.Errorf("failed to resolve workspace: %s", workspace)
+			workspaceID, err := client.GetWorkspaceID(cmd.Context(), workspace)
+			if err != nil {
+				return err
 			}
 
 			// Load last-viewed resource type (default: resources)

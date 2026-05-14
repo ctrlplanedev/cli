@@ -12,7 +12,11 @@ import (
 
 func New(client *api.ClientWithResponses, workspace string, name string) (*ResourceProvider, error) {
 	ctx := context.Background()
-	workspaceId := client.GetWorkspaceID(ctx, workspace).String()
+	workspaceUUID, err := client.GetWorkspaceID(ctx, workspace)
+	if err != nil {
+		return nil, err
+	}
+	workspaceId := workspaceUUID.String()
 
 	log.Debug("Upserting resource provider", "workspaceId", workspaceId, "name", name)
 

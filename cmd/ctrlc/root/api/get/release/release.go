@@ -25,7 +25,10 @@ func NewReleaseCmd() *cobra.Command {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
 
-			workspaceID := client.GetWorkspaceID(cmd.Context(), workspace)
+			workspaceID, err := client.GetWorkspaceID(cmd.Context(), workspace)
+			if err != nil {
+				return err
+			}
 			resp, err := client.GetRelease(cmd.Context(), workspaceID.String(), releaseID)
 			if err != nil {
 				return fmt.Errorf("failed to get release: %w", err)

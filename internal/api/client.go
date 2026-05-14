@@ -23,20 +23,22 @@ func NewAPIKeyClientWithResponses(server string, apiKey string) (*ClientWithResp
 	)
 }
 
-func (c *ClientWithResponses) GetWorkspaceID(ctx context.Context, workspace string) uuid.UUID {
-	id, err := uuid.Parse(workspace)
-	if err == nil {
-		return id
+func (c *ClientWithResponses) GetWorkspaceID(ctx context.Context, workspace string) (uuid.UUID, error) {
+	if id, err := uuid.Parse(workspace); err == nil {
+		return id, nil
 	}
 
 	resp, err := c.GetWorkspaceBySlugWithResponse(ctx, workspace)
 	if err != nil {
-		return uuid.Nil
+		return uuid.Nil, fmt.Errorf("failed to look up workspace %q: %w", workspace, err)
 	}
 
 	if resp.JSON200 == nil {
-		return uuid.Nil
+		if resp.StatusCode() == http.StatusNotFound {
+			return uuid.Nil, fmt.Errorf("workspace %q not found", workspace)
+		}
+		return uuid.Nil, fmt.Errorf("failed to look up workspace %q: %s: %s", workspace, resp.Status(), strings.TrimSpace(string(resp.Body)))
 	}
 
-	return resp.JSON200.Id
+	return resp.JSON200.Id, nil
 }
