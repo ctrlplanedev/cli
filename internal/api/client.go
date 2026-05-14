@@ -34,7 +34,10 @@ func (c *ClientWithResponses) GetWorkspaceID(ctx context.Context, workspace stri
 	}
 
 	if resp.JSON200 == nil {
-		return uuid.Nil, fmt.Errorf("workspace %q not found", workspace)
+		if resp.StatusCode() == http.StatusNotFound {
+			return uuid.Nil, fmt.Errorf("workspace %q not found", workspace)
+		}
+		return uuid.Nil, fmt.Errorf("failed to look up workspace %q: %s: %s", workspace, resp.Status(), strings.TrimSpace(string(resp.Body)))
 	}
 
 	return resp.JSON200.Id, nil
