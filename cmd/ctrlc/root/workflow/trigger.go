@@ -6,6 +6,7 @@ import (
 
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -14,23 +15,19 @@ func NewTriggerCmd() *cobra.Command {
 	var inputFlags []string
 
 	cmd := &cobra.Command{
-		Use:   "trigger <workflow-id>",
+		Use:   "trigger <id-or-slug>",
 		Short: "Trigger a workflow run",
-		Long:  `Trigger a workflow run with the given inputs.`,
+		Long:  `Trigger a workflow run with the given inputs. The argument is auto-detected as a UUID or slug.`,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			workflowID := args[0]
+			identifier := args[0]
 
-			apiURL := viper.GetString("url")
-			apiKey := viper.GetString("api-key")
-			workspace := viper.GetString("workspace")
-
-			client, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			client, err := api.NewAPIKeyClientWithResponses(viper.GetString("url"), viper.GetString("api-key"))
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
 
-			workspaceID, err := client.GetWorkspaceID(cmd.Context(), workspace)
+			workspaceID, err := client.GetWorkspaceID(cmd.Context(), viper.GetString("workspace"))
 			if err != nil {
 				return err
 			}
@@ -47,15 +44,18 @@ func NewTriggerCmd() *cobra.Command {
 				inputs[key] = value
 			}
 
-			body := api.CreateWorkflowRunJSONRequestBody{
-				Inputs: inputs,
+			if _, err := uuid.Parse(identifier); err == nil {
+				resp, err := client.CreateWorkflowRun(cmd.Context(), workspaceID.String(), identifier, api.CreateWorkflowRunJSONRequestBody{Inputs: inputs})
+				if err != nil {
+					return fmt.Errorf("failed to trigger workflow: %w", err)
+				}
+				return cliutil.HandleResponseOutput(cmd, resp)
 			}
 
-			resp, err := client.CreateWorkflowRun(cmd.Context(), workspaceID.String(), workflowID, body)
+			resp, err := client.CreateWorkflowRunBySlug(cmd.Context(), workspaceID.String(), identifier, api.CreateWorkflowRunBySlugJSONRequestBody{Inputs: inputs})
 			if err != nil {
-				return fmt.Errorf("failed to trigger workflow: %w", err)
+				return fmt.Errorf("failed to trigger workflow by slug: %w", err)
 			}
-
 			return cliutil.HandleResponseOutput(cmd, resp)
 		},
 	}

@@ -202,6 +202,11 @@ const (
 	WorkflowSelectorArrayInputTypeArray WorkflowSelectorArrayInputType = "array"
 )
 
+// Defines values for WorkflowSlugConflictResponseCode.
+const (
+	DUPLICATESLUG WorkflowSlugConflictResponseCode = "DUPLICATE_SLUG"
+)
+
 // Defines values for WorkflowStringInputType.
 const (
 	String WorkflowStringInputType = "string"
@@ -335,6 +340,9 @@ type CreateWorkflow struct {
 	Inputs    []WorkflowInput          `json:"inputs"`
 	JobAgents []CreateWorkflowJobAgent `json:"jobAgents"`
 	Name      string                   `json:"name"`
+
+	// Slug URL-safe identifier unique within the workspace. Derived from name if omitted.
+	Slug *string `json:"slug,omitempty"`
 }
 
 // CreateWorkflowJobAgent defines model for CreateWorkflowJobAgent.
@@ -1188,6 +1196,9 @@ type UpdateWorkflow struct {
 	Inputs    []WorkflowInput          `json:"inputs"`
 	JobAgents []CreateWorkflowJobAgent `json:"jobAgents"`
 	Name      string                   `json:"name"`
+
+	// Slug URL-safe identifier unique within the workspace.
+	Slug *string `json:"slug,omitempty"`
 }
 
 // UpdateWorkspaceRequest defines model for UpdateWorkspaceRequest.
@@ -1478,6 +1489,7 @@ type Workflow struct {
 	Inputs    []WorkflowInput    `json:"inputs"`
 	JobAgents []WorkflowJobAgent `json:"jobAgents"`
 	Name      string             `json:"name"`
+	Slug      string             `json:"slug"`
 }
 
 // WorkflowArrayInput defines model for WorkflowArrayInput.
@@ -1578,6 +1590,22 @@ type WorkflowSelectorArrayInputSelectorEntityType string
 
 // WorkflowSelectorArrayInputType defines model for WorkflowSelectorArrayInput.Type.
 type WorkflowSelectorArrayInputType string
+
+// WorkflowSlugConflictResponse defines model for WorkflowSlugConflictResponse.
+type WorkflowSlugConflictResponse struct {
+	Code    WorkflowSlugConflictResponseCode `json:"code"`
+	Details struct {
+		// ExistingWorkflowId UUID of the workflow that already uses this slug, if known.
+		ExistingWorkflowId *string `json:"existingWorkflowId,omitempty"`
+
+		// Slug The slug that collided.
+		Slug string `json:"slug"`
+	} `json:"details"`
+	Message string `json:"message"`
+}
+
+// WorkflowSlugConflictResponseCode defines model for WorkflowSlugConflictResponse.Code.
+type WorkflowSlugConflictResponseCode string
 
 // WorkflowStringInput defines model for WorkflowStringInput.
 type WorkflowStringInput struct {
@@ -1808,6 +1836,12 @@ type ListWorkflowsParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// CreateWorkflowRunBySlugJSONBody defines parameters for CreateWorkflowRunBySlug.
+type CreateWorkflowRunBySlugJSONBody struct {
+	// Inputs Input values for the workflow run.
+	Inputs map[string]interface{} `json:"inputs"`
+}
+
 // CreateWorkflowRunJSONBody defines parameters for CreateWorkflowRun.
 type CreateWorkflowRunJSONBody struct {
 	// Inputs Input values for the workflow run.
@@ -1906,6 +1940,9 @@ type UpdateVariableSetJSONRequestBody = UpdateVariableSet
 
 // CreateWorkflowJSONRequestBody defines body for CreateWorkflow for application/json ContentType.
 type CreateWorkflowJSONRequestBody = CreateWorkflow
+
+// CreateWorkflowRunBySlugJSONRequestBody defines body for CreateWorkflowRunBySlug for application/json ContentType.
+type CreateWorkflowRunBySlugJSONRequestBody CreateWorkflowRunBySlugJSONBody
 
 // UpdateWorkflowJSONRequestBody defines body for UpdateWorkflow for application/json ContentType.
 type UpdateWorkflowJSONRequestBody = UpdateWorkflow
@@ -2952,6 +2989,14 @@ type ClientInterface interface {
 	CreateWorkflowWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	CreateWorkflow(ctx context.Context, workspaceId string, body CreateWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetWorkflowBySlug request
+	GetWorkflowBySlug(ctx context.Context, workspaceId string, slug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateWorkflowRunBySlugWithBody request with any body
+	CreateWorkflowRunBySlugWithBody(ctx context.Context, workspaceId string, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateWorkflowRunBySlug(ctx context.Context, workspaceId string, slug string, body CreateWorkflowRunBySlugJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteWorkflow request
 	DeleteWorkflow(ctx context.Context, workspaceId string, workflowId string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -4412,6 +4457,42 @@ func (c *Client) CreateWorkflowWithBody(ctx context.Context, workspaceId string,
 
 func (c *Client) CreateWorkflow(ctx context.Context, workspaceId string, body CreateWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateWorkflowRequest(c.Server, workspaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetWorkflowBySlug(ctx context.Context, workspaceId string, slug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetWorkflowBySlugRequest(c.Server, workspaceId, slug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateWorkflowRunBySlugWithBody(ctx context.Context, workspaceId string, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateWorkflowRunBySlugRequestWithBody(c.Server, workspaceId, slug, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateWorkflowRunBySlug(ctx context.Context, workspaceId string, slug string, body CreateWorkflowRunBySlugJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateWorkflowRunBySlugRequest(c.Server, workspaceId, slug, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9202,6 +9283,101 @@ func NewCreateWorkflowRequestWithBody(server string, workspaceId string, content
 	return req, nil
 }
 
+// NewGetWorkflowBySlugRequest generates requests for GetWorkflowBySlug
+func NewGetWorkflowBySlugRequest(server string, workspaceId string, slug string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "slug", runtime.ParamLocationPath, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflows/slug/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateWorkflowRunBySlugRequest calls the generic CreateWorkflowRunBySlug builder with application/json body
+func NewCreateWorkflowRunBySlugRequest(server string, workspaceId string, slug string, body CreateWorkflowRunBySlugJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateWorkflowRunBySlugRequestWithBody(server, workspaceId, slug, "application/json", bodyReader)
+}
+
+// NewCreateWorkflowRunBySlugRequestWithBody generates requests for CreateWorkflowRunBySlug with any type of body
+func NewCreateWorkflowRunBySlugRequestWithBody(server string, workspaceId string, slug string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "slug", runtime.ParamLocationPath, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/workflows/slug/%s/runs", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewDeleteWorkflowRequest generates requests for DeleteWorkflow
 func NewDeleteWorkflowRequest(server string, workspaceId string, workflowId string) (*http.Request, error) {
 	var err error
@@ -9766,6 +9942,14 @@ type ClientWithResponsesInterface interface {
 	CreateWorkflowWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWorkflowResponse, error)
 
 	CreateWorkflowWithResponse(ctx context.Context, workspaceId string, body CreateWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWorkflowResponse, error)
+
+	// GetWorkflowBySlugWithResponse request
+	GetWorkflowBySlugWithResponse(ctx context.Context, workspaceId string, slug string, reqEditors ...RequestEditorFn) (*GetWorkflowBySlugResponse, error)
+
+	// CreateWorkflowRunBySlugWithBodyWithResponse request with any body
+	CreateWorkflowRunBySlugWithBodyWithResponse(ctx context.Context, workspaceId string, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWorkflowRunBySlugResponse, error)
+
+	CreateWorkflowRunBySlugWithResponse(ctx context.Context, workspaceId string, slug string, body CreateWorkflowRunBySlugJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWorkflowRunBySlugResponse, error)
 
 	// DeleteWorkflowWithResponse request
 	DeleteWorkflowWithResponse(ctx context.Context, workspaceId string, workflowId string, reqEditors ...RequestEditorFn) (*DeleteWorkflowResponse, error)
@@ -12110,6 +12294,7 @@ type CreateWorkflowResponse struct {
 	HTTPResponse *http.Response
 	JSON201      *Workflow
 	JSON400      *ErrorResponse
+	JSON409      *WorkflowSlugConflictResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -12122,6 +12307,54 @@ func (r CreateWorkflowResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r CreateWorkflowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetWorkflowBySlugResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Workflow
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetWorkflowBySlugResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetWorkflowBySlugResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateWorkflowRunBySlugResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *WorkflowRun
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateWorkflowRunBySlugResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateWorkflowRunBySlugResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -12182,6 +12415,7 @@ type UpdateWorkflowResponse struct {
 	JSON202      *Workflow
 	JSON400      *ErrorResponse
 	JSON404      *ErrorResponse
+	JSON409      *WorkflowSlugConflictResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -13280,6 +13514,32 @@ func (c *ClientWithResponses) CreateWorkflowWithResponse(ctx context.Context, wo
 		return nil, err
 	}
 	return ParseCreateWorkflowResponse(rsp)
+}
+
+// GetWorkflowBySlugWithResponse request returning *GetWorkflowBySlugResponse
+func (c *ClientWithResponses) GetWorkflowBySlugWithResponse(ctx context.Context, workspaceId string, slug string, reqEditors ...RequestEditorFn) (*GetWorkflowBySlugResponse, error) {
+	rsp, err := c.GetWorkflowBySlug(ctx, workspaceId, slug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetWorkflowBySlugResponse(rsp)
+}
+
+// CreateWorkflowRunBySlugWithBodyWithResponse request with arbitrary body returning *CreateWorkflowRunBySlugResponse
+func (c *ClientWithResponses) CreateWorkflowRunBySlugWithBodyWithResponse(ctx context.Context, workspaceId string, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWorkflowRunBySlugResponse, error) {
+	rsp, err := c.CreateWorkflowRunBySlugWithBody(ctx, workspaceId, slug, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateWorkflowRunBySlugResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateWorkflowRunBySlugWithResponse(ctx context.Context, workspaceId string, slug string, body CreateWorkflowRunBySlugJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWorkflowRunBySlugResponse, error) {
+	rsp, err := c.CreateWorkflowRunBySlug(ctx, workspaceId, slug, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateWorkflowRunBySlugResponse(rsp)
 }
 
 // DeleteWorkflowWithResponse request returning *DeleteWorkflowResponse
@@ -16951,6 +17211,93 @@ func ParseCreateWorkflowResponse(rsp *http.Response) (*CreateWorkflowResponse, e
 		}
 		response.JSON400 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest WorkflowSlugConflictResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetWorkflowBySlugResponse parses an HTTP response from a GetWorkflowBySlugWithResponse call
+func ParseGetWorkflowBySlugResponse(rsp *http.Response) (*GetWorkflowBySlugResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetWorkflowBySlugResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Workflow
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateWorkflowRunBySlugResponse parses an HTTP response from a CreateWorkflowRunBySlugWithResponse call
+func ParseCreateWorkflowRunBySlugResponse(rsp *http.Response) (*CreateWorkflowRunBySlugResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateWorkflowRunBySlugResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest WorkflowRun
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
 	}
 
 	return response, nil
@@ -17070,6 +17417,13 @@ func ParseUpdateWorkflowResponse(rsp *http.Response) (*UpdateWorkflowResponse, e
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest WorkflowSlugConflictResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 
