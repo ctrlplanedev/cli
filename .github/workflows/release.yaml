@@ -16,7 +16,7 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'ctrlplanedev'
+    if: github.repository_owner == 'wandb'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -33,7 +33,7 @@ jobs:
           version: "~> v2"
           args: release --clean --parallelism 2
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   docker:
     runs-on: ubuntu-latest
