@@ -104,6 +104,7 @@ const (
 	InvalidIntegration  JobStatus = "invalidIntegration"
 	InvalidJobAgent     JobStatus = "invalidJobAgent"
 	Pending             JobStatus = "pending"
+	Queued              JobStatus = "queued"
 	Skipped             JobStatus = "skipped"
 	Successful          JobStatus = "successful"
 )
@@ -1702,6 +1703,21 @@ type ListJobAgentsParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ListJobAgentJobsParams defines parameters for ListJobAgentJobs.
+type ListJobAgentJobsParams struct {
+	// Status Filter jobs by status
+	Status *JobStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// IncludeDispatchContext Include the dispatch context on each job. It can be large, so it is omitted by default.
+	IncludeDispatchContext *bool `form:"includeDispatchContext,omitempty" json:"includeDispatchContext,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // GetJobsParams defines parameters for GetJobs.
 type GetJobsParams struct {
 	// Limit Maximum number of items to return
@@ -1746,6 +1762,24 @@ type GetReleaseTargetStatesJSONBody struct {
 
 // GetReleaseTargetStatesParams defines parameters for GetReleaseTargetStates.
 type GetReleaseTargetStatesParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListEligibleVersionsForReleaseTargetJSONBody defines parameters for ListEligibleVersionsForReleaseTarget.
+type ListEligibleVersionsForReleaseTargetJSONBody struct {
+	// ExcludeRuleIds Policy rule IDs to skip during evaluation. Useful when a caller wants to ignore a specific constraint (for example, a versionSelector pin) while still respecting every other rule.
+	ExcludeRuleIds *[]openapi_types.UUID `json:"excludeRuleIds,omitempty"`
+
+	// Filter CEL expression to filter eligible versions. Defaults to "true" (all eligible versions).
+	Filter *string `json:"filter,omitempty"`
+}
+
+// ListEligibleVersionsForReleaseTargetParams defines parameters for ListEligibleVersionsForReleaseTarget.
+type ListEligibleVersionsForReleaseTargetParams struct {
 	// Limit Maximum number of items to return
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
@@ -1910,6 +1944,9 @@ type PreviewReleaseTargetsForResourceJSONRequestBody = ResourcePreviewRequest
 
 // GetReleaseTargetStatesJSONRequestBody defines body for GetReleaseTargetStates for application/json ContentType.
 type GetReleaseTargetStatesJSONRequestBody GetReleaseTargetStatesJSONBody
+
+// ListEligibleVersionsForReleaseTargetJSONRequestBody defines body for ListEligibleVersionsForReleaseTarget for application/json ContentType.
+type ListEligibleVersionsForReleaseTargetJSONRequestBody ListEligibleVersionsForReleaseTargetJSONBody
 
 // RequestResourceProviderUpsertJSONRequestBody defines body for RequestResourceProviderUpsert for application/json ContentType.
 type RequestResourceProviderUpsertJSONRequestBody = UpsertResourceProviderRequest
@@ -2800,6 +2837,12 @@ type ClientInterface interface {
 
 	RequestJobAgentUpsert(ctx context.Context, workspaceId string, jobAgentId string, body RequestJobAgentUpsertJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListJobAgentJobs request
+	ListJobAgentJobs(ctx context.Context, workspaceId string, jobAgentId string, params *ListJobAgentJobsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ClaimJob request
+	ClaimJob(ctx context.Context, workspaceId string, jobAgentId string, jobId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetJobs request
 	GetJobs(ctx context.Context, workspaceId string, params *GetJobsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -2864,6 +2907,11 @@ type ClientInterface interface {
 
 	// GetReleaseTargetDesiredRelease request
 	GetReleaseTargetDesiredRelease(ctx context.Context, workspaceId string, releaseTargetKey string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListEligibleVersionsForReleaseTargetWithBody request with any body
+	ListEligibleVersionsForReleaseTargetWithBody(ctx context.Context, workspaceId string, releaseTargetKey string, params *ListEligibleVersionsForReleaseTargetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ListEligibleVersionsForReleaseTarget(ctx context.Context, workspaceId string, releaseTargetKey string, params *ListEligibleVersionsForReleaseTargetParams, body ListEligibleVersionsForReleaseTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetJobsForReleaseTarget request
 	GetJobsForReleaseTarget(ctx context.Context, workspaceId string, releaseTargetKey string, params *GetJobsForReleaseTargetParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3639,6 +3687,30 @@ func (c *Client) RequestJobAgentUpsert(ctx context.Context, workspaceId string, 
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListJobAgentJobs(ctx context.Context, workspaceId string, jobAgentId string, params *ListJobAgentJobsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListJobAgentJobsRequest(c.Server, workspaceId, jobAgentId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ClaimJob(ctx context.Context, workspaceId string, jobAgentId string, jobId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewClaimJobRequest(c.Server, workspaceId, jobAgentId, jobId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetJobs(ctx context.Context, workspaceId string, params *GetJobsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetJobsRequest(c.Server, workspaceId, params)
 	if err != nil {
@@ -3917,6 +3989,30 @@ func (c *Client) GetReleaseTargetStates(ctx context.Context, workspaceId string,
 
 func (c *Client) GetReleaseTargetDesiredRelease(ctx context.Context, workspaceId string, releaseTargetKey string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetReleaseTargetDesiredReleaseRequest(c.Server, workspaceId, releaseTargetKey)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListEligibleVersionsForReleaseTargetWithBody(ctx context.Context, workspaceId string, releaseTargetKey string, params *ListEligibleVersionsForReleaseTargetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListEligibleVersionsForReleaseTargetRequestWithBody(c.Server, workspaceId, releaseTargetKey, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListEligibleVersionsForReleaseTarget(ctx context.Context, workspaceId string, releaseTargetKey string, params *ListEligibleVersionsForReleaseTargetParams, body ListEligibleVersionsForReleaseTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListEligibleVersionsForReleaseTargetRequest(c.Server, workspaceId, releaseTargetKey, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -6483,6 +6579,165 @@ func NewRequestJobAgentUpsertRequestWithBody(server string, workspaceId string, 
 	return req, nil
 }
 
+// NewListJobAgentJobsRequest generates requests for ListJobAgentJobs
+func NewListJobAgentJobsRequest(server string, workspaceId string, jobAgentId string, params *ListJobAgentJobsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "jobAgentId", runtime.ParamLocationPath, jobAgentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/job-agents/%s/jobs", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "status", runtime.ParamLocationQuery, *params.Status); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.IncludeDispatchContext != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "includeDispatchContext", runtime.ParamLocationQuery, *params.IncludeDispatchContext); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewClaimJobRequest generates requests for ClaimJob
+func NewClaimJobRequest(server string, workspaceId string, jobAgentId string, jobId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "jobAgentId", runtime.ParamLocationPath, jobAgentId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "jobId", runtime.ParamLocationPath, jobId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/job-agents/%s/jobs/%s/claim", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetJobsRequest generates requests for GetJobs
 func NewGetJobsRequest(server string, workspaceId string, params *GetJobsParams) (*http.Request, error) {
 	var err error
@@ -7408,6 +7663,98 @@ func NewGetReleaseTargetDesiredReleaseRequest(server string, workspaceId string,
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewListEligibleVersionsForReleaseTargetRequest calls the generic ListEligibleVersionsForReleaseTarget builder with application/json body
+func NewListEligibleVersionsForReleaseTargetRequest(server string, workspaceId string, releaseTargetKey string, params *ListEligibleVersionsForReleaseTargetParams, body ListEligibleVersionsForReleaseTargetJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewListEligibleVersionsForReleaseTargetRequestWithBody(server, workspaceId, releaseTargetKey, params, "application/json", bodyReader)
+}
+
+// NewListEligibleVersionsForReleaseTargetRequestWithBody generates requests for ListEligibleVersionsForReleaseTarget with any type of body
+func NewListEligibleVersionsForReleaseTargetRequestWithBody(server string, workspaceId string, releaseTargetKey string, params *ListEligibleVersionsForReleaseTargetParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "workspaceId", runtime.ParamLocationPath, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "releaseTargetKey", runtime.ParamLocationPath, releaseTargetKey)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/workspaces/%s/release-targets/%s/eligible-versions", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -9753,6 +10100,12 @@ type ClientWithResponsesInterface interface {
 
 	RequestJobAgentUpsertWithResponse(ctx context.Context, workspaceId string, jobAgentId string, body RequestJobAgentUpsertJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestJobAgentUpsertResponse, error)
 
+	// ListJobAgentJobsWithResponse request
+	ListJobAgentJobsWithResponse(ctx context.Context, workspaceId string, jobAgentId string, params *ListJobAgentJobsParams, reqEditors ...RequestEditorFn) (*ListJobAgentJobsResponse, error)
+
+	// ClaimJobWithResponse request
+	ClaimJobWithResponse(ctx context.Context, workspaceId string, jobAgentId string, jobId string, reqEditors ...RequestEditorFn) (*ClaimJobResponse, error)
+
 	// GetJobsWithResponse request
 	GetJobsWithResponse(ctx context.Context, workspaceId string, params *GetJobsParams, reqEditors ...RequestEditorFn) (*GetJobsResponse, error)
 
@@ -9817,6 +10170,11 @@ type ClientWithResponsesInterface interface {
 
 	// GetReleaseTargetDesiredReleaseWithResponse request
 	GetReleaseTargetDesiredReleaseWithResponse(ctx context.Context, workspaceId string, releaseTargetKey string, reqEditors ...RequestEditorFn) (*GetReleaseTargetDesiredReleaseResponse, error)
+
+	// ListEligibleVersionsForReleaseTargetWithBodyWithResponse request with any body
+	ListEligibleVersionsForReleaseTargetWithBodyWithResponse(ctx context.Context, workspaceId string, releaseTargetKey string, params *ListEligibleVersionsForReleaseTargetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListEligibleVersionsForReleaseTargetResponse, error)
+
+	ListEligibleVersionsForReleaseTargetWithResponse(ctx context.Context, workspaceId string, releaseTargetKey string, params *ListEligibleVersionsForReleaseTargetParams, body ListEligibleVersionsForReleaseTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*ListEligibleVersionsForReleaseTargetResponse, error)
 
 	// GetJobsForReleaseTargetWithResponse request
 	GetJobsForReleaseTargetWithResponse(ctx context.Context, workspaceId string, releaseTargetKey string, params *GetJobsForReleaseTargetParams, reqEditors ...RequestEditorFn) (*GetJobsForReleaseTargetResponse, error)
@@ -10933,6 +11291,66 @@ func (r RequestJobAgentUpsertResponse) StatusCode() int {
 	return 0
 }
 
+type ListJobAgentJobsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Items []Job `json:"items"`
+
+		// Limit Maximum number of items returned
+		Limit int `json:"limit"`
+
+		// Offset Number of items skipped
+		Offset int `json:"offset"`
+
+		// Total Total number of items available
+		Total int `json:"total"`
+	}
+	JSON400 *ErrorResponse
+	JSON404 *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListJobAgentJobsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListJobAgentJobsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ClaimJobResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Job
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+	JSON409      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ClaimJobResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ClaimJobResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetJobsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -11385,6 +11803,41 @@ func (r GetReleaseTargetDesiredReleaseResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetReleaseTargetDesiredReleaseResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListEligibleVersionsForReleaseTargetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Items []DeploymentVersion `json:"items"`
+
+		// Limit Maximum number of items returned
+		Limit int `json:"limit"`
+
+		// Offset Number of items skipped
+		Offset int `json:"offset"`
+
+		// Total Total number of items available
+		Total int `json:"total"`
+	}
+	JSON400 *ErrorResponse
+	JSON404 *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListEligibleVersionsForReleaseTargetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListEligibleVersionsForReleaseTargetResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -12912,6 +13365,24 @@ func (c *ClientWithResponses) RequestJobAgentUpsertWithResponse(ctx context.Cont
 	return ParseRequestJobAgentUpsertResponse(rsp)
 }
 
+// ListJobAgentJobsWithResponse request returning *ListJobAgentJobsResponse
+func (c *ClientWithResponses) ListJobAgentJobsWithResponse(ctx context.Context, workspaceId string, jobAgentId string, params *ListJobAgentJobsParams, reqEditors ...RequestEditorFn) (*ListJobAgentJobsResponse, error) {
+	rsp, err := c.ListJobAgentJobs(ctx, workspaceId, jobAgentId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListJobAgentJobsResponse(rsp)
+}
+
+// ClaimJobWithResponse request returning *ClaimJobResponse
+func (c *ClientWithResponses) ClaimJobWithResponse(ctx context.Context, workspaceId string, jobAgentId string, jobId string, reqEditors ...RequestEditorFn) (*ClaimJobResponse, error) {
+	rsp, err := c.ClaimJob(ctx, workspaceId, jobAgentId, jobId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseClaimJobResponse(rsp)
+}
+
 // GetJobsWithResponse request returning *GetJobsResponse
 func (c *ClientWithResponses) GetJobsWithResponse(ctx context.Context, workspaceId string, params *GetJobsParams, reqEditors ...RequestEditorFn) (*GetJobsResponse, error) {
 	rsp, err := c.GetJobs(ctx, workspaceId, params, reqEditors...)
@@ -13119,6 +13590,23 @@ func (c *ClientWithResponses) GetReleaseTargetDesiredReleaseWithResponse(ctx con
 		return nil, err
 	}
 	return ParseGetReleaseTargetDesiredReleaseResponse(rsp)
+}
+
+// ListEligibleVersionsForReleaseTargetWithBodyWithResponse request with arbitrary body returning *ListEligibleVersionsForReleaseTargetResponse
+func (c *ClientWithResponses) ListEligibleVersionsForReleaseTargetWithBodyWithResponse(ctx context.Context, workspaceId string, releaseTargetKey string, params *ListEligibleVersionsForReleaseTargetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListEligibleVersionsForReleaseTargetResponse, error) {
+	rsp, err := c.ListEligibleVersionsForReleaseTargetWithBody(ctx, workspaceId, releaseTargetKey, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListEligibleVersionsForReleaseTargetResponse(rsp)
+}
+
+func (c *ClientWithResponses) ListEligibleVersionsForReleaseTargetWithResponse(ctx context.Context, workspaceId string, releaseTargetKey string, params *ListEligibleVersionsForReleaseTargetParams, body ListEligibleVersionsForReleaseTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*ListEligibleVersionsForReleaseTargetResponse, error) {
+	rsp, err := c.ListEligibleVersionsForReleaseTarget(ctx, workspaceId, releaseTargetKey, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListEligibleVersionsForReleaseTargetResponse(rsp)
 }
 
 // GetJobsForReleaseTargetWithResponse request returning *GetJobsForReleaseTargetResponse
@@ -15155,6 +15643,104 @@ func ParseRequestJobAgentUpsertResponse(rsp *http.Response) (*RequestJobAgentUps
 	return response, nil
 }
 
+// ParseListJobAgentJobsResponse parses an HTTP response from a ListJobAgentJobsWithResponse call
+func ParseListJobAgentJobsResponse(rsp *http.Response) (*ListJobAgentJobsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListJobAgentJobsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Items []Job `json:"items"`
+
+			// Limit Maximum number of items returned
+			Limit int `json:"limit"`
+
+			// Offset Number of items skipped
+			Offset int `json:"offset"`
+
+			// Total Total number of items available
+			Total int `json:"total"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseClaimJobResponse parses an HTTP response from a ClaimJobWithResponse call
+func ParseClaimJobResponse(rsp *http.Response) (*ClaimJobResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ClaimJobResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Job
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetJobsResponse parses an HTTP response from a GetJobsWithResponse call
 func ParseGetJobsResponse(rsp *http.Response) (*GetJobsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -15830,6 +16416,57 @@ func ParseGetReleaseTargetDesiredReleaseResponse(rsp *http.Response) (*GetReleas
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListEligibleVersionsForReleaseTargetResponse parses an HTTP response from a ListEligibleVersionsForReleaseTargetWithResponse call
+func ParseListEligibleVersionsForReleaseTargetResponse(rsp *http.Response) (*ListEligibleVersionsForReleaseTargetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListEligibleVersionsForReleaseTargetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Items []DeploymentVersion `json:"items"`
+
+			// Limit Maximum number of items returned
+			Limit int `json:"limit"`
+
+			// Offset Number of items skipped
+			Offset int `json:"offset"`
+
+			// Total Total number of items available
+			Total int `json:"total"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest ErrorResponse
