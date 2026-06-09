@@ -159,7 +159,10 @@ func fetchResourcesFiltered(client *api.Client, workspaceID string, filter strin
 }
 
 func fetchJobs(ctx context.Context, client *api.Client, workspaceID string, limit int32) dataMsg {
-	resp, err := client.Job.ListJobs(ctx, connect.NewRequest(&apiv1.ListJobsRequest{
+	// The top-level Jobs table uses ListJobsWithRelease so each job arrives
+	// joined to its release target's deployment/environment/resource — bare
+	// ListJobs returns only release_id and can't fill those columns.
+	resp, err := client.Job.ListJobsWithRelease(ctx, connect.NewRequest(&apiv1.ListJobsWithReleaseRequest{
 		WorkspaceId: workspaceID,
 		Limit:       limit,
 	}))
@@ -169,7 +172,8 @@ func fetchJobs(ctx context.Context, client *api.Client, workspaceID string, limi
 
 	items := resp.Msg.GetItems()
 	rows := make([]tableRow, 0, len(items))
-	for _, job := range items {
+	for _, item := range items {
+		job := item.GetJob()
 		id := job.GetId()
 		shortID := id
 		if len(shortID) > 8 {
@@ -177,7 +181,7 @@ func fetchJobs(ctx context.Context, client *api.Client, workspaceID string, limi
 		}
 		rows = append(rows, tableRow{
 			id:      id,
-			cols:    []string{shortID, job.GetStatus(), job.GetReleaseId(), "", "", job.GetCreatedAt().AsTime().Format(timeLayout)},
+			cols:    []string{shortID, job.GetStatus(), item.GetDeployment().GetName(), item.GetEnvironment().GetName(), item.GetResource().GetName(), job.GetCreatedAt().AsTime().Format(timeLayout)},
 			rawItem: job,
 		})
 	}
@@ -342,7 +346,7 @@ func columnsForResource(rt resourceType) []string {
 	case resourceTypeResources:
 		return []string{"NAME", "KIND", "VERSION", "IDENTIFIER"}
 	case resourceTypeJobs:
-		return []string{"ID", "STATUS", "RELEASE", "ENVIRONMENT", "RESOURCE", "CREATED"}
+		return []string{"ID", "STATUS", "DEPLOYMENT", "ENVIRONMENT", "RESOURCE", "CREATED"}
 	case resourceTypeEnvironments:
 		return []string{"NAME", "DESCRIPTION", "ID", "CREATED"}
 	case resourceTypeVersions:
