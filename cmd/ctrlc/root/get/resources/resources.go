@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
-	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
 	"github.com/ctrlplanedev/cli/internal/resources"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"google.golang.org/protobuf/proto"
 )
 
 func NewResourcesCmd() *cobra.Command {
@@ -48,7 +48,12 @@ func NewResourcesCmd() *cobra.Command {
 				return err
 			}
 
-			return cliutil.HandleAnyOutput(cmd, items, output)
+			msgs := make([]proto.Message, len(items))
+			for i, item := range items {
+				msgs[i] = item
+			}
+
+			return cliutil.HandleProtoSliceOutput(cmd, msgs, output)
 		},
 	}
 
@@ -61,17 +66,17 @@ func NewResourcesCmd() *cobra.Command {
 	return cmd
 }
 
-func buildFilters(kinds, metadata, versions, providerIDs []string) api.ListResourcesFilters {
-	filters := api.ListResourcesFilters{}
+func buildFilters(kinds, metadata, versions, providerIDs []string) resources.Filters {
+	filters := resources.Filters{}
 
 	if len(kinds) > 0 {
-		filters.Kinds = &kinds
+		filters.Kinds = kinds
 	}
 	if len(versions) > 0 {
-		filters.Versions = &versions
+		filters.Versions = versions
 	}
 	if len(providerIDs) > 0 {
-		filters.ProviderIds = &providerIDs
+		filters.ProviderIDs = providerIDs
 	}
 	if len(metadata) > 0 {
 		m := make(map[string]string)
@@ -81,7 +86,7 @@ func buildFilters(kinds, metadata, versions, providerIDs []string) api.ListResou
 				m[parts[0]] = parts[1]
 			}
 		}
-		filters.Metadata = &m
+		filters.Metadata = m
 	}
 
 	return filters

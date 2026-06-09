@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -65,7 +66,7 @@ func NewSyncTailscaleCmd() *cobra.Command {
 			apiURL := viper.GetString("url")
 			apiKey := viper.GetString("api-key")
 			workspaceId := viper.GetString("workspace")
-			ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			ctrlplaneClient, err := api.NewConnectClient(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
@@ -95,7 +96,7 @@ func NewSyncTailscaleCmd() *cobra.Command {
 				return fmt.Errorf("failed to list devices: %w", err)
 			}
 
-			resources := []api.ResourceProviderResource{}
+			resources := []*apiv1.ResourceInput{}
 			for _, device := range devices {
 				metadata := map[string]string{}
 				metadata["tailscale/id"] = device.ID
@@ -132,12 +133,12 @@ func NewSyncTailscaleCmd() *cobra.Command {
 				}
 
 				name := strings.Split(device.Name, ".")[0]
-				resources = append(resources, api.ResourceProviderResource{
+				resources = append(resources, &apiv1.ResourceInput{
 					Version:    "tailscale/v1",
 					Kind:       "Device",
 					Name:       name,
 					Identifier: fmt.Sprintf("%s/%s", tailnet, device.ID),
-					Config:     config.Struct(),
+					Config:     api.NewStruct(config.Struct()),
 					Metadata:   metadata,
 				})
 			}
@@ -151,12 +152,12 @@ func NewSyncTailscaleCmd() *cobra.Command {
 			}
 
 			upsertResp, err := rp.UpsertResource(ctx, resources)
-			log.Info("Response from upserting resources", "status", upsertResp.Status)
 			if err != nil {
 				return fmt.Errorf("failed to upsert resources: %w", err)
 			}
+			log.Info("Response from upserting resources", "ok", upsertResp.GetOk())
 
-			return cliutil.HandleResponseOutput(cmd, upsertResp)
+			return cliutil.HandleProtoOutput(cmd, upsertResp)
 		},
 	}
 

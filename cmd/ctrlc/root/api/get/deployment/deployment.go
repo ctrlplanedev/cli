@@ -3,6 +3,8 @@ package deployment
 import (
 	"fmt"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
 	"github.com/spf13/cobra"
@@ -20,7 +22,7 @@ func NewDeploymentCmd() *cobra.Command {
 			apiKey := viper.GetString("api-key")
 			workspace := viper.GetString("workspace")
 
-			client, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			client, err := api.NewConnectClient(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
@@ -29,12 +31,15 @@ func NewDeploymentCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			resp, err := client.GetDeploymentByName(cmd.Context(), workspaceID.String(), name)
+			resp, err := client.Deployment.GetDeploymentByName(cmd.Context(), connect.NewRequest(&apiv1.GetDeploymentByNameRequest{
+				WorkspaceId: workspaceID.String(),
+				Name:        name,
+			}))
 			if err != nil {
 				return fmt.Errorf("failed to get deployment: %w", err)
 			}
 
-			return cliutil.HandleResponseOutput(cmd, resp)
+			return cliutil.HandleProtoOutput(cmd, resp.Msg)
 		},
 	}
 

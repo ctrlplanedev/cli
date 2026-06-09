@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	"github.com/MakeNowJust/heredoc"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -26,17 +28,17 @@ type clusterConfig struct {
 // The clusterName is used to:
 // - Create unique identifiers across clusters (cluster/namespace/release)
 // - Tag resources with their source cluster for filtering and relationships
-func helmReleaseToResource(release *release.Release, clusterName string) api.ResourceProviderResource {
+func helmReleaseToResource(release *release.Release, clusterName string) *apiv1.ResourceInput {
 	metadata := buildHelmMetadata(release, clusterName)
 	config := buildHelmConfig(release)
 	identifier := fmt.Sprintf("%s/%s/%s", clusterName, release.Namespace, release.Name)
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/helm/release/v1",
 		Kind:       "HelmRelease",
 		Name:       identifier, // Use cluster/namespace/release for uniqueness
 		Identifier: identifier,
-		Config:     config,
+		Config:     api.NewStruct(config),
 		Metadata:   metadata,
 	}
 }
@@ -150,12 +152,12 @@ func NewSyncHelmCmd() *cobra.Command {
 // These functions break down the sync operation into clear, testable steps
 
 // initializeCtrlplaneClient creates an authenticated API client
-func initializeCtrlplaneClient() (*api.ClientWithResponses, string, error) {
+func initializeCtrlplaneClient() (*api.Client, string, error) {
 	apiURL := viper.GetString("url")
 	apiKey := viper.GetString("api-key")
 	workspaceId := viper.GetString("workspace")
 
-	ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+	ctrlplaneClient, err := api.NewConnectClient(apiURL, apiKey)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to create API client: %w", err)
 	}
@@ -170,7 +172,7 @@ func initializeCtrlplaneClient() (*api.ClientWithResponses, string, error) {
 //
 // If a cluster identifier is provided, we try to fetch the cluster resource from Ctrlplane
 // to get the canonical cluster name. Otherwise, we use the name from kubeconfig.
-func resolveClusterConfig(ctx context.Context, client *api.ClientWithResponses, workspaceId, flagIdentifier, flagName string) (clusterConfig, *rest.Config, error) {
+func resolveClusterConfig(ctx context.Context, client *api.Client, workspaceId, flagIdentifier, flagName string) (clusterConfig, *rest.Config, error) {
 	// Get kubeconfig first since we need it regardless
 	kubeConfig, kubeconfigClusterName, err := getKubeConfig()
 	if err != nil {
@@ -190,9 +192,12 @@ func resolveClusterConfig(ctx context.Context, client *api.ClientWithResponses, 
 	resolvedClusterName := flagName
 	if clusterIdentifier != "" {
 		// Try to get the canonical cluster name from Ctrlplane
-		clusterResource, err := client.GetResourceByIdentifierWithResponse(ctx, workspaceId, clusterIdentifier)
-		if err == nil && clusterResource.JSON200 != nil {
-			resolvedClusterName = clusterResource.JSON200.Name
+		clusterResource, err := client.Resource.GetResourceByIdentifier(ctx, connect.NewRequest(&apiv1.GetResourceByIdentifierRequest{
+			WorkspaceId: workspaceId,
+			Identifier:  clusterIdentifier,
+		}))
+		if err == nil && clusterResource.Msg != nil {
+			resolvedClusterName = clusterResource.Msg.GetName()
 			log.Info("Using cluster name from Ctrlplane", "name", resolvedClusterName)
 		}
 	}
@@ -231,8 +236,8 @@ func fetchHelmReleases(kubeConfig *rest.Config, namespace string) ([]*release.Re
 }
 
 // convertReleasesToResources transforms Helm releases into Ctrlplane resource format
-func convertReleasesToResources(releases []*release.Release, clusterName string) []api.ResourceProviderResource {
-	resources := make([]api.ResourceProviderResource, 0, len(releases))
+func convertReleasesToResources(releases []*release.Release, clusterName string) []*apiv1.ResourceInput {
+	resources := make([]*apiv1.ResourceInput, 0, len(releases))
 	for _, release := range releases {
 		resource := helmReleaseToResource(release, clusterName)
 		resources = append(resources, resource)
@@ -242,16 +247,21 @@ func convertReleasesToResources(releases []*release.Release, clusterName string)
 
 // inheritClusterMetadata copies non-tag metadata from the parent cluster resource to all Helm releases.
 // This is useful for propagating environment labels, region info, etc. from the cluster to its workloads.
-func inheritClusterMetadata(ctx context.Context, client *api.ClientWithResponses, workspaceId, clusterIdentifier string, resources []api.ResourceProviderResource) {
-	clusterResource, err := client.GetResourceByIdentifierWithResponse(ctx, workspaceId, clusterIdentifier)
-	if err != nil || clusterResource.JSON200 == nil {
+func inheritClusterMetadata(ctx context.Context, client *api.Client, workspaceId, clusterIdentifier string, resources []*apiv1.ResourceInput) {
+	clusterResource, err := client.Resource.GetResourceByIdentifier(ctx, connect.NewRequest(&apiv1.GetResourceByIdentifierRequest{
+		WorkspaceId: workspaceId,
+		Identifier:  clusterIdentifier,
+	}))
+	if err != nil || clusterResource.Msg == nil {
 		log.Debug("Could not fetch cluster resource for metadata inheritance", "identifier", clusterIdentifier)
 		return
 	}
 
+	clusterMetadata := clusterResource.Msg.GetMetadata()
+
 	// Copy metadata from cluster to each Helm release (skip tags to avoid conflicts)
 	for i := range resources {
-		for key, value := range clusterResource.JSON200.Metadata {
+		for key, value := range clusterMetadata {
 			// Skip user-defined tags to let each release keep its own tags
 			if strings.HasPrefix(key, "tags/") {
 				continue
@@ -262,14 +272,14 @@ func inheritClusterMetadata(ctx context.Context, client *api.ClientWithResponses
 			}
 		}
 		// Ensure kubernetes/name is set to the cluster's canonical name
-		resources[i].Metadata["kubernetes/name"] = clusterResource.JSON200.Name
+		resources[i].Metadata["kubernetes/name"] = clusterResource.Msg.GetName()
 	}
 
-	log.Debug("Inherited metadata from cluster resource", "keys", len(clusterResource.JSON200.Metadata))
+	log.Debug("Inherited metadata from cluster resource", "keys", len(clusterMetadata))
 }
 
 // upsertResourcesToCtrlplane sends the resources to Ctrlplane via the resource provider API
-func upsertResourcesToCtrlplane(ctx context.Context, client *api.ClientWithResponses, workspaceId string, resources []api.ResourceProviderResource, clusterName, providerName string) error {
+func upsertResourcesToCtrlplane(ctx context.Context, client *api.Client, workspaceId string, resources []*apiv1.ResourceInput, clusterName, providerName string) error {
 	// Generate default provider name if not specified
 	if providerName == "" {
 		providerName = fmt.Sprintf("helm-cluster-%s", clusterName)
@@ -289,7 +299,7 @@ func upsertResourcesToCtrlplane(ctx context.Context, client *api.ClientWithRespo
 		return fmt.Errorf("failed to upsert resources: %w", err)
 	}
 
-	log.Info("Successfully synced resources", "status", resp.Status)
+	log.Info("Successfully synced resources", "ok", resp.GetOk())
 	return nil
 }
 

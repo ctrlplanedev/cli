@@ -3,6 +3,8 @@ package workflow
 import (
 	"fmt"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
 	"github.com/google/uuid"
@@ -19,7 +21,7 @@ func NewGetCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			identifier := args[0]
 
-			client, err := api.NewAPIKeyClientWithResponses(viper.GetString("url"), viper.GetString("api-key"))
+			client, err := api.NewConnectClient(viper.GetString("url"), viper.GetString("api-key"))
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
@@ -30,18 +32,24 @@ func NewGetCmd() *cobra.Command {
 			}
 
 			if _, err := uuid.Parse(identifier); err == nil {
-				resp, err := client.GetWorkflow(cmd.Context(), workspaceID.String(), identifier)
+				resp, err := client.Workflow.GetWorkflow(cmd.Context(), connect.NewRequest(&apiv1.GetWorkflowRequest{
+					WorkspaceId: workspaceID.String(),
+					WorkflowId:  identifier,
+				}))
 				if err != nil {
 					return fmt.Errorf("failed to get workflow: %w", err)
 				}
-				return cliutil.HandleResponseOutput(cmd, resp)
+				return cliutil.HandleProtoOutput(cmd, resp.Msg)
 			}
 
-			resp, err := client.GetWorkflowBySlug(cmd.Context(), workspaceID.String(), identifier)
+			resp, err := client.Workflow.GetWorkflowBySlug(cmd.Context(), connect.NewRequest(&apiv1.GetWorkflowBySlugRequest{
+				WorkspaceId: workspaceID.String(),
+				Slug:        identifier,
+			}))
 			if err != nil {
 				return fmt.Errorf("failed to get workflow by slug: %w", err)
 			}
-			return cliutil.HandleResponseOutput(cmd, resp)
+			return cliutil.HandleProtoOutput(cmd, resp.Msg)
 		},
 	}
 

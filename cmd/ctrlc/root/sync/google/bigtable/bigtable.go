@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -106,7 +107,7 @@ func initBigtableClient(ctx context.Context) (*bigtableadmin.Service, error) {
 }
 
 // processInstances lists and processes all Bigtable instances
-func processInstances(ctx context.Context, adminClient *bigtableadmin.Service, project string) ([]api.ResourceProviderResource, error) {
+func processInstances(ctx context.Context, adminClient *bigtableadmin.Service, project string) ([]*apiv1.ResourceInput, error) {
 	projectParent := fmt.Sprintf("projects/%s", project)
 	instances, err := adminClient.Projects.Instances.List(projectParent).Do()
 	if err != nil {
@@ -115,7 +116,7 @@ func processInstances(ctx context.Context, adminClient *bigtableadmin.Service, p
 
 	log.Info("Found instances", "count", len(instances.Instances))
 
-	resources := []api.ResourceProviderResource{}
+	resources := []*apiv1.ResourceInput{}
 	for _, instance := range instances.Instances {
 		resource, err := processInstance(ctx, adminClient, instance, project)
 		if err != nil {
@@ -129,7 +130,7 @@ func processInstances(ctx context.Context, adminClient *bigtableadmin.Service, p
 }
 
 // processInstance handles processing of a single Bigtable instance
-func processInstance(_ context.Context, adminClient *bigtableadmin.Service, instance *bigtableadmin.Instance, project string) (api.ResourceProviderResource, error) {
+func processInstance(_ context.Context, adminClient *bigtableadmin.Service, instance *bigtableadmin.Instance, project string) (*apiv1.ResourceInput, error) {
 	metadata := initInstanceMetadata(instance, project)
 
 	// Process clusters
@@ -151,12 +152,12 @@ func processInstance(_ context.Context, adminClient *bigtableadmin.Service, inst
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"Google Cloud Console\": \"%s\" }", consoleUrl)
 	instanceFullName := fmt.Sprintf("projects/%s/instances/%s", project, instance.Name)
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/database/v1",
 		Kind:       "GoogleBigtable",
 		Name:       instance.DisplayName,
 		Identifier: instanceFullName,
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			"name": instance.Name,
 			"host": instance.Name,
 			"port": 443,
@@ -166,7 +167,7 @@ func processInstance(_ context.Context, adminClient *bigtableadmin.Service, inst
 				"state":      strings.ToLower(instance.State),
 				"type":       instance.Type,
 			},
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }

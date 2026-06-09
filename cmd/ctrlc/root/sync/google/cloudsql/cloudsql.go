@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/Masterminds/semver"
 	"github.com/charmbracelet/log"
@@ -239,7 +240,7 @@ func initSQLAdminClient(ctx context.Context) (*sqladmin.Service, error) {
 }
 
 // processInstances lists and processes all Cloud SQL instances
-func processInstances(_ context.Context, sqlService *sqladmin.Service, project string) ([]api.ResourceProviderResource, error) {
+func processInstances(_ context.Context, sqlService *sqladmin.Service, project string) ([]*apiv1.ResourceInput, error) {
 	instances, err := sqlService.Instances.List(project).Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list instances: %w", err)
@@ -247,7 +248,7 @@ func processInstances(_ context.Context, sqlService *sqladmin.Service, project s
 
 	log.Info("Found instances", "count", len(instances.Items))
 
-	resources := []api.ResourceProviderResource{}
+	resources := []*apiv1.ResourceInput{}
 	for _, instance := range instances.Items {
 		resource := processInstance(instance, project)
 		resources = append(resources, resource)
@@ -257,7 +258,7 @@ func processInstances(_ context.Context, sqlService *sqladmin.Service, project s
 }
 
 // processInstance handles processing of a single Cloud SQL instance
-func processInstance(instance *sqladmin.DatabaseInstance, project string) api.ResourceProviderResource {
+func processInstance(instance *sqladmin.DatabaseInstance, project string) *apiv1.ResourceInput {
 	// Extract region from zone
 	region := strings.Join(strings.Split(instance.GceZone, "-")[:2], "-")
 
@@ -270,12 +271,12 @@ func processInstance(instance *sqladmin.DatabaseInstance, project string) api.Re
 
 	metadata := buildInstanceMetadata(instance, project, region, host, port, consoleUrl)
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/database/v1",
 		Kind:       "GoogleCloudSQL",
 		Name:       instance.Name,
 		Identifier: instance.SelfLink,
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			"name": instance.Name,
 			"host": host,
 			"port": port,
@@ -288,7 +289,7 @@ func processInstance(instance *sqladmin.DatabaseInstance, project string) api.Re
 				"connectionName":             instance.ConnectionName,
 				"serviceAccountEmailAddress": instance.ServiceAccountEmailAddress,
 			},
-		},
+		}),
 		Metadata: metadata,
 	}
 }

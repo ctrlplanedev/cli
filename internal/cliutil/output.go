@@ -3,26 +3,32 @@ package cliutil
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
 	"text/template"
 
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v2"
 )
 
-// HandleResponseOutput processes the HTTP response and passes the decoded result to HandleResponseOutput
-func HandleResponseOutput(cmd *cobra.Command, resp *http.Response) error {
-	defer resp.Body.Close()
-
+// HandleProtoOutput renders a Connect/proto response message through the same
+// template/format/github-action pipeline used for REST responses. The message
+// is marshalled with protojson so field names match the proto JSON mapping.
+func HandleProtoOutput(cmd *cobra.Command, msg proto.Message) error {
 	intervalFlag, _ := cmd.Flags().GetString("interval")
 	if intervalFlag != "" {
 		return nil
 	}
 
+	b, err := protojson.MarshalOptions{UseProtoNames: false, EmitUnpopulated: false}.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal response: %w", err)
+	}
+
 	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.Unmarshal(b, &result); err != nil {
 		return fmt.Errorf("failed to decode response: %w", err)
 	}
 
@@ -196,6 +202,46 @@ func HandleAnyOutput(cmd *cobra.Command, result interface{}, format string) erro
 
 	fmt.Fprintln(cmd.OutOrStdout(), string(output))
 	return nil
+}
+
+// protoToGeneric marshals a proto message via protojson and decodes it back
+// into a plain map so it renders identically through json/yaml marshalling
+// (well-known types such as structpb.Struct serialise correctly this way,
+// unlike encoding/json over the raw proto struct).
+func protoToGeneric(msg proto.Message) (map[string]interface{}, error) {
+	b, err := protojson.Marshal(msg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal response: %w", err)
+	}
+	var result map[string]interface{}
+	if err := json.Unmarshal(b, &result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+	return result, nil
+}
+
+// HandleProtoAnyOutput marshals a single proto message as json or yaml,
+// matching HandleAnyOutput's behaviour for the --output flag.
+func HandleProtoAnyOutput(cmd *cobra.Command, msg proto.Message, format string) error {
+	generic, err := protoToGeneric(msg)
+	if err != nil {
+		return err
+	}
+	return HandleAnyOutput(cmd, generic, format)
+}
+
+// HandleProtoSliceOutput marshals a slice of proto messages as a json/yaml
+// array, matching HandleAnyOutput's behaviour for the --output flag.
+func HandleProtoSliceOutput(cmd *cobra.Command, msgs []proto.Message, format string) error {
+	generic := make([]map[string]interface{}, 0, len(msgs))
+	for _, m := range msgs {
+		g, err := protoToGeneric(m)
+		if err != nil {
+			return err
+		}
+		generic = append(generic, g)
+	}
+	return HandleAnyOutput(cmd, generic, format)
 }
 
 // GetEnv fetches the value of an environment variable or returns a default

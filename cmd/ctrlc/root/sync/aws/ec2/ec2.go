@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -98,7 +99,7 @@ func NewSyncEC2Cmd() *cobra.Command {
 				return fmt.Errorf("failed to describe instances: %w", err)
 			}
 
-			resources := []api.ResourceProviderResource{}
+			resources := []*apiv1.ResourceInput{}
 			for _, reservation := range result.Reservations {
 				accountId := *reservation.OwnerId
 				for _, instance := range reservation.Instances {
@@ -232,12 +233,12 @@ func NewSyncEC2Cmd() *cobra.Command {
 
 					// Get ARN for the instance
 					arn := fmt.Sprintf("arn:aws:ec2:%s:%s:instance/%s", region, accountId, *instance.InstanceId)
-					resources = append(resources, api.ResourceProviderResource{
+					resources = append(resources, &apiv1.ResourceInput{
 						Version:    "compute/v1",
 						Kind:       "Instance",
 						Name:       name,
 						Identifier: arn,
-						Config:     instanceData.Struct(),
+						Config:     api.NewStruct(instanceData.Struct()),
 						Metadata:   metadata,
 					})
 				}
@@ -248,7 +249,7 @@ func NewSyncEC2Cmd() *cobra.Command {
 				name = fmt.Sprintf("aws-ec2-region-%s", region)
 			}
 
-			ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			ctrlplaneClient, err := api.NewConnectClient(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
@@ -259,12 +260,12 @@ func NewSyncEC2Cmd() *cobra.Command {
 			}
 
 			upsertResp, err := rp.UpsertResource(ctx, resources)
-			log.Info("Response from upserting resources", "status", upsertResp.Status)
 			if err != nil {
 				return fmt.Errorf("failed to upsert resources: %w", err)
 			}
+			log.Info("Response from upserting resources", "ok", upsertResp.GetOk())
 
-			return cliutil.HandleResponseOutput(cmd, upsertResp)
+			return cliutil.HandleProtoOutput(cmd, upsertResp)
 		},
 	}
 

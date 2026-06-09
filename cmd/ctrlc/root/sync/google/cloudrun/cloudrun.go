@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -84,16 +85,16 @@ func processServiceMetadata(service *run.Service) map[string]string {
 	return metadata
 }
 
-func processService(service *run.Service) api.ResourceProviderResource {
-	resource := api.ResourceProviderResource{
+func processService(service *run.Service) *apiv1.ResourceInput {
+	resource := &apiv1.ResourceInput{
 		Name:       service.Metadata.Name,
 		Identifier: service.Metadata.SelfLink,
 		Version:    "ctrlplane.dev/container/service/v1",
 		Kind:       "GoogleCloudRunService",
 		Metadata:   processServiceMetadata(service),
-		Config: map[string]interface{}{
+		Config: api.NewStruct(map[string]interface{}{
 			"image": service.Spec.Template.Spec.Containers[0].Image,
-		},
+		}),
 	}
 
 	return resource
@@ -115,7 +116,7 @@ func runSync(project, providerName *string, regions *[]string) func(cmd *cobra.C
 			return fmt.Errorf("failed to list Cloud Run services: %w", err)
 		}
 
-		allResources := make([]api.ResourceProviderResource, 0)
+		allResources := make([]*apiv1.ResourceInput, 0)
 		for _, service := range services.Items {
 			resource := processService(service)
 			allResources = append(allResources, resource)

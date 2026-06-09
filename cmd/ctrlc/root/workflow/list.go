@@ -3,6 +3,8 @@ package workflow
 import (
 	"fmt"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
 	"github.com/spf13/cobra"
@@ -22,7 +24,7 @@ func NewListCmd() *cobra.Command {
 			apiKey := viper.GetString("api-key")
 			workspace := viper.GetString("workspace")
 
-			client, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			client, err := api.NewConnectClient(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
@@ -39,20 +41,16 @@ func NewListCmd() *cobra.Command {
 				return fmt.Errorf("invalid --offset %d, must be non-negative", offset)
 			}
 
-			params := &api.ListWorkflowsParams{}
-			if limit > 0 {
-				params.Limit = &limit
-			}
-			if offset > 0 {
-				params.Offset = &offset
-			}
-
-			resp, err := client.ListWorkflows(cmd.Context(), workspaceID.String(), params)
+			resp, err := client.Workflow.ListWorkflows(cmd.Context(), connect.NewRequest(&apiv1.ListWorkflowsRequest{
+				WorkspaceId: workspaceID.String(),
+				Limit:       int32(limit),
+				Offset:      int32(offset),
+			}))
 			if err != nil {
 				return fmt.Errorf("failed to list workflows: %w", err)
 			}
 
-			return cliutil.HandleResponseOutput(cmd, resp)
+			return cliutil.HandleProtoOutput(cmd, resp.Msg)
 		},
 	}
 

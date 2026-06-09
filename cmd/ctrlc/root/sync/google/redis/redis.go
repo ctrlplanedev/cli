@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/Masterminds/semver"
 	"github.com/charmbracelet/log"
@@ -91,7 +92,7 @@ func initRedisClient(ctx context.Context) (*redis.Service, error) {
 }
 
 // processInstances lists and processes all Redis instances
-func processInstances(ctx context.Context, redisClient *redis.Service, project string) ([]api.ResourceProviderResource, error) {
+func processInstances(ctx context.Context, redisClient *redis.Service, project string) ([]*apiv1.ResourceInput, error) {
 	parent := fmt.Sprintf("projects/%s/locations/-", project)
 	instances, err := redisClient.Projects.Locations.Instances.List(parent).Do()
 	if err != nil {
@@ -100,7 +101,7 @@ func processInstances(ctx context.Context, redisClient *redis.Service, project s
 
 	log.Info("Found Redis instances", "count", len(instances.Instances))
 
-	resources := []api.ResourceProviderResource{}
+	resources := []*apiv1.ResourceInput{}
 	for _, instance := range instances.Instances {
 		resource, err := processInstance(ctx, instance, project)
 		if err != nil {
@@ -114,7 +115,7 @@ func processInstances(ctx context.Context, redisClient *redis.Service, project s
 }
 
 // processInstance handles processing of a single Redis instance
-func processInstance(_ context.Context, instance *redis.Instance, project string) (api.ResourceProviderResource, error) {
+func processInstance(_ context.Context, instance *redis.Instance, project string) (*apiv1.ResourceInput, error) {
 	metadata := initInstanceMetadata(instance, project)
 
 	// Extract location from name (e.g. projects/myproject/locations/us-central1/instances/myinstance -> us-central1)
@@ -130,12 +131,12 @@ func processInstance(_ context.Context, instance *redis.Instance, project string
 		location, instanceName, project)
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"Google Cloud Console\": \"%s\" }", consoleUrl)
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/database/v1",
 		Kind:       "GoogleRedis",
 		Name:       instanceName,
 		Identifier: instance.Name,
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			"name": instanceName,
 			"host": instance.Host,
 			"port": instance.Port,
@@ -147,7 +148,7 @@ func processInstance(_ context.Context, instance *redis.Instance, project string
 				"transitEncryptionMode": instance.TransitEncryptionMode,
 				"connectMode":           instance.ConnectMode,
 			},
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }

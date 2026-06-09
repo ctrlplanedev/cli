@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -38,7 +39,7 @@ func NewSyncClustersCmd() *cobra.Command {
 				return fmt.Errorf("failed to list Netbox clusters: %w", err)
 			}
 
-			resources := make([]api.ResourceProviderResource, 0, len(allClusters))
+			resources := make([]*apiv1.ResourceInput, 0, len(allClusters))
 			for _, cluster := range allClusters {
 				resources = append(resources, mapCluster(cluster))
 			}
@@ -88,7 +89,7 @@ func fetchAllClusters(ctx context.Context, client *netbox.APIClient) ([]netbox.C
 	return all, nil
 }
 
-func mapCluster(cluster netbox.Cluster) api.ResourceProviderResource {
+func mapCluster(cluster netbox.Cluster) *apiv1.ResourceInput {
 	metadata := map[string]string{}
 
 	metadata["netbox/id"] = strconv.Itoa(int(cluster.Id))
@@ -120,12 +121,12 @@ func mapCluster(cluster netbox.Cluster) api.ResourceProviderResource {
 		config["tenant"] = tenant.GetName()
 	}
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "netbox/cluster/v1",
 		Kind:       "Cluster",
 		Name:       cluster.Name,
 		Identifier: strconv.Itoa(int(cluster.Id)),
-		Config:     config,
+		Config:     api.NewStruct(config),
 		Metadata:   metadata,
 	}
 }

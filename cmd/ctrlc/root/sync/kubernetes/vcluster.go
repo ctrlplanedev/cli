@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/Masterminds/semver"
 	"github.com/charmbracelet/log"
@@ -22,21 +24,22 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func getParentClusterResource(ctx context.Context, ctrlplaneClient *api.ClientWithResponses, workspaceId string, clusterIdentifier string) (ClusterResource, error) {
-	clusterResourceResponse, err := ctrlplaneClient.GetResourceByIdentifierWithResponse(ctx, workspaceId, clusterIdentifier)
+func getParentClusterResource(ctx context.Context, ctrlplaneClient *api.Client, workspaceId string, clusterIdentifier string) (ClusterResource, error) {
+	clusterResourceResponse, err := ctrlplaneClient.Resource.GetResourceByIdentifier(ctx, connect.NewRequest(&apiv1.GetResourceByIdentifierRequest{
+		WorkspaceId: workspaceId,
+		Identifier:  clusterIdentifier,
+	}))
 	if err != nil {
 		return ClusterResource{}, fmt.Errorf("failed to get cluster resource: %w", err)
 	}
-	if clusterResourceResponse.StatusCode() != 200 {
-		return ClusterResource{}, fmt.Errorf("failed to get cluster resource: %s", clusterResourceResponse.Status())
-	}
+	msg := clusterResourceResponse.Msg
 	clusterResource := ClusterResource{
-		Config:     clusterResourceResponse.JSON200.Config,
-		Metadata:   clusterResourceResponse.JSON200.Metadata,
-		Name:       clusterResourceResponse.JSON200.Name,
-		Identifier: clusterResourceResponse.JSON200.Identifier,
-		Kind:       clusterResourceResponse.JSON200.Kind,
-		Version:    clusterResourceResponse.JSON200.Version,
+		Config:     msg.GetConfig().AsMap(),
+		Metadata:   msg.GetMetadata(),
+		Name:       msg.GetName(),
+		Identifier: msg.GetIdentifier(),
+		Kind:       msg.GetKind(),
+		Version:    msg.GetVersion(),
 	}
 
 	return clusterResource, nil
@@ -125,24 +128,24 @@ func generateVclusterKind(clusterResource ClusterResource) string {
 	return fmt.Sprintf("%s/%s", clusterResource.Kind, kinds.KindVCluster)
 }
 
-func getCreateResourceFromVcluster(vcluster find.VCluster, clusterResource ClusterResource) (api.ResourceProviderResource, error) {
+func getCreateResourceFromVcluster(vcluster find.VCluster, clusterResource ClusterResource) (*apiv1.ResourceInput, error) {
 	metadata, err := generateVclusterMetadata(vcluster, clusterResource.Metadata)
 	if err != nil {
-		return api.ResourceProviderResource{}, fmt.Errorf("failed to generate vcluster metadata: %w", err)
+		return nil, fmt.Errorf("failed to generate vcluster metadata: %w", err)
 	}
 
 	clonedParentConfig, err := deepClone(clusterResource.Config)
 	if err != nil {
-		return api.ResourceProviderResource{}, fmt.Errorf("failed to clone parent config: %w", err)
+		return nil, fmt.Errorf("failed to clone parent config: %w", err)
 	}
 
-	resource := api.ResourceProviderResource{
+	resource := &apiv1.ResourceInput{
 		Name:       fmt.Sprintf("%s/%s/%s", clusterResource.Name, vcluster.Namespace, vcluster.Name),
 		Identifier: fmt.Sprintf("%s/%s/vcluster/%s", clusterResource.Identifier, vcluster.Namespace, vcluster.Name),
 		Kind:       generateVclusterKind(clusterResource),
 		Version:    "ctrlplane.dev/kubernetes/cluster/v1",
 		Metadata:   metadata,
-		Config:     generateVclusterConfig(vcluster, clonedParentConfig),
+		Config:     api.NewStruct(generateVclusterConfig(vcluster, clonedParentConfig)),
 	}
 
 	return resource, nil
@@ -201,7 +204,7 @@ func NewSyncVclusterCmd() *cobra.Command {
 				return fmt.Errorf("cluster identifier is required, please set the CTRLPLANE_CLUSTER_IDENTIFIER environment variable or use the --cluster-identifier flag")
 			}
 
-			ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			ctrlplaneClient, err := api.NewConnectClient(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
@@ -235,7 +238,7 @@ func NewSyncVclusterCmd() *cobra.Command {
 				return fmt.Errorf("failed to create resource provider: %w", err)
 			}
 
-			resourcesToUpsert := []api.ResourceProviderResource{}
+			resourcesToUpsert := []*apiv1.ResourceInput{}
 			for _, vcluster := range vclusters {
 				resource, err := getCreateResourceFromVcluster(vcluster, clusterResource)
 				if err != nil {

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/Masterminds/semver"
 	"github.com/charmbracelet/log"
@@ -92,7 +93,7 @@ func initGKEClient(ctx context.Context) (*container.Service, error) {
 }
 
 // processClusters lists and processes all GKE clusters
-func processClusters(ctx context.Context, gkeClient *container.Service, project string) ([]api.ResourceProviderResource, error) {
+func processClusters(ctx context.Context, gkeClient *container.Service, project string) ([]*apiv1.ResourceInput, error) {
 	parent := fmt.Sprintf("projects/%s/locations/-", project)
 	resp, err := gkeClient.Projects.Locations.Clusters.List(parent).Do()
 	if err != nil {
@@ -101,7 +102,7 @@ func processClusters(ctx context.Context, gkeClient *container.Service, project 
 
 	log.Info("Found GKE clusters", "count", len(resp.Clusters))
 
-	resources := []api.ResourceProviderResource{}
+	resources := []*apiv1.ResourceInput{}
 	for _, cluster := range resp.Clusters {
 		resource, err := processCluster(ctx, cluster, project)
 		if err != nil {
@@ -115,7 +116,7 @@ func processClusters(ctx context.Context, gkeClient *container.Service, project 
 }
 
 // processCluster handles processing of a single GKE cluster
-func processCluster(_ context.Context, cluster *container.Cluster, project string) (api.ResourceProviderResource, error) {
+func processCluster(_ context.Context, cluster *container.Cluster, project string) (*apiv1.ResourceInput, error) {
 	metadata := initClusterMetadata(cluster, project)
 
 	// Extract location info
@@ -143,12 +144,12 @@ func processCluster(_ context.Context, cluster *container.Cluster, project strin
 		certificateAuthorityData = cluster.MasterAuth.ClusterCaCertificate
 	}
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/kubernetes/cluster/v1",
 		Kind:       "GoogleKubernetesEngine",
 		Name:       cluster.Name,
 		Identifier: cluster.SelfLink,
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			"name":    cluster.Name,
 			"version": cluster.CurrentMasterVersion,
 			"server": map[string]any{
@@ -166,7 +167,7 @@ func processCluster(_ context.Context, cluster *container.Cluster, project strin
 				"status":        cluster.Status,
 				"network":       getResourceName(cluster.Network),
 			},
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }

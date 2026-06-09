@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -213,7 +214,7 @@ func NewSyncClickhouseCmd() *cobra.Command {
 			apiURL := viper.GetString("url")
 			apiKey := viper.GetString("api-key")
 			workspaceId := viper.GetString("workspace")
-			ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			ctrlplaneClient, err := api.NewConnectClient(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
@@ -225,7 +226,7 @@ func NewSyncClickhouseCmd() *cobra.Command {
 				return fmt.Errorf("failed to list ClickHouse services: %w", err)
 			}
 
-			resources := []api.ResourceProviderResource{}
+			resources := []*apiv1.ResourceInput{}
 			for _, service := range services {
 				var endpoints []string
 				for _, endpoint := range service.Endpoints {
@@ -276,12 +277,12 @@ func NewSyncClickhouseCmd() *cobra.Command {
 
 				// Create a sanitized name
 				name := strings.Split(service.Name, ".")[0]
-				resources = append(resources, api.ResourceProviderResource{
+				resources = append(resources, &apiv1.ResourceInput{
 					Version:    "ctrlplane.dev/database/v1",
 					Kind:       "ClickhouseCloud",
 					Name:       name,
 					Identifier: fmt.Sprintf("%s/%s", organizationID, service.ID),
-					Config: map[string]any{
+					Config: api.NewStruct(map[string]any{
 						"host":     connection.Host,
 						"port":     connection.Port,
 						"username": connection.Username,
@@ -297,7 +298,7 @@ func NewSyncClickhouseCmd() *cobra.Command {
 							"isPrimary":  service.IsPrimary,
 							"isReadonly": service.IsReadonly,
 						},
-					},
+					}),
 					Metadata: metadata,
 				})
 			}
@@ -310,16 +311,10 @@ func NewSyncClickhouseCmd() *cobra.Command {
 				return fmt.Errorf("failed to create resource provider: %w", err)
 			}
 			upsertResp, err := rp.UpsertResource(ctx, resources)
-			log.Info("Response from upserting resources", "status", upsertResp.Status)
 			if err != nil {
-				if upsertResp != nil {
-					log.Error("Failed to upsert resources",
-						"error", err,
-						"status", upsertResp.Status,
-						"body", upsertResp.Body)
-				}
 				return fmt.Errorf("failed to upsert resources: %w", err)
 			}
+			log.Info("Response from upserting resources", "ok", upsertResp.GetOk())
 			return nil
 		},
 	}

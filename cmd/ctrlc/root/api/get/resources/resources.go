@@ -2,8 +2,9 @@ package resources
 
 import (
 	"fmt"
-	"net/url"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
 	"github.com/spf13/cobra"
@@ -24,7 +25,7 @@ func NewResourcesCmd() *cobra.Command {
 			apiKey := viper.GetString("api-key")
 			workspace := viper.GetString("workspace")
 
-			client, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			client, err := api.NewConnectClient(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
@@ -34,24 +35,23 @@ func NewResourcesCmd() *cobra.Command {
 				return err
 			}
 
-			params := &api.GetAllResourcesParams{}
-			if limit > 0 {
-				params.Limit = &limit
-			}
-			if offset > 0 {
-				params.Offset = &offset
+			req := &apiv1.ListResourcesRequest{
+				WorkspaceId: workspaceID.String(),
+				Page: &apiv1.Page{
+					Limit:  int32(limit),
+					Offset: int32(offset),
+				},
 			}
 			if query != "" {
-				q := url.QueryEscape(query)
-				params.Cel = &q
+				req.Selector = &query
 			}
 
-			resp, err := client.GetAllResources(cmd.Context(), workspaceID.String(), params)
+			resp, err := client.Resource.ListResources(cmd.Context(), connect.NewRequest(req))
 			if err != nil {
 				return fmt.Errorf("failed to get resources: %w", err)
 			}
 
-			return cliutil.HandleResponseOutput(cmd, resp)
+			return cliutil.HandleProtoOutput(cmd, resp.Msg)
 		},
 	}
 

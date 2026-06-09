@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -90,11 +91,11 @@ func initSecretManagerClient(ctx context.Context) (*secretmanager.Service, error
 }
 
 // processSecrets lists and processes all secrets
-func processSecrets(ctx context.Context, secretClient *secretmanager.Service, project string) ([]api.ResourceProviderResource, error) {
+func processSecrets(ctx context.Context, secretClient *secretmanager.Service, project string) ([]*apiv1.ResourceInput, error) {
 	// Build the parent name for listing secrets
 	parent := fmt.Sprintf("projects/%s", project)
 
-	resources := []api.ResourceProviderResource{}
+	resources := []*apiv1.ResourceInput{}
 	secretCount := 0
 	pageToken := ""
 
@@ -135,7 +136,7 @@ func processSecrets(ctx context.Context, secretClient *secretmanager.Service, pr
 }
 
 // processSecret handles processing of a single secret
-func processSecret(_ context.Context, secretClient *secretmanager.Service, secret *secretmanager.Secret, project string) (api.ResourceProviderResource, error) {
+func processSecret(_ context.Context, secretClient *secretmanager.Service, secret *secretmanager.Secret, project string) (*apiv1.ResourceInput, error) {
 	// Extract secret name from full resource name
 	// Format: projects/{project}/secrets/{secret}
 	secretName := getResourceName(secret.Name)
@@ -179,12 +180,12 @@ func processSecret(_ context.Context, secretClient *secretmanager.Service, secre
 		secretName, project)
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"Google Cloud Console\": \"%s\" }", consoleUrl)
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/secret/v1",
 		Kind:       "GoogleSecret",
 		Name:       secretName,
 		Identifier: secret.Name,
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			// Common cross-provider options
 			"name":     secretName,
 			"provider": "google",
@@ -194,7 +195,7 @@ func processSecret(_ context.Context, secretClient *secretmanager.Service, secre
 			"googleSecretManager": map[string]any{
 				"project": project,
 			},
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }

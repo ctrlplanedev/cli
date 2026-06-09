@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -28,7 +29,7 @@ type viewFrame struct {
 // Model is the root Bubble Tea model for the ctrlplane TUI
 type Model struct {
 	// API
-	client      *api.ClientWithResponses
+	client      *api.Client
 	workspaceID string
 
 	// Display info
@@ -58,7 +59,7 @@ type Model struct {
 }
 
 // NewModel creates the root model
-func NewModel(client *api.ClientWithResponses, workspaceID string, refreshInterval time.Duration, startView resourceType, workspaceName string, apiURL string) Model {
+func NewModel(client *api.Client, workspaceID string, refreshInterval time.Duration, startView resourceType, workspaceName string, apiURL string) Model {
 	frame := newTopLevelFrame(startView)
 	return Model{
 		client:          client,
@@ -289,48 +290,48 @@ func (m Model) handleDrillDown() (tea.Model, tea.Cmd) {
 	switch frame.resource {
 	case resourceTypeDeployments:
 		if frame.drillKind == "" {
-			depItem, ok := row.rawItem.(api.DeploymentAndSystems)
+			depItem, ok := row.rawItem.(*apiv1.DeploymentWithSystems)
 			if !ok {
 				return m, nil
 			}
 			jobFrame := viewFrame{
-				title:     depItem.Deployment.Name + " > Jobs",
+				title:     depItem.GetDeployment().GetName() + " > Jobs",
 				resource:  resourceTypeDeployments,
 				table:     newTableModel(columnsForDrillDown("deployment-jobs")),
 				drillKind: "deployment-jobs",
 				drill: &drillContext{
-					deploymentID:   depItem.Deployment.Id,
-					deploymentName: depItem.Deployment.Name,
+					deploymentID:   depItem.GetDeployment().GetId(),
+					deploymentName: depItem.GetDeployment().GetName(),
 				},
 				statusColIndex: 1,
 			}
 			jobFrame.table.width = m.width
 			jobFrame.table.height = m.height
 			m.stack = append(m.stack, jobFrame)
-			return m, fetchJobsForDeployment(m.client, m.workspaceID, depItem.Deployment.Id)
+			return m, fetchJobsForDeployment(m.client, m.workspaceID, depItem.GetDeployment().GetId())
 		}
 
 	case resourceTypeResources:
 		if frame.drillKind == "" {
-			resItem, ok := row.rawItem.(api.Resource)
+			resItem, ok := row.rawItem.(*apiv1.Resource)
 			if !ok {
 				return m, nil
 			}
 			depFrame := viewFrame{
-				title:     resItem.Name + " > Deployments",
+				title:     resItem.GetName() + " > Deployments",
 				resource:  resourceTypeResources,
 				table:     newTableModel(columnsForDrillDown("resource-deployments")),
 				drillKind: "resource-deployments",
 				drill: &drillContext{
-					resourceIdentifier: resItem.Identifier,
-					resourceName:       resItem.Name,
+					resourceIdentifier: resItem.GetIdentifier(),
+					resourceName:       resItem.GetName(),
 				},
 				statusColIndex: 1,
 			}
 			depFrame.table.width = m.width
 			depFrame.table.height = m.height
 			m.stack = append(m.stack, depFrame)
-			return m, fetchDeploymentsForResource(m.client, m.workspaceID, resItem.Identifier)
+			return m, fetchDeploymentsForResource(m.client, m.workspaceID, resItem.GetIdentifier())
 		}
 	}
 

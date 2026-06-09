@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/Masterminds/semver"
 	"github.com/aws/aws-sdk-go-v2/service/rds"
@@ -61,7 +62,7 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 		log.Info("Syncing RDS instances", "regions", regionsToSync)
 
 		// Process each region
-		var allResources []api.ResourceProviderResource
+		var allResources []*apiv1.ResourceInput
 		var mu sync.Mutex
 		var wg sync.WaitGroup
 		var syncErrors []error
@@ -164,8 +165,8 @@ func initRDSClient(ctx context.Context, region string) (*rds.Client, string, err
 	return rds.NewFromConfig(cfg), accountID, nil
 }
 
-func processInstances(ctx context.Context, rdsClient *rds.Client, region string) ([]api.ResourceProviderResource, error) {
-	var resources []api.ResourceProviderResource
+func processInstances(ctx context.Context, rdsClient *rds.Client, region string) ([]*apiv1.ResourceInput, error) {
+	var resources []*apiv1.ResourceInput
 	var marker *string
 
 	for {
@@ -195,7 +196,7 @@ func processInstances(ctx context.Context, rdsClient *rds.Client, region string)
 	return resources, nil
 }
 
-func processInstance(ctx context.Context, instance *types.DBInstance, region string, rdsClient *rds.Client) (api.ResourceProviderResource, error) {
+func processInstance(ctx context.Context, instance *types.DBInstance, region string, rdsClient *rds.Client) (*apiv1.ResourceInput, error) {
 	// Get default port based on engine
 	port := int32(5432) // Default to PostgreSQL port
 	if instance.Endpoint != nil && instance.Endpoint.Port != nil && *instance.Endpoint.Port != 0 {
@@ -231,12 +232,12 @@ func processInstance(ctx context.Context, instance *types.DBInstance, region str
 		}
 	}
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/database/v1",
 		Kind:       "AmazonRelationalDatabaseService",
 		Name:       *instance.DBInstanceIdentifier,
 		Identifier: identifier,
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			"name": *instance.DBInstanceIdentifier,
 			"host": host,
 			"port": port,
@@ -253,13 +254,13 @@ func processInstance(ctx context.Context, instance *types.DBInstance, region str
 				"instanceClass": *instance.DBInstanceClass,
 				"multiAZ":       instance.MultiAZ,
 			},
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }
 
-func processClusters(ctx context.Context, rdsClient *rds.Client, region string, accountID string) ([]api.ResourceProviderResource, error) {
-	var resources []api.ResourceProviderResource
+func processClusters(ctx context.Context, rdsClient *rds.Client, region string, accountID string) ([]*apiv1.ResourceInput, error) {
+	var resources []*apiv1.ResourceInput
 	var marker *string
 
 	for {
@@ -289,7 +290,7 @@ func processClusters(ctx context.Context, rdsClient *rds.Client, region string, 
 	return resources, nil
 }
 
-func processCluster(cluster *types.DBCluster, region string, accountID string) (api.ResourceProviderResource, error) {
+func processCluster(cluster *types.DBCluster, region string, accountID string) (*apiv1.ResourceInput, error) {
 	port := int32(5432)
 	if cluster.Port != nil && *cluster.Port != 0 {
 		port = *cluster.Port
@@ -343,18 +344,18 @@ func processCluster(cluster *types.DBCluster, region string, accountID string) (
 		awsClusterConfig["masterUserSecret"] = secret
 	}
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/database/v1",
 		Kind:       "AmazonRelationalDatabaseCluster",
 		Name:       *cluster.DBClusterIdentifier,
 		Identifier: identifier,
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			"name":                         *cluster.DBClusterIdentifier,
 			"host":                         host,
 			"port":                         port,
 			"ssl":                          true,
 			"awsRelationalDatabaseCluster": awsClusterConfig,
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }
@@ -384,14 +385,14 @@ func buildClusterMetadata(cluster *types.DBCluster, region, accountID, host stri
 		kinds.DBMetadataVersionPatch:      patch,
 		kinds.DBMetadataVersionPrerelease: prerelease,
 
-		"aws/account":       accountID,
-		"aws/region":        region,
-		"aws/resource-type": "rds-cluster",
-		"aws/status":        *cluster.Status,
-		"aws/console-url":   consoleUrl,
-		"aws/engine":        *cluster.Engine,
-		"aws/db-type":       dbType,
-		"aws/is-aurora":     strconv.FormatBool(strings.Contains(strings.ToLower(*cluster.Engine), "aurora")),
+		"aws/account":              accountID,
+		"aws/region":               region,
+		"aws/resource-type":        "rds-cluster",
+		"aws/status":               *cluster.Status,
+		"aws/console-url":          consoleUrl,
+		"aws/engine":               *cluster.Engine,
+		"aws/db-type":              dbType,
+		"aws/is-aurora":            strconv.FormatBool(strings.Contains(strings.ToLower(*cluster.Engine), "aurora")),
 		"aws/cluster-member-count": strconv.Itoa(len(cluster.DBClusterMembers)),
 
 		"compute/multi-az": strconv.FormatBool(multiAZ),

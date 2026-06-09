@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -43,7 +44,7 @@ func NewSyncProjectsCmd() *cobra.Command {
 				return fmt.Errorf("failed to list projects: %w", err)
 			}
 
-			resources := []api.ResourceProviderResource{}
+			resources := []*apiv1.ResourceInput{}
 
 			// Process each project
 			for _, project := range resp.Projects {
@@ -67,12 +68,12 @@ func NewSyncProjectsCmd() *cobra.Command {
 					metadata[fmt.Sprintf("labels/%s", key)] = value
 				}
 
-				resources = append(resources, api.ResourceProviderResource{
+				resources = append(resources, &apiv1.ResourceInput{
 					Version:    "ctrlplane.dev/cloud/account/v1",
 					Kind:       "GoogleProject",
 					Name:       project.Name,
 					Identifier: project.ProjectId,
-					Config: map[string]any{
+					Config: api.NewStruct(map[string]any{
 						"id":            project.ProjectId,
 						"name":          project.Name,
 						"projectNumber": project.ProjectNumber,
@@ -82,7 +83,7 @@ func NewSyncProjectsCmd() *cobra.Command {
 							"type": project.Parent.Type,
 						},
 						"labels": project.Labels,
-					},
+					}),
 					Metadata: metadata,
 				})
 			}
@@ -96,7 +97,7 @@ func NewSyncProjectsCmd() *cobra.Command {
 			apiKey := viper.GetString("api-key")
 			workspaceId := viper.GetString("workspace")
 
-			ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			ctrlplaneClient, err := api.NewConnectClient(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
@@ -112,7 +113,7 @@ func NewSyncProjectsCmd() *cobra.Command {
 				return fmt.Errorf("failed to upsert resources: %w", err)
 			}
 
-			log.Info("Response from upserting resources", "status", upsertResp.Status)
+			log.Info("Response from upserting resources", "ok", upsertResp.GetOk())
 			return nil
 		},
 	}

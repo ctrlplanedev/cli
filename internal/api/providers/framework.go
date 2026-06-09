@@ -14,7 +14,7 @@ import (
 type Context interface {
 	Ctx() context.Context
 	WorkspaceIDValue() string
-	APIClient() *api.ClientWithResponses
+	APIClient() *api.Client
 	ResolverProvider() *resolver.APIResolver
 }
 

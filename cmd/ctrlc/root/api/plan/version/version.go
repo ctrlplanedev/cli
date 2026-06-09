@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
@@ -37,7 +39,7 @@ func NewPlanVersionCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			apiURL := viper.GetString("url")
 			apiKey := viper.GetString("api-key")
-			client, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			client, err := api.NewConnectClient(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
@@ -57,40 +59,38 @@ func NewPlanVersionCmd() *cobra.Command {
 
 			config := cliutil.ConvertConfigArrayToNestedMap(configArray)
 
-			var jobAgentConfig *map[string]any
+			var jobAgentConfig map[string]any
 			if jobAgentConfigFile != "" {
 				data, err := os.ReadFile(jobAgentConfigFile)
 				if err != nil {
 					return fmt.Errorf("failed to read job agent config file: %w", err)
 				}
-				var cfg map[string]any
-				if err := json.Unmarshal(data, &cfg); err != nil {
+				if err := json.Unmarshal(data, &jobAgentConfig); err != nil {
 					return fmt.Errorf("failed to parse job agent config file: %w", err)
 				}
-				jobAgentConfig = &cfg
 			}
 
-			versionReq := api.DeploymentPlanVersion{
-				Tag:            tag,
-				Name:           &name,
-				Metadata:       &metadata,
-				Config:         &config,
-				JobAgentConfig: jobAgentConfig,
+			metadataAny := make(map[string]any, len(metadata))
+			for k, v := range metadata {
+				metadataAny[k] = v
 			}
 
-			resp, err := client.CreateDeploymentPlan(
-				cmd.Context(),
-				workspaceID.String(),
-				deploymentID,
-				api.CreateDeploymentPlanJSONRequestBody{
-					Version: versionReq,
+			resp, err := client.Deployment.CreateDeploymentPlan(cmd.Context(), connect.NewRequest(&apiv1.CreateDeploymentPlanRequest{
+				WorkspaceId:  workspaceID.String(),
+				DeploymentId: deploymentID,
+				Version: &apiv1.PlanVersionInput{
+					Tag:            tag,
+					Name:           &name,
+					Metadata:       api.NewStruct(metadataAny),
+					Config:         api.NewStruct(config),
+					JobAgentConfig: api.NewStruct(jobAgentConfig),
 				},
-			)
+			}))
 			if err != nil {
 				return fmt.Errorf("failed to create deployment plan: %w", err)
 			}
 
-			return cliutil.HandleResponseOutput(cmd, resp)
+			return cliutil.HandleProtoOutput(cmd, resp.Msg)
 		},
 	}
 

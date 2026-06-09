@@ -3,14 +3,14 @@ package resourceprovider
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 )
 
-func New(client *api.ClientWithResponses, workspace string, name string) (*ResourceProvider, error) {
+func New(client *api.Client, workspace string, name string) (*ResourceProvider, error) {
 	ctx := context.Background()
 	workspaceUUID, err := client.GetWorkspaceID(ctx, workspace)
 	if err != nil {
@@ -20,38 +20,26 @@ func New(client *api.ClientWithResponses, workspace string, name string) (*Resou
 
 	log.Debug("Upserting resource provider", "workspaceId", workspaceId, "name", name)
 
-	resp, err := client.RequestResourceProviderUpsertWithResponse(ctx, workspaceId, api.RequestResourceProviderUpsertJSONRequestBody{
-		Name: name,
-	})
+	resp, err := client.Resource.UpsertResourceProvider(ctx, connect.NewRequest(&apiv1.UpsertResourceProviderRequest{
+		WorkspaceId: workspaceId,
+		Name:        name,
+	}))
 	if err != nil {
 		log.Error("Failed to upsert resource provider",
 			"error", err,
 			"workspaceId", workspaceId,
-			"name", name,
-			"status", resp.StatusCode,
-			"body", string(resp.Body))
+			"name", name)
 		return nil, fmt.Errorf("failed to upsert resource provider: %w", err)
 	}
 
-	log.Debug("Got response from upserting resource provider",
-		"status", resp.StatusCode,
-		"body", string(resp.Body))
-
-	if resp.JSON202 == nil {
-		log.Error("Invalid response from upserting resource provider",
-			"status", resp.StatusCode(),
-			"body", string(resp.Body))
-		return nil, fmt.Errorf("failed to upsert resource provider: %s", string(resp.Body))
-	}
-
-	provider := resp.JSON202
+	provider := resp.Msg
 	log.Debug("Successfully created resource provider",
-		"id", provider.Id,
+		"id", provider.GetId(),
 		"name", name)
 
 	return &ResourceProvider{
 		Name:        name,
-		ID:          provider.Id,
+		ID:          provider.GetId(),
 		client:      client,
 		workspaceId: workspaceId,
 	}, nil
@@ -60,28 +48,23 @@ func New(client *api.ClientWithResponses, workspace string, name string) (*Resou
 type ResourceProvider struct {
 	ID          string
 	Name        string
-	client      *api.ClientWithResponses
+	client      *api.Client
 	workspaceId string
 }
 
-func (r *ResourceProvider) UpsertResource(ctx context.Context, resources []api.ResourceProviderResource) (*http.Response, error) {
-	upsertResp, err := r.client.SetResourceProviderResources(
+func (r *ResourceProvider) UpsertResource(ctx context.Context, resources []*apiv1.ResourceInput) (*apiv1.SetResourceProviderResourcesResponse, error) {
+	upsertResp, err := r.client.Resource.SetResourceProviderResources(
 		ctx,
-		r.workspaceId,
-		r.ID,
-		api.SetResourceProviderResourcesJSONRequestBody{
-			Resources: resources,
-		},
+		connect.NewRequest(&apiv1.SetResourceProviderResourcesRequest{
+			WorkspaceId: r.workspaceId,
+			ProviderId:  r.ID,
+			Resources:   resources,
+		}),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to upsert resource: %w", err)
+		return nil, fmt.Errorf("failed to upsert resources: %w", err)
 	}
-	if upsertResp.StatusCode >= 400 {
-		defer upsertResp.Body.Close()
-		body, _ := io.ReadAll(upsertResp.Body)
-		return upsertResp, fmt.Errorf("failed to upsert resources (HTTP %d): %s", upsertResp.StatusCode, string(body))
-	}
-	return upsertResp, nil
+	return upsertResp.Msg, nil
 }
 
 // func (r *ResourceProvider) AddResourceRelationshipRule(ctx context.Context, rules []api.ResourceProviderResourceRelationshipRule) error {

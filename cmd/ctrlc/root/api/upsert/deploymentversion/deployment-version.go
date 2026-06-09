@@ -3,33 +3,33 @@ package deploymentversion
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func safeConvertToDeploymentVersionStatus(status string) (*api.DeploymentVersionStatus, error) {
+const deploymentVersionStatusReady = "ready"
+
+func safeConvertToDeploymentVersionStatus(status string) (string, error) {
 	statusLower := strings.ToLower(status)
-	if statusLower == "ready" || statusLower == "" {
-		s := api.DeploymentVersionStatusReady
-		return &s, nil
+	switch statusLower {
+	case "ready", "":
+		return deploymentVersionStatusReady, nil
+	case "building":
+		return "building", nil
+	case "failed":
+		return "failed", nil
 	}
-	if statusLower == "building" {
-		s := api.DeploymentVersionStatusBuilding
-		return &s, nil
-	}
-	if statusLower == "failed" {
-		s := api.DeploymentVersionStatusFailed
-		return &s, nil
-	}
-	return nil, fmt.Errorf("invalid deployment version status: %s", status)
+	return "", fmt.Errorf("invalid deployment version status: %s", status)
 }
 
 func NewUpsertDeploymentVersionCmd() *cobra.Command {
@@ -62,18 +62,18 @@ func NewUpsertDeploymentVersionCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			apiURL := viper.GetString("url")
 			apiKey := viper.GetString("api-key")
-			client, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			client, err := api.NewConnectClient(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
 
-			var parsedTime *time.Time
+			var parsedTime *timestamppb.Timestamp
 			if createdAt != "" {
 				t, err := time.Parse(time.RFC3339, createdAt)
 				if err != nil {
 					return fmt.Errorf("failed to parse created_at time: %w", err)
 				}
-				parsedTime = &t
+				parsedTime = timestamppb.New(t)
 			}
 
 			if len(links) > 0 {
@@ -88,10 +88,6 @@ func NewUpsertDeploymentVersionCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to convert deployment version status: %w", err)
 			}
-			if stat == nil {
-				s := api.DeploymentVersionStatusReady
-				stat = &s
-			}
 
 			workspaceID, err := client.GetWorkspaceID(cmd.Context(), workspace)
 			if err != nil {
@@ -100,37 +96,37 @@ func NewUpsertDeploymentVersionCmd() *cobra.Command {
 
 			config := cliutil.ConvertConfigArrayToNestedMap(configArray)
 
-			var jobAgentConfig *map[string]interface{}
+			var jobAgentConfig map[string]any
 			if jobAgentConfigFile != "" {
 				data, err := os.ReadFile(jobAgentConfigFile)
 				if err != nil {
 					return fmt.Errorf("failed to read job agent config file: %w", err)
 				}
-				var cfg map[string]interface{}
-				if err := json.Unmarshal(data, &cfg); err != nil {
+				if err := json.Unmarshal(data, &jobAgentConfig); err != nil {
 					return fmt.Errorf("failed to parse job agent config file: %w", err)
 				}
-				jobAgentConfig = &cfg
 			}
 
-			var response *http.Response
+			var response *apiv1.DeploymentVersion
 			for _, id := range deploymentID {
-				resp, err := client.CreateDeploymentVersion(cmd.Context(), workspaceID.String(), id, api.CreateDeploymentVersionJSONRequestBody{
+				resp, err := client.Deployment.CreateDeploymentVersion(cmd.Context(), connect.NewRequest(&apiv1.CreateDeploymentVersionRequest{
+					WorkspaceId:    workspaceID.String(),
+					DeploymentId:   id,
 					Tag:            tag,
-					Metadata:       &metadata,
+					Metadata:       metadata,
 					CreatedAt:      parsedTime,
-					Config:         &config,
+					Config:         api.NewStruct(config),
 					Name:           name,
-					Status:         *stat,
-					JobAgentConfig: jobAgentConfig,
-				})
+					Status:         stat,
+					JobAgentConfig: api.NewStruct(jobAgentConfig),
+				}))
 				if err != nil {
 					return fmt.Errorf("failed to create deployment version: %w", err)
 				}
-				response = resp
+				response = resp.Msg
 			}
 
-			return cliutil.HandleResponseOutput(cmd, response)
+			return cliutil.HandleProtoOutput(cmd, response)
 		},
 	}
 
@@ -143,7 +139,7 @@ func NewUpsertDeploymentVersionCmd() *cobra.Command {
 	cmd.Flags().StringToStringVarP(&links, "link", "l", make(map[string]string), "Links key-value pairs (can be specified multiple times)")
 	cmd.Flags().StringVarP(&createdAt, "created-at", "r", "", "Created at timestamp (e.g. --created-at 2024-01-01T00:00:00Z) for the deployment version")
 	cmd.Flags().StringVarP(&name, "name", "n", "", "Name of the deployment version")
-	cmd.Flags().StringVarP(&status, "status", "s", string(api.DeploymentVersionStatusReady), "Status of the deployment version (one of: ready, building, failed)")
+	cmd.Flags().StringVarP(&status, "status", "s", deploymentVersionStatusReady, "Status of the deployment version (one of: ready, building, failed)")
 	cmd.Flags().StringVar(&message, "message", "", "Message of the deployment version")
 	cmd.Flags().StringVar(&jobAgentConfigFile, "job-agent-config-file", "", "Path to JSON file containing job agent configuration")
 

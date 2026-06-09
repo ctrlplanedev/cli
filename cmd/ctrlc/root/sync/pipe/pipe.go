@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/avast/retry-go"
 	"github.com/charmbracelet/log"
@@ -83,7 +85,7 @@ func NewSyncPipeCmd() *cobra.Command {
 			apiURL := viper.GetString("url")
 			apiKey := viper.GetString("api-key")
 			workspace := viper.GetString("workspace")
-			ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			ctrlplaneClient, err := api.NewConnectClient(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
@@ -110,9 +112,9 @@ func NewSyncPipeCmd() *cobra.Command {
 				return err
 			}
 
-			log.Info("Response from upserting resources", "status", upsertResp.Status)
+			log.Info("Response from upserting resources", "ok", upsertResp.GetOk())
 
-			return cliutil.HandleResponseOutput(cmd, upsertResp)
+			return cliutil.HandleProtoOutput(cmd, upsertResp)
 		},
 	}
 
@@ -205,15 +207,15 @@ func parseResources(data []byte) ([]resourceInput, error) {
 	return nil, fmt.Errorf("invalid JSON input: %s", snippet)
 }
 
-func toAPIResources(resources []resourceInput) []api.ResourceProviderResource {
-	out := make([]api.ResourceProviderResource, 0, len(resources))
+func toAPIResources(resources []resourceInput) []*apiv1.ResourceInput {
+	out := make([]*apiv1.ResourceInput, 0, len(resources))
 	for _, r := range resources {
-		out = append(out, api.ResourceProviderResource{
+		out = append(out, &apiv1.ResourceInput{
 			Name:       r.Name,
 			Identifier: r.Identifier,
 			Version:    r.Version,
 			Kind:       r.Kind,
-			Config:     r.Config,
+			Config:     api.NewStruct(r.Config),
 			Metadata:   r.Metadata,
 		})
 	}
@@ -250,7 +252,7 @@ func validateResources(resources []resourceInput) error {
 
 func syncResourceVariables(
 	ctx context.Context,
-	client *api.ClientWithResponses,
+	client *api.Client,
 	workspaceID string,
 	resources []resourceInput,
 ) error {
@@ -266,25 +268,16 @@ func syncResourceVariables(
 
 		err := retry.Do(
 			func() error {
-				varsResp, err := client.RequestResourceVariablesUpdateWithResponse(
-					ctx,
-					workspaceID,
-					resource.Identifier,
-					api.RequestResourceVariablesUpdateJSONRequestBody(vars),
-				)
+				_, err := client.Resource.ReplaceResourceVariables(ctx, connect.NewRequest(&apiv1.ReplaceResourceVariablesRequest{
+					WorkspaceId:        workspaceID,
+					ResourceIdentifier: resource.Identifier,
+					Variables:          api.NewStruct(vars).GetFields(),
+				}))
 				if err != nil {
+					if connect.CodeOf(err) == connect.CodeNotFound {
+						return fmt.Errorf("resource '%s' not found yet, retrying", resource.Identifier)
+					}
 					return retry.Unrecoverable(fmt.Errorf("failed to update resource variables for '%s': %w", resource.Identifier, err))
-				}
-				if varsResp == nil {
-					return retry.Unrecoverable(fmt.Errorf("failed to update resource variables for '%s': empty response", resource.Identifier))
-				}
-				if varsResp.StatusCode() == 404 {
-					return fmt.Errorf("resource '%s' not found yet, retrying", resource.Identifier)
-				}
-				if varsResp.StatusCode() >= 400 {
-					return retry.Unrecoverable(
-						fmt.Errorf("failed to update resource variables for '%s': %s", resource.Identifier, string(varsResp.Body)),
-					)
 				}
 				return nil
 			},

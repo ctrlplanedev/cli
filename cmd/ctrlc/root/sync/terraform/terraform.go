@@ -3,12 +3,12 @@ package terraform
 import (
 	"fmt"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/cliutil"
-
-	// "github.com/ctrlplanedev/cli/internal/cliutil"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-tfe"
 	"github.com/spf13/cobra"
@@ -47,7 +47,7 @@ func NewSyncTerraformCmd() *cobra.Command {
 				return fmt.Errorf("invalid workspace ID: %w", err)
 			}
 
-			ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			ctrlplaneClient, err := api.NewConnectClient(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}
@@ -58,48 +58,45 @@ func NewSyncTerraformCmd() *cobra.Command {
 			}
 
 			providerName := fmt.Sprintf("tf-%s", organization)
-			upsertReq := api.RequestResourceProviderUpsertJSONRequestBody{
-				Name: providerName,
-			}
-			resp, err := ctrlplaneClient.RequestResourceProviderUpsertWithResponse(ctx, workspaceId, upsertReq)
+			resp, err := ctrlplaneClient.Resource.UpsertResourceProvider(ctx, connect.NewRequest(&apiv1.UpsertResourceProviderRequest{
+				WorkspaceId: workspaceId,
+				Name:        providerName,
+			}))
 			if err != nil {
 				return fmt.Errorf("failed to upsert resource provider: %w", err)
 			}
 
-			if resp.JSON202 == nil {
-				return fmt.Errorf("failed to upsert resource provider: %s", resp.Body)
-			}
-
-			providerId := resp.JSON202.Id
+			providerId := resp.Msg.GetId()
 			fmt.Println("Provider ID:", providerId)
 			workspaces, err := getWorkspacesInOrg(cmd.Context(), terraformClient, organization)
 			if err != nil {
 				return fmt.Errorf("failed to get workspaces in organization: %w", err)
 			}
 
-			resources := []api.ResourceProviderResource{}
+			resources := []*apiv1.ResourceInput{}
 
 			for _, workspace := range workspaces {
-				resource := api.ResourceProviderResource{
+				resource := &apiv1.ResourceInput{
 					Version:    workspace.Version,
 					Identifier: workspace.Identifier,
 					Metadata:   workspace.Metadata,
 					Name:       workspace.Name,
 					Kind:       workspace.Kind,
-					Config:     workspace.Config,
+					Config:     api.NewStruct(workspace.Config),
 				}
 				resources = append(resources, resource)
 			}
 
-			patchReq := api.SetResourceProviderResourcesJSONRequestBody{
-				Resources: resources,
-			}
-			upsertResp, err := ctrlplaneClient.SetResourceProviderResources(ctx, workspaceId, providerId, patchReq)
+			upsertResp, err := ctrlplaneClient.Resource.SetResourceProviderResources(ctx, connect.NewRequest(&apiv1.SetResourceProviderResourcesRequest{
+				WorkspaceId: workspaceId,
+				ProviderId:  providerId,
+				Resources:   resources,
+			}))
 			if err != nil {
 				return fmt.Errorf("failed to upsert resources: %w", err)
 			}
 
-			return cliutil.HandleResponseOutput(cmd, upsertResp)
+			return cliutil.HandleProtoOutput(cmd, upsertResp.Msg)
 		},
 	}
 

@@ -2,26 +2,27 @@ package resources
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 )
 
 const pageSize = 200
 
-// APIResourceService implements ResourceService using the generated API client.
+// APIResourceService implements ResourceService using the Connect API client.
 type APIResourceService struct {
-	Client      api.ClientWithResponsesInterface
+	Client      *api.Client
 	WorkspaceID string
 }
 
 // NewAPIResourceService creates an APIResourceService by initializing the API
 // client and resolving the workspace ID from a slug or UUID.
 func NewAPIResourceService(ctx context.Context, apiURL, apiKey, workspace string) (*APIResourceService, error) {
-	client, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+	client, err := api.NewConnectClient(apiURL, apiKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}
@@ -38,51 +39,56 @@ func NewAPIResourceService(ctx context.Context, apiURL, apiKey, workspace string
 	}, nil
 }
 
-func (s *APIResourceService) GetByIdentifier(ctx context.Context, identifier string) (*api.Resource, error) {
+func (s *APIResourceService) GetByIdentifier(ctx context.Context, identifier string) (*apiv1.Resource, error) {
 	log.Debug("GetByIdentifier", "workspaceID", s.WorkspaceID, "identifier", identifier)
 	start := time.Now()
-	resp, err := s.Client.GetResourceByIdentifierWithResponse(ctx, s.WorkspaceID, identifier)
+	resp, err := s.Client.Resource.GetResourceByIdentifier(ctx, connect.NewRequest(&apiv1.GetResourceByIdentifierRequest{
+		WorkspaceId: s.WorkspaceID,
+		Identifier:  identifier,
+	}))
 	elapsed := time.Since(start)
 	if err != nil {
+		if connect.CodeOf(err) == connect.CodeNotFound {
+			return nil, fmt.Errorf("resource %q not found", identifier)
+		}
 		return nil, fmt.Errorf("failed to get resource: %w", err)
 	}
-	if resp.JSON200 == nil {
-		log.Debug("GetByIdentifier response", "status", resp.Status(), "body", string(resp.Body), "duration", elapsed)
-		return nil, fmt.Errorf("unexpected response status: %s", resp.Status())
-	}
-	log.Debug("GetByIdentifier response", "status", resp.Status(), "duration", elapsed)
-	return resp.JSON200, nil
+	log.Debug("GetByIdentifier response", "duration", elapsed)
+	return resp.Msg, nil
 }
 
-func (s *APIResourceService) Search(ctx context.Context, filters api.ListResourcesFilters) ([]api.Resource, error) {
+func (s *APIResourceService) Search(ctx context.Context, filters Filters) ([]*apiv1.Resource, error) {
 	searchStart := time.Now()
-	var allItems []api.Resource
-	offset := 0
-	limit := pageSize
+	var allItems []*apiv1.Resource
+	var offset int32
+	const limit int32 = pageSize
 
 	log.Debug("Search", "workspaceID", s.WorkspaceID, "filters", filters, "pageSize", limit)
 
 	for {
-		body := filters
-		body.Limit = &limit
-		body.Offset = &offset
+		req := &apiv1.SearchResourcesRequest{
+			WorkspaceId: s.WorkspaceID,
+			Kinds:       filters.Kinds,
+			Versions:    filters.Versions,
+			ProviderIds: filters.ProviderIDs,
+			Metadata:    filters.Metadata,
+			Limit:       limit,
+			Offset:      offset,
+		}
 
 		log.Debug("Search request", "offset", offset, "limit", limit)
 		start := time.Now()
-		resp, err := s.Client.SearchResourcesWithResponse(ctx, s.WorkspaceID, body)
+		resp, err := s.Client.Resource.SearchResources(ctx, connect.NewRequest(req))
 		elapsed := time.Since(start)
 		if err != nil {
 			return nil, fmt.Errorf("failed to search resources: %w", err)
 		}
-		if resp.JSON200 == nil {
-			log.Debug("Search response error", "status", resp.Status(), "body", string(resp.Body), "duration", elapsed)
-			return nil, fmt.Errorf("unexpected response status: %s", resp.Status())
-		}
 
-		log.Debug("Search response", "items", len(resp.JSON200.Items), "total", resp.JSON200.Total, "offset", resp.JSON200.Offset, "duration", elapsed)
-		allItems = append(allItems, resp.JSON200.Items...)
+		msg := resp.Msg
+		log.Debug("Search response", "items", len(msg.GetItems()), "total", msg.GetTotal(), "offset", msg.GetOffset(), "duration", elapsed)
+		allItems = append(allItems, msg.GetItems()...)
 
-		if offset+limit >= resp.JSON200.Total {
+		if offset+limit >= msg.GetTotal() {
 			break
 		}
 		offset += limit
@@ -92,32 +98,20 @@ func (s *APIResourceService) Search(ctx context.Context, filters api.ListResourc
 	return allItems, nil
 }
 
-func (s *APIResourceService) DeleteByIdentifier(ctx context.Context, identifier string) (*api.ResourceRequestAccepted, error) {
+func (s *APIResourceService) DeleteByIdentifier(ctx context.Context, identifier string) (*apiv1.ResourceMutationResponse, error) {
 	log.Debug("DeleteByIdentifier", "workspaceID", s.WorkspaceID, "identifier", identifier)
 	start := time.Now()
-	resp, err := s.Client.RequestResourceDeletionByIdentifierWithResponse(ctx, s.WorkspaceID, identifier)
+	resp, err := s.Client.Resource.DeleteResourceByIdentifier(ctx, connect.NewRequest(&apiv1.DeleteResourceByIdentifierRequest{
+		WorkspaceId: s.WorkspaceID,
+		Identifier:  identifier,
+	}))
 	elapsed := time.Since(start)
 	if err != nil {
+		if connect.CodeOf(err) == connect.CodeNotFound {
+			return nil, fmt.Errorf("resource %q not found", identifier)
+		}
 		return nil, fmt.Errorf("failed to delete resource: %w", err)
 	}
-
-	// The generated client expects 202 but the API actually returns 200.
-	// Handle both cases.
-	if resp.JSON202 != nil {
-		log.Debug("DeleteByIdentifier response", "status", resp.Status(), "duration", elapsed)
-		return resp.JSON202, nil
-	}
-
-	statusCode := resp.HTTPResponse.StatusCode
-	if statusCode == 200 {
-		var result api.ResourceRequestAccepted
-		if err := json.Unmarshal(resp.Body, &result); err != nil {
-			return nil, fmt.Errorf("failed to parse delete response: %w", err)
-		}
-		log.Debug("DeleteByIdentifier response", "status", resp.Status(), "duration", elapsed)
-		return &result, nil
-	}
-
-	log.Debug("DeleteByIdentifier response error", "status", resp.Status(), "body", string(resp.Body), "duration", elapsed)
-	return nil, fmt.Errorf("unexpected response status: %s", resp.Status())
+	log.Debug("DeleteByIdentifier response", "duration", elapsed)
+	return resp.Msg, nil
 }

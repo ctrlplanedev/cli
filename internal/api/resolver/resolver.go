@@ -4,18 +4,20 @@ import (
 	"context"
 	"fmt"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/google/uuid"
 )
 
 type APIResolver struct {
-	client      *api.ClientWithResponses
+	client      *api.Client
 	workspaceID uuid.UUID
 	systemCache map[string]uuid.UUID
 	jobCache    map[string]uuid.UUID
 }
 
-func NewAPIResolver(client *api.ClientWithResponses, workspaceID uuid.UUID) *APIResolver {
+func NewAPIResolver(client *api.Client, workspaceID uuid.UUID) *APIResolver {
 	return &APIResolver{
 		client:      client,
 		workspaceID: workspaceID,
@@ -24,7 +26,7 @@ func NewAPIResolver(client *api.ClientWithResponses, workspaceID uuid.UUID) *API
 	}
 }
 
-func NewAPIResolverFromWorkspace(ctx context.Context, client *api.ClientWithResponses, workspace string) (*APIResolver, error) {
+func NewAPIResolverFromWorkspace(ctx context.Context, client *api.Client, workspace string) (*APIResolver, error) {
 	workspaceID, err := client.GetWorkspaceID(ctx, workspace)
 	if err != nil {
 		return nil, err
@@ -41,15 +43,14 @@ func (r *APIResolver) ResolveSystemID(ctx context.Context, nameOrID string) (uui
 		return id, nil
 	}
 
-	resp, err := r.client.ListSystemsWithResponse(ctx, r.workspaceID.String(), nil)
+	resp, err := r.client.System.ListSystems(ctx, connect.NewRequest(&apiv1.ListSystemsRequest{
+		WorkspaceId: r.workspaceID.String(),
+	}))
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to list systems: %w", err)
 	}
-	if resp.JSON200 == nil {
-		return uuid.Nil, fmt.Errorf("failed to list systems: %s", string(resp.Body))
-	}
 
-	for _, sys := range resp.JSON200.Items {
+	for _, sys := range resp.Msg.GetItems() {
 		systemID, err := uuid.Parse(sys.Id)
 		if err != nil {
 			continue
@@ -72,15 +73,14 @@ func (r *APIResolver) ResolveJobAgentID(ctx context.Context, nameOrID string) (u
 		return id, nil
 	}
 
-	resp, err := r.client.ListJobAgentsWithResponse(ctx, r.workspaceID.String(), &api.ListJobAgentsParams{})
+	resp, err := r.client.Job.ListJobAgents(ctx, connect.NewRequest(&apiv1.ListJobAgentsRequest{
+		WorkspaceId: r.workspaceID.String(),
+	}))
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to list job agents: %w", err)
 	}
-	if resp.JSON200 == nil {
-		return uuid.Nil, fmt.Errorf("failed to list job agents: %s", string(resp.Body))
-	}
 
-	for _, agent := range resp.JSON200.Items {
+	for _, agent := range resp.Msg.GetItems() {
 		agentID, err := uuid.Parse(agent.Id)
 		if err != nil {
 			continue

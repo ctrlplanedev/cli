@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -187,7 +188,7 @@ func initGitHubClient(ctx context.Context, token string) (*github.Client, error)
 }
 
 // processPullRequests lists and processes all pull requests
-func processPullRequests(ctx context.Context, client *github.Client, owner, repo string, states []string) ([]api.ResourceProviderResource, error) {
+func processPullRequests(ctx context.Context, client *github.Client, owner, repo string, states []string) ([]*apiv1.ResourceInput, error) {
 	log.Debug("Processing pull requests", "owner", owner, "repo", repo, "states", states)
 
 	// If no states specified or "all" is specified, include everything
@@ -278,7 +279,7 @@ func processPullRequests(ctx context.Context, client *github.Client, owner, repo
 		"filtered", len(filteredPRs),
 		"states", states)
 
-	resources := []api.ResourceProviderResource{}
+	resources := []*apiv1.ResourceInput{}
 	for _, pr := range filteredPRs {
 		log.Info("Processing pull request", "number", pr.GetNumber(), "source", pr.GetHead().GetRef(), "target", pr.GetBase().GetRef())
 		resource, err := processPullRequest(ctx, client, owner, repo, pr)
@@ -462,7 +463,7 @@ func getNormalizedStatus(pr *github.PullRequest) string {
 }
 
 // processPullRequest handles processing of a single pull request
-func processPullRequest(ctx context.Context, client *github.Client, owner, repo string, pr *github.PullRequest) (api.ResourceProviderResource, error) {
+func processPullRequest(ctx context.Context, client *github.Client, owner, repo string, pr *github.PullRequest) (*apiv1.ResourceInput, error) {
 	prNumber := pr.GetNumber()
 	log.Debug("Processing pull request", "number", prNumber, "title", pr.GetTitle())
 
@@ -506,12 +507,12 @@ func processPullRequest(ctx context.Context, client *github.Client, owner, repo 
 	resourceName := fmt.Sprintf("%s-%s-%d", owner, repo, prNumber)
 	log.Debug("Creating resource", "number", prNumber, "name", resourceName)
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/git/pull-request/v1",
 		Kind:       "GitHubPullRequest",
 		Name:       resourceName,
 		Identifier: "github-" + pr.GetNodeID(),
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			"number":    prNumber,
 			"url":       prUrl,
 			"state":     pr.GetState(),
@@ -527,7 +528,7 @@ func processPullRequest(ctx context.Context, client *github.Client, owner, repo 
 				"login":     pr.GetUser().GetLogin(),
 				"avatarUrl": pr.GetUser().GetAvatarURL(),
 			},
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/Masterminds/semver"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -63,7 +64,7 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 		log.Info("Syncing EKS clusters", "regions", regionsToSync)
 
 		// Process each region
-		var allResources []api.ResourceProviderResource
+		var allResources []*apiv1.ResourceInput
 		var mu sync.Mutex
 		var wg sync.WaitGroup
 		var syncErrors []error
@@ -130,8 +131,8 @@ func initEKSClient(ctx context.Context, region string) (*eks.Client, aws.Config,
 	return eks.NewFromConfig(cfg), cfg, nil
 }
 
-func processClusters(ctx context.Context, eksClient *eks.Client, region string, cfg aws.Config) ([]api.ResourceProviderResource, error) {
-	var resources []api.ResourceProviderResource
+func processClusters(ctx context.Context, eksClient *eks.Client, region string, cfg aws.Config) ([]*apiv1.ResourceInput, error) {
+	var resources []*apiv1.ResourceInput
 	var nextToken *string
 
 	accountID, err := common.GetAccountID(ctx, cfg)
@@ -174,7 +175,7 @@ func processClusters(ctx context.Context, eksClient *eks.Client, region string, 
 	return resources, nil
 }
 
-func processCluster(_ context.Context, cluster *types.Cluster, region string, accountID string) (api.ResourceProviderResource, error) {
+func processCluster(_ context.Context, cluster *types.Cluster, region string, accountID string) (*apiv1.ResourceInput, error) {
 	metadata := initClusterMetadata(cluster, region)
 
 	metadata["aws/account"] = accountID
@@ -183,12 +184,12 @@ func processCluster(_ context.Context, cluster *types.Cluster, region string, ac
 		region, region, *cluster.Name)
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"AWS Console\": \"%s\" }", consoleUrl)
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/kubernetes/cluster/v1",
 		Kind:       "AmazonElasticKubernetesService",
 		Name:       *cluster.Name,
 		Identifier: *cluster.Arn,
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			"name":    *cluster.Name,
 			"version": *cluster.Version,
 			"server": map[string]any{
@@ -205,7 +206,7 @@ func processCluster(_ context.Context, cluster *types.Cluster, region string, ac
 				"platformVersion": *cluster.PlatformVersion,
 				"vpc":             *cluster.ResourcesVpcConfig.VpcId,
 			},
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }

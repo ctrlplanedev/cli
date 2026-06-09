@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -113,7 +114,7 @@ func initComputeClient(ctx context.Context) (*compute.Service, error) {
 }
 
 // processNetworks lists and processes all VPC networks
-func processNetworks(_ context.Context, computeClient *compute.Service, project string) ([]api.ResourceProviderResource, error) {
+func processNetworks(_ context.Context, computeClient *compute.Service, project string) ([]*apiv1.ResourceInput, error) {
 	networks, err := computeClient.Networks.List(project).Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list networks: %w", err)
@@ -121,7 +122,7 @@ func processNetworks(_ context.Context, computeClient *compute.Service, project 
 
 	log.Info("Found networks", "count", len(networks.Items))
 
-	resources := []api.ResourceProviderResource{}
+	resources := []*apiv1.ResourceInput{}
 	for _, network := range networks.Items {
 		// Count subnets for this network
 		subnetCount := 0
@@ -146,7 +147,7 @@ func processNetworks(_ context.Context, computeClient *compute.Service, project 
 }
 
 // processNetwork handles processing of a single VPC network
-func processNetwork(network *compute.Network, project string, subnetCount int) (api.ResourceProviderResource, error) {
+func processNetwork(network *compute.Network, project string, subnetCount int) (*apiv1.ResourceInput, error) {
 	metadata := initNetworkMetadata(network, project, subnetCount)
 
 	// Build console URL
@@ -171,12 +172,12 @@ func processNetwork(network *compute.Network, project string, subnetCount int) (
 		metadata["network/peering-count"] = strconv.Itoa(len(network.Peerings))
 	}
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/network/v1",
 		Kind:       "GoogleNetwork",
 		Name:       network.Name,
 		Identifier: network.SelfLink,
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			// Common cross-provider options
 			"name": network.Name,
 			"type": "vpc",
@@ -192,7 +193,7 @@ func processNetwork(network *compute.Network, project string, subnetCount int) (
 				"subnetCount":       subnetCount,
 				"routingMode":       network.RoutingConfig.RoutingMode,
 			},
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }
@@ -242,14 +243,14 @@ func initNetworkMetadata(network *compute.Network, project string, subnetCount i
 }
 
 // processSubnets lists and processes all subnetworks
-func processSubnets(_ context.Context, computeClient *compute.Service, project string) ([]api.ResourceProviderResource, error) {
+func processSubnets(_ context.Context, computeClient *compute.Service, project string) ([]*apiv1.ResourceInput, error) {
 	// Use AggregatedList to get subnets from all regions
 	resp, err := computeClient.Subnetworks.AggregatedList(project).Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list subnetworks: %w", err)
 	}
 
-	resources := []api.ResourceProviderResource{}
+	resources := []*apiv1.ResourceInput{}
 	subnetCount := 0
 
 	// Process subnets from all regions
@@ -275,7 +276,7 @@ func processSubnets(_ context.Context, computeClient *compute.Service, project s
 }
 
 // processSubnet handles processing of a single subnet
-func processSubnet(subnet *compute.Subnetwork, project string, region string) (api.ResourceProviderResource, error) {
+func processSubnet(subnet *compute.Subnetwork, project string, region string) (*apiv1.ResourceInput, error) {
 	metadata := initSubnetMetadata(subnet, project, region)
 
 	// Build console URL
@@ -286,12 +287,12 @@ func processSubnet(subnet *compute.Subnetwork, project string, region string) (a
 	// Extract network name from self link
 	networkName := getResourceName(subnet.Network)
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/network/subnet/v1",
 		Kind:       "GoogleSubnet",
 		Name:       subnet.Name,
 		Identifier: subnet.SelfLink,
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			// Common cross-provider options
 			"name":        subnet.Name,
 			"provider":    "google",
@@ -314,7 +315,7 @@ func processSubnet(subnet *compute.Subnetwork, project string, region string) (a
 				"enableFlowLogs":        subnet.EnableFlowLogs,
 				"secondaryIpRanges":     subnet.SecondaryIpRanges,
 			},
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }
@@ -395,7 +396,7 @@ func initSubnetMetadata(subnet *compute.Subnetwork, project string, region strin
 }
 
 // processFirewalls lists and processes all firewall rules
-func processFirewalls(_ context.Context, computeClient *compute.Service, project string) ([]api.ResourceProviderResource, error) {
+func processFirewalls(_ context.Context, computeClient *compute.Service, project string) ([]*apiv1.ResourceInput, error) {
 	firewalls, err := computeClient.Firewalls.List(project).Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list firewalls: %w", err)
@@ -403,7 +404,7 @@ func processFirewalls(_ context.Context, computeClient *compute.Service, project
 
 	log.Info("Found firewall rules", "count", len(firewalls.Items))
 
-	resources := []api.ResourceProviderResource{}
+	resources := []*apiv1.ResourceInput{}
 	for _, firewall := range firewalls.Items {
 		resource, err := processFirewall(firewall, project)
 		if err != nil {
@@ -417,7 +418,7 @@ func processFirewalls(_ context.Context, computeClient *compute.Service, project
 }
 
 // processFirewall handles processing of a single firewall rule
-func processFirewall(firewall *compute.Firewall, project string) (api.ResourceProviderResource, error) {
+func processFirewall(firewall *compute.Firewall, project string) (*apiv1.ResourceInput, error) {
 	metadata := initFirewallMetadata(firewall, project)
 
 	// Build console URL for the network (since firewalls don't have direct URLs)
@@ -426,12 +427,12 @@ func processFirewall(firewall *compute.Firewall, project string) (api.ResourcePr
 		networkName, project)
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"Google Cloud Console\": \"%s\" }", consoleUrl)
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/network/firewall/v1",
 		Kind:       "GoogleFirewall",
 		Name:       firewall.Name,
 		Identifier: firewall.SelfLink,
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			// Common cross-provider options
 			"name":        firewall.Name,
 			"id":          strconv.FormatUint(firewall.Id, 10),
@@ -457,7 +458,7 @@ func processFirewall(firewall *compute.Firewall, project string) (api.ResourcePr
 				"sourceServiceAccounts": firewall.SourceServiceAccounts,
 				"targetServiceAccounts": firewall.TargetServiceAccounts,
 			},
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }
@@ -563,14 +564,14 @@ func initFirewallMetadata(firewall *compute.Firewall, project string) map[string
 }
 
 // processForwardingRules lists and processes all forwarding rules (load balancers)
-func processForwardingRules(_ context.Context, computeClient *compute.Service, project string) ([]api.ResourceProviderResource, error) {
+func processForwardingRules(_ context.Context, computeClient *compute.Service, project string) ([]*apiv1.ResourceInput, error) {
 	// Use AggregatedList to get forwarding rules from all regions
 	resp, err := computeClient.ForwardingRules.AggregatedList(project).Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list forwarding rules: %w", err)
 	}
 
-	resources := []api.ResourceProviderResource{}
+	resources := []*apiv1.ResourceInput{}
 	ruleCount := 0
 
 	// Process forwarding rules from all regions
@@ -596,7 +597,7 @@ func processForwardingRules(_ context.Context, computeClient *compute.Service, p
 }
 
 // processForwardingRule handles processing of a single forwarding rule
-func processForwardingRule(rule *compute.ForwardingRule, project string, region string) (api.ResourceProviderResource, error) {
+func processForwardingRule(rule *compute.ForwardingRule, project string, region string) (*apiv1.ResourceInput, error) {
 	metadata := initForwardingRuleMetadata(rule, project, region)
 
 	// Build console URL
@@ -616,12 +617,12 @@ func processForwardingRule(rule *compute.ForwardingRule, project string, region 
 		networkName = getResourceName(rule.Network)
 	}
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/network/forwarding-rule/v1",
 		Kind:       "GoogleForwardingRule",
 		Name:       rule.Name,
 		Identifier: rule.SelfLink,
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			// Common cross-provider options
 			"name":             rule.Name,
 			"type":             "loadbalancer",
@@ -645,7 +646,7 @@ func processForwardingRule(rule *compute.ForwardingRule, project string, region 
 				"subnetwork":     rule.Subnetwork,
 				"network":        rule.Network,
 			},
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }

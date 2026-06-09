@@ -5,10 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/ctrlplanedev/cli/internal/api"
-	"github.com/ctrlplanedev/cli/internal/cliutil"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
 
@@ -47,48 +44,19 @@ func NewReleaseTargetsCmd() *cobra.Command {
   # Preview with inline flags
   ctrlc api get release-targets --name my-pod --kind kubernetes/pod --version v1 --identifier my-pod-id`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			input, err := buildInput(filePath, name, kind, version, identifier, metadata, config)
-			if err != nil {
+			// Validate input so usage errors surface as before, even though the
+			// command is not yet supported over the Connect API.
+			if _, err := buildInput(filePath, name, kind, version, identifier, metadata, config); err != nil {
 				return err
 			}
 
-			apiURL := viper.GetString("url")
-			apiKey := viper.GetString("api-key")
-			workspace := viper.GetString("workspace")
-
-			client, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
-			if err != nil {
-				return fmt.Errorf("failed to create API client: %w", err)
-			}
-
-			workspaceID, err := client.GetWorkspaceID(cmd.Context(), workspace)
-			if err != nil {
-				return err
-			}
-
-			params := &api.PreviewReleaseTargetsForResourceParams{}
-			if limit > 0 {
-				params.Limit = &limit
-			}
-			if offset > 0 {
-				params.Offset = &offset
-			}
-
-			body := api.PreviewReleaseTargetsForResourceJSONRequestBody{
-				Name:       input.Name,
-				Kind:       input.Kind,
-				Version:    input.Version,
-				Identifier: input.Identifier,
-				Config:     input.Config,
-				Metadata:   input.Metadata,
-			}
-
-			resp, err := client.PreviewReleaseTargetsForResource(cmd.Context(), workspaceID.String(), params, body)
-			if err != nil {
-				return fmt.Errorf("failed to preview release targets: %w", err)
-			}
-
-			return cliutil.HandleResponseOutput(cmd, resp)
+			// The engine's Connect API has no equivalent of the REST
+			// PreviewReleaseTargetsForResource operation: PreviewReleaseTargets
+			// only paginates existing targets and accepts no hypothetical
+			// resource definition. Surface this clearly rather than silently
+			// degrading. Tracked for a future engine RPC.
+			return fmt.Errorf("`ctrlc api get release-targets` is not supported via the Connect API: " +
+				"the workspace-engine exposes no RPC that simulates release targets for a hypothetical resource")
 		},
 	}
 

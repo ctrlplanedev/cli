@@ -10,11 +10,11 @@ import (
 type ProviderContext struct {
 	ctx         context.Context
 	workspaceID string
-	client      *api.ClientWithResponses
+	client      *api.Client
 	resolver    *resolver.APIResolver
 }
 
-func NewProviderContext(ctx context.Context, workspaceID string, client *api.ClientWithResponses, resolver *resolver.APIResolver) *ProviderContext {
+func NewProviderContext(ctx context.Context, workspaceID string, client *api.Client, resolver *resolver.APIResolver) *ProviderContext {
 	return &ProviderContext{
 		ctx:         ctx,
 		workspaceID: workspaceID,
@@ -31,7 +31,7 @@ func (c *ProviderContext) WorkspaceIDValue() string {
 	return c.workspaceID
 }
 
-func (c *ProviderContext) APIClient() *api.ClientWithResponses {
+func (c *ProviderContext) APIClient() *api.Client {
 	return c.client
 }
 

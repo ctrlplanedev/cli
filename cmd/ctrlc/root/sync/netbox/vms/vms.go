@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -38,7 +39,7 @@ func NewSyncVMsCmd() *cobra.Command {
 				return fmt.Errorf("failed to list Netbox VMs: %w", err)
 			}
 
-			resources := make([]api.ResourceProviderResource, 0, len(allVMs))
+			resources := make([]*apiv1.ResourceInput, 0, len(allVMs))
 			for _, vm := range allVMs {
 				resources = append(resources, mapVM(vm))
 			}
@@ -88,7 +89,7 @@ func fetchAllVMs(ctx context.Context, client *netbox.APIClient) ([]netbox.Virtua
 	return all, nil
 }
 
-func mapVM(vm netbox.VirtualMachineWithConfigContext) api.ResourceProviderResource {
+func mapVM(vm netbox.VirtualMachineWithConfigContext) *apiv1.ResourceInput {
 	metadata := map[string]string{}
 
 	metadata["netbox/id"] = strconv.Itoa(int(vm.Id))
@@ -133,12 +134,12 @@ func mapVM(vm netbox.VirtualMachineWithConfigContext) api.ResourceProviderResour
 		config["primary_ip"] = pip.GetAddress()
 	}
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "netbox/vm/v1",
 		Kind:       "VirtualMachine",
 		Name:       vm.Name,
 		Identifier: strconv.Itoa(int(vm.Id)),
-		Config:     config,
+		Config:     api.NewStruct(config),
 		Metadata:   metadata,
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"sync"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -53,7 +54,7 @@ func runSync(regions *[]string, name *string) func(cmd *cobra.Command, args []st
 			return err
 		}
 
-		allResources := make([]api.ResourceProviderResource, 0)
+		allResources := make([]*apiv1.ResourceInput, 0)
 
 		var mu sync.Mutex
 		var wg sync.WaitGroup
@@ -173,7 +174,7 @@ func initComputeClient(ctx context.Context, region string) (*ec2.Client, aws.Con
 // processNetworks lists and processes all VPCs and subnets
 func processNetworks(
 	ctx context.Context, ec2Client *ec2.Client, awsSubnets []types.Subnet, region string, accountId string,
-) ([]api.ResourceProviderResource, error) {
+) ([]*apiv1.ResourceInput, error) {
 	var nextToken *string
 	vpcs := make([]types.Vpc, 0)
 	subnetsByVpc := make(map[string][]types.Subnet)
@@ -206,7 +207,7 @@ func processNetworks(
 
 	log.Info("Found vpcOutput", "count", len(vpcs), "region", region, "accountId", accountId)
 
-	resources := make([]api.ResourceProviderResource, 0)
+	resources := make([]*apiv1.ResourceInput, 0)
 	for _, vpc := range vpcs {
 		if awsVpcSubnets, exists = subnetsByVpc[*vpc.VpcId]; !exists {
 			awsVpcSubnets = []types.Subnet{}
@@ -225,7 +226,7 @@ func processNetworks(
 // processNetwork handles processing of a single VPC network
 func processNetwork(
 	vpc types.Vpc, subnets []types.Subnet, region string, accountId string,
-) (api.ResourceProviderResource, error) {
+) (*apiv1.ResourceInput, error) {
 	metadata := initNetworkMetadata(vpc, region, len(subnets))
 	vpcName := getVpcName(vpc)
 
@@ -234,12 +235,12 @@ func processNetwork(
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"AWS Console\": \"%s\" }", consoleUrl)
 
 	log.Debug("Processed Network", "accountId", accountId, "region", region, "name", vpcName, "id", *vpc.VpcId, "subnetCount", len(subnets))
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/network/v1",
 		Kind:       "AmazonNetwork",
 		Name:       vpcName,
 		Identifier: *vpc.VpcId,
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			// Common cross-provider options
 			"name": vpcName,
 			"type": "vpc",
@@ -252,7 +253,7 @@ func processNetwork(
 				"state":       string(vpc.State),
 				"subnetCount": len(subnets),
 			},
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }
@@ -314,8 +315,8 @@ func getAwsSubnets(ctx context.Context, ec2Client *ec2.Client, region string, ac
 }
 
 // processSubnets lists and processes all subnetworks
-func processSubnets(_ context.Context, subnets []types.Subnet, region string) ([]api.ResourceProviderResource, error) {
-	resources := make([]api.ResourceProviderResource, 0)
+func processSubnets(_ context.Context, subnets []types.Subnet, region string) ([]*apiv1.ResourceInput, error) {
+	resources := make([]*apiv1.ResourceInput, 0)
 	subnetCount := 0
 
 	// Process subnets from all regions
@@ -334,18 +335,18 @@ func processSubnets(_ context.Context, subnets []types.Subnet, region string) ([
 }
 
 // processSubnet handles processing of a single subnet
-func processSubnet(subnet types.Subnet, region string) (api.ResourceProviderResource, error) {
+func processSubnet(subnet types.Subnet, region string) (*apiv1.ResourceInput, error) {
 	metadata := initSubnetMetadata(subnet, region)
 	subnetName := getSubnetName(subnet)
 	consoleUrl := getSubnetConsoleUrl(subnet, region)
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"AWS Console\": \"%s\" }", consoleUrl)
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/network/subnet/v1",
 		Kind:       "AmazonSubnet",
 		Name:       subnetName,
 		Identifier: *subnet.SubnetArn,
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			// Common cross-provider options
 			"name":     subnetName,
 			"provider": "aws",
@@ -354,7 +355,7 @@ func processSubnet(subnet types.Subnet, region string) (api.ResourceProviderReso
 			"region":   region,
 			"id":       *subnet.SubnetId,
 			"vpcId":    *subnet.VpcId,
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }

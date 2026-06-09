@@ -6,17 +6,18 @@ import (
 	"strconv"
 	"strings"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/ctrlplanedev/cli/internal/api"
 )
 
-func mapDevice(device netboxDevice) api.ResourceProviderResource {
+func mapDevice(device netboxDevice) *apiv1.ResourceInput {
 	metadata := map[string]string{}
 
 	links := map[string]string{
-		"Device": device.Url,
+		"Device":      device.Url,
 		"Display URL": device.DisplayURL,
 		"Device Type": device.DeviceType.Url,
-		"Role": device.Role.Url,
+		"Role":        device.Role.Url,
 	}
 	linksJSON, err := json.Marshal(links)
 	if err == nil {
@@ -91,12 +92,12 @@ func mapDevice(device netboxDevice) api.ResourceProviderResource {
 	identifier := strings.ReplaceAll(device.Url, "https://", "")
 	identifier = strings.ReplaceAll(identifier, "http://", "")
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "netbox/device/v1",
 		Kind:       "Device",
 		Name:       name,
 		Identifier: identifier,
-		Config:     config,
+		Config:     api.NewStruct(config),
 		Metadata:   metadata,
 	}
 }

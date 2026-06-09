@@ -2,9 +2,10 @@ package providers
 
 import (
 	"fmt"
-	"net/http"
 	"time"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	"github.com/avast/retry-go"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -102,26 +103,24 @@ func (r *ResourceItemSpec) upsert(ctx Context) error {
 		config = make(map[string]any)
 	}
 
-	resources := []api.ResourceProviderResource{
+	resources := []*apiv1.ResourceInput{
 		{
 			Identifier: r.Identifier,
 			Name:       r.DisplayName,
 			Kind:       r.Kind,
 			Version:    r.Version,
-			Config:     config,
+			Config:     api.NewStruct(config),
 			Metadata:   metadata,
 		},
 	}
 
-	patchReq := api.SetResourceProviderResourcesJSONRequestBody{
-		Resources: resources,
-	}
-	resp, err := ctx.APIClient().SetResourceProviderResourcesWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), providerID, patchReq)
+	_, err = ctx.APIClient().Resource.SetResourceProviderResources(ctx.Ctx(), connect.NewRequest(&apiv1.SetResourceProviderResourcesRequest{
+		WorkspaceId: ctx.WorkspaceIDValue(),
+		ProviderId:  providerID,
+		Resources:   resources,
+	}))
 	if err != nil {
 		return fmt.Errorf("failed to upsert resource: %w", err)
-	}
-	if resp.StatusCode() != http.StatusAccepted {
-		return fmt.Errorf("failed to upsert resource: %s", resp.Status())
 	}
 
 	return r.syncVariables(ctx)
@@ -133,25 +132,25 @@ func (r *ResourceItemSpec) getProviderID(ctx Context) (string, error) {
 		providerName = "ctrlc-apply"
 	}
 
-	providerResp, err := ctx.APIClient().GetResourceProviderByNameWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), providerName)
-	if err != nil {
+	providerResp, err := ctx.APIClient().Resource.GetResourceProviderByName(ctx.Ctx(), connect.NewRequest(&apiv1.GetResourceProviderByNameRequest{
+		WorkspaceId: ctx.WorkspaceIDValue(),
+		Name:        providerName,
+	}))
+	if err == nil {
+		return providerResp.Msg.GetId(), nil
+	}
+	if connect.CodeOf(err) != connect.CodeNotFound {
 		return "", fmt.Errorf("failed to get resource provider: %w", err)
 	}
 
-	if providerResp.JSON200 != nil {
-		return providerResp.JSON200.Id, nil
-	}
-
-	createResp, err := ctx.APIClient().RequestResourceProviderUpsertWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), api.RequestResourceProviderUpsertJSONRequestBody{
-		Name: providerName,
-	})
+	createResp, err := ctx.APIClient().Resource.UpsertResourceProvider(ctx.Ctx(), connect.NewRequest(&apiv1.UpsertResourceProviderRequest{
+		WorkspaceId: ctx.WorkspaceIDValue(),
+		Name:        providerName,
+	}))
 	if err != nil {
 		return "", fmt.Errorf("failed to create resource provider: %w", err)
 	}
-	if createResp.StatusCode() != http.StatusAccepted {
-		return "", fmt.Errorf("failed to create resource provider: %s", createResp.Status())
-	}
-	return createResp.JSON202.Id, nil
+	return createResp.Msg.GetId(), nil
 }
 
 // BatchUpsertResources groups resources by provider and makes one
@@ -191,7 +190,7 @@ func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
 			continue
 		}
 
-		apiResources := make([]api.ResourceProviderResource, 0, len(group))
+		apiResources := make([]*apiv1.ResourceInput, 0, len(group))
 		for _, spec := range group {
 			metadata := spec.Metadata
 			if metadata == nil {
@@ -201,20 +200,23 @@ func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
 			if config == nil {
 				config = make(map[string]any)
 			}
-			apiResources = append(apiResources, api.ResourceProviderResource{
+			apiResources = append(apiResources, &apiv1.ResourceInput{
 				Identifier: spec.Identifier,
 				Name:       spec.DisplayName,
 				Kind:       spec.Kind,
 				Version:    spec.Version,
-				Config:     config,
+				Config:     api.NewStruct(config),
 				Metadata:   metadata,
 			})
 		}
 
 		log.Debug("Upserting resources", "workspaceID", ctx.WorkspaceIDValue(), "provider", providerName, "providerID", providerID)
-		resp, err := ctx.APIClient().SetResourceProviderResourcesWithResponse(
-			ctx.Ctx(), ctx.WorkspaceIDValue(), providerID,
-			api.SetResourceProviderResourcesJSONRequestBody{Resources: apiResources},
+		_, err = ctx.APIClient().Resource.SetResourceProviderResources(
+			ctx.Ctx(), connect.NewRequest(&apiv1.SetResourceProviderResourcesRequest{
+				WorkspaceId: ctx.WorkspaceIDValue(),
+				ProviderId:  providerID,
+				Resources:   apiResources,
+			}),
 		)
 		if err != nil {
 			for _, spec := range group {
@@ -222,16 +224,6 @@ func BatchUpsertResources(ctx Context, specs []*ResourceItemSpec) []Result {
 					Type:  resourceTypeName,
 					Name:  spec.DisplayName,
 					Error: fmt.Errorf("failed to upsert resources: %w", err),
-				})
-			}
-			continue
-		}
-		if resp.StatusCode() != http.StatusAccepted {
-			for _, spec := range group {
-				results = append(results, Result{
-					Type:  resourceTypeName,
-					Name:  spec.DisplayName,
-					Error: fmt.Errorf("failed to upsert resources: %s", resp.Status()),
 				})
 			}
 			continue
@@ -270,22 +262,19 @@ func (r *ResourceItemSpec) upsertWithoutProvider(ctx Context) Result {
 	}
 
 	log.Debug("Upserting resource directly (no provider)", "identifier", r.Identifier)
-	resp, err := ctx.APIClient().UpsertResourceByIdentifierWithResponse(
-		ctx.Ctx(), ctx.WorkspaceIDValue(), r.Identifier,
-		api.UpsertResourceByIdentifierJSONRequestBody{
-			Name:     r.DisplayName,
-			Kind:     r.Kind,
-			Version:  r.Version,
-			Config:   &config,
-			Metadata: &metadata,
-		},
+	_, err := ctx.APIClient().Resource.UpsertResourceByIdentifier(
+		ctx.Ctx(), connect.NewRequest(&apiv1.UpsertResourceByIdentifierRequest{
+			WorkspaceId: ctx.WorkspaceIDValue(),
+			Identifier:  r.Identifier,
+			Name:        r.DisplayName,
+			Kind:        r.Kind,
+			Version:     r.Version,
+			Config:      api.NewStruct(config),
+			Metadata:    metadata,
+		}),
 	)
 	if err != nil {
 		result.Error = fmt.Errorf("failed to upsert resource: %w", err)
-		return result
-	}
-	if resp.StatusCode() != http.StatusAccepted {
-		result.Error = fmt.Errorf("failed to upsert resource: %s", resp.HTTPResponse.Status)
 		return result
 	}
 
@@ -305,18 +294,18 @@ func (r *ResourceItemSpec) syncVariables(ctx Context) error {
 
 	err := retry.Do(
 		func() error {
-			varsResp, err := ctx.APIClient().RequestResourceVariablesUpdateWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), r.Identifier, api.RequestResourceVariablesUpdateJSONRequestBody(vars))
+			_, err := ctx.APIClient().Resource.ReplaceResourceVariables(ctx.Ctx(), connect.NewRequest(&apiv1.ReplaceResourceVariablesRequest{
+				WorkspaceId:        ctx.WorkspaceIDValue(),
+				ResourceIdentifier: r.Identifier,
+				Variables:          api.NewStruct(vars).GetFields(),
+			}))
 			if err != nil {
+				// The resource may not be queryable immediately after upsert;
+				// retry on NotFound, treat everything else as terminal.
+				if connect.CodeOf(err) == connect.CodeNotFound {
+					return fmt.Errorf("resource not found yet, retrying")
+				}
 				return retry.Unrecoverable(fmt.Errorf("failed to update resource variables: %w", err))
-			}
-			if varsResp == nil {
-				return retry.Unrecoverable(fmt.Errorf("failed to update resource variables: empty response"))
-			}
-			if varsResp.StatusCode() == 404 {
-				return fmt.Errorf("resource not found yet, retrying")
-			}
-			if varsResp.StatusCode() != 202 {
-				return retry.Unrecoverable(fmt.Errorf("failed to update resource variables: %s", string(varsResp.Body)))
 			}
 			return nil
 		},

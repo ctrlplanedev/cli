@@ -33,7 +33,7 @@ func NewResourceCmd() *cobra.Command {
 				return err
 			}
 
-			return cliutil.HandleAnyOutput(cmd, resource, output)
+			return cliutil.HandleProtoAnyOutput(cmd, resource, output)
 		},
 	}
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -97,7 +98,7 @@ func initStorageClient(ctx context.Context) (*storage.Service, error) {
 }
 
 // processBuckets lists and processes all Storage buckets in the project
-func processBuckets(ctx context.Context, storageClient *storage.Service, project string) ([]api.ResourceProviderResource, error) {
+func processBuckets(ctx context.Context, storageClient *storage.Service, project string) ([]*apiv1.ResourceInput, error) {
 	// List all buckets in the project
 	buckets, err := storageClient.Buckets.List(project).Do()
 	if err != nil {
@@ -106,7 +107,7 @@ func processBuckets(ctx context.Context, storageClient *storage.Service, project
 
 	log.Info("Found buckets", "count", len(buckets.Items))
 
-	resources := []api.ResourceProviderResource{}
+	resources := []*apiv1.ResourceInput{}
 	for _, bucket := range buckets.Items {
 		resource, err := processBucket(ctx, storageClient, bucket, project)
 		if err != nil {
@@ -120,7 +121,7 @@ func processBuckets(ctx context.Context, storageClient *storage.Service, project
 }
 
 // processBucket handles processing of a single Storage bucket
-func processBucket(_ context.Context, storageClient *storage.Service, bucket *storage.Bucket, project string) (api.ResourceProviderResource, error) {
+func processBucket(_ context.Context, storageClient *storage.Service, bucket *storage.Bucket, project string) (*apiv1.ResourceInput, error) {
 	metadata := initBucketMetadata(bucket, project)
 
 	// Process IAM policy if available
@@ -140,12 +141,12 @@ func processBucket(_ context.Context, storageClient *storage.Service, bucket *st
 		bucket.Name, project)
 	metadata["ctrlplane/links"] = fmt.Sprintf("{ \"Google Cloud Console\": \"%s\" }", consoleUrl)
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/storage/v1",
 		Kind:       "GoogleBucket",
 		Name:       bucket.Name,
 		Identifier: fmt.Sprintf("projects/%s/buckets/%s", project, bucket.Name),
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			"name": bucket.Name,
 			"googleStorage": map[string]any{
 				"project":         project,
@@ -154,7 +155,7 @@ func processBucket(_ context.Context, storageClient *storage.Service, bucket *st
 				"retentionPolicy": bucket.RetentionPolicy != nil,
 				"versioning":      bucket.Versioning != nil && bucket.Versioning.Enabled,
 			},
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }

@@ -70,7 +70,7 @@ func runApply(ctx context.Context, filePatterns []string, selectorRaw string) er
 	workspace := viper.GetString("workspace")
 	providerName := viper.GetString("provider")
 
-	client, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+	client, err := api.NewConnectClient(apiURL, apiKey)
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
 	}

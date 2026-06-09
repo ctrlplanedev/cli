@@ -45,7 +45,7 @@ func NewSyncKubernetesCmd() *cobra.Command {
 			apiKey := viper.GetString("api-key")
 			workspaceId := viper.GetString("workspace")
 
-			ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			ctrlplaneClient, err := api.NewConnectClient(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}

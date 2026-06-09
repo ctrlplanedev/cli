@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -38,7 +39,7 @@ func NewSyncIPAddressesCmd() *cobra.Command {
 				return fmt.Errorf("failed to list Netbox IP addresses: %w", err)
 			}
 
-			resources := make([]api.ResourceProviderResource, 0, len(allIPs))
+			resources := make([]*apiv1.ResourceInput, 0, len(allIPs))
 			for _, ip := range allIPs {
 				resources = append(resources, mapIPAddress(ip))
 			}
@@ -88,7 +89,7 @@ func fetchAllIPAddresses(ctx context.Context, client *netbox.APIClient) ([]netbo
 	return all, nil
 }
 
-func mapIPAddress(ip netbox.IPAddress) api.ResourceProviderResource {
+func mapIPAddress(ip netbox.IPAddress) *apiv1.ResourceInput {
 	metadata := map[string]string{}
 
 	metadata["netbox/id"] = strconv.Itoa(int(ip.Id))
@@ -125,12 +126,12 @@ func mapIPAddress(ip netbox.IPAddress) api.ResourceProviderResource {
 		config["tenant"] = tenant.GetName()
 	}
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "netbox/ip-address/v1",
 		Kind:       "IPAddress",
 		Name:       ip.Address,
 		Identifier: strconv.Itoa(int(ip.Id)),
-		Config:     config,
+		Config:     api.NewStruct(config),
 		Metadata:   metadata,
 	}
 }

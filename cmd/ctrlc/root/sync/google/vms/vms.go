@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -90,14 +91,14 @@ func initComputeClient(ctx context.Context) (*compute.Service, error) {
 }
 
 // processVMs lists and processes all VM instances
-func processVMs(ctx context.Context, computeClient *compute.Service, project string) ([]api.ResourceProviderResource, error) {
+func processVMs(ctx context.Context, computeClient *compute.Service, project string) ([]*apiv1.ResourceInput, error) {
 	// Use AggregatedList to get VMs from all zones
 	resp, err := computeClient.Instances.AggregatedList(project).Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list VM instances: %w", err)
 	}
 
-	resources := []api.ResourceProviderResource{}
+	resources := []*apiv1.ResourceInput{}
 	vmCount := 0
 
 	// Process VMs from all zones
@@ -123,7 +124,7 @@ func processVMs(ctx context.Context, computeClient *compute.Service, project str
 }
 
 // processVM handles processing of a single VM instance
-func processVM(instance *compute.Instance, project string, zone string) (api.ResourceProviderResource, error) {
+func processVM(instance *compute.Instance, project string, zone string) (*apiv1.ResourceInput, error) {
 	metadata := initVMMetadata(instance, project, zone)
 
 	// Extract region from zone (e.g. us-central1-a -> us-central1)
@@ -155,12 +156,12 @@ func processVM(instance *compute.Instance, project string, zone string) (api.Res
 		networkName = getResourceName(instance.NetworkInterfaces[0].Network)
 	}
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/compute/machine/v1",
 		Kind:       "GoogleComputeEngine",
 		Name:       instance.Name,
 		Identifier: instance.SelfLink,
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			"name":        instance.Name,
 			"id":          strconv.FormatUint(instance.Id, 10),
 			"os":          os,
@@ -177,7 +178,7 @@ func processVM(instance *compute.Instance, project string, zone string) (api.Res
 				"internalIP":  internalIP,
 				"externalIP":  externalIP,
 			},
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }

@@ -30,7 +30,7 @@ func NewUICmd() *cobra.Command {
 				return fmt.Errorf("workspace is required: set via --workspace, CTRLPLANE_WORKSPACE, or config file")
 			}
 
-			client, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+			client, err := api.NewConnectClient(apiURL, apiKey)
 			if err != nil {
 				return fmt.Errorf("failed to create API client: %w", err)
 			}

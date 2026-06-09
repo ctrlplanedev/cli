@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ctrlplanedev/cli/internal/api"
 )
@@ -59,12 +61,14 @@ type drillContext struct {
 	resourceName       string
 }
 
+const timeLayout = "2006-01-02 15:04"
+
 // --- top-level fetchers ---
 
-func fetchData(client *api.ClientWithResponses, workspaceID string, rt resourceType) tea.Cmd {
+func fetchData(client *api.Client, workspaceID string, rt resourceType) tea.Cmd {
 	return func() tea.Msg {
 		ctx := context.Background()
-		limit := 100
+		limit := int32(100)
 
 		switch rt {
 		case resourceTypeDeployments:
@@ -83,158 +87,157 @@ func fetchData(client *api.ClientWithResponses, workspaceID string, rt resourceT
 	}
 }
 
-func fetchDeployments(ctx context.Context, client *api.ClientWithResponses, workspaceID string, limit int) dataMsg {
-	resp, err := client.ListDeploymentsWithResponse(ctx, workspaceID, &api.ListDeploymentsParams{Limit: &limit})
+func fetchDeployments(ctx context.Context, client *api.Client, workspaceID string, limit int32) dataMsg {
+	resp, err := client.Deployment.ListDeployments(ctx, connect.NewRequest(&apiv1.ListDeploymentsRequest{
+		WorkspaceId: workspaceID,
+		Limit:       limit,
+	}))
 	if err != nil {
 		return dataMsg{err: err}
 	}
-	if resp.JSON200 == nil {
-		return dataMsg{err: fmt.Errorf("unexpected response: %d", resp.HTTPResponse.StatusCode)}
-	}
 
-	rows := make([]tableRow, 0, len(resp.JSON200.Items))
-	for _, item := range resp.JSON200.Items {
-		desc := ""
-		if item.Deployment.Description != nil {
-			desc = *item.Deployment.Description
-		}
+	items := resp.Msg.GetItems()
+	rows := make([]tableRow, 0, len(items))
+	for _, item := range items {
+		dep := item.GetDeployment()
+		desc := dep.GetDescription()
 		// Get system names (now plural)
 		systemNames := ""
-		if len(item.Systems) > 0 {
-			systemNames = item.Systems[0].Name
-			for i := 1; i < len(item.Systems); i++ {
-				systemNames += ", " + item.Systems[i].Name
+		systems := item.GetSystems()
+		if len(systems) > 0 {
+			systemNames = systems[0].GetName()
+			for i := 1; i < len(systems); i++ {
+				systemNames += ", " + systems[i].GetName()
 			}
 		}
 		rows = append(rows, tableRow{
-			id:      item.Deployment.Id,
-			cols:    []string{item.Deployment.Name, systemNames, item.Deployment.Slug, desc},
+			id:      dep.GetId(),
+			cols:    []string{dep.GetName(), systemNames, dep.GetSlug(), desc},
 			rawItem: item,
 		})
 	}
-	return dataMsg{rows: rows, total: resp.JSON200.Total}
+	return dataMsg{rows: rows, total: int(resp.Msg.GetTotal())}
 }
 
-func fetchResources(ctx context.Context, client *api.ClientWithResponses, workspaceID string, limit int) dataMsg {
+func fetchResources(ctx context.Context, client *api.Client, workspaceID string, limit int32) dataMsg {
 	return fetchResourcesWithFilter(ctx, client, workspaceID, limit, "")
 }
 
-func fetchResourcesWithFilter(ctx context.Context, client *api.ClientWithResponses, workspaceID string, limit int, filter string) dataMsg {
-	params := &api.GetAllResourcesParams{Limit: &limit}
+func fetchResourcesWithFilter(ctx context.Context, client *api.Client, workspaceID string, limit int32, filter string) dataMsg {
+	req := &apiv1.ListResourcesRequest{
+		WorkspaceId: workspaceID,
+		Page:        &apiv1.Page{Limit: limit},
+	}
 	if filter != "" {
 		cel := fmt.Sprintf("resource.name.contains('%s')", filter)
-		params.Cel = &cel
+		req.Selector = &cel
 	}
 
-	resp, err := client.GetAllResourcesWithResponse(ctx, workspaceID, params)
+	resp, err := client.Resource.ListResources(ctx, connect.NewRequest(req))
 	if err != nil {
 		return dataMsg{err: err}
 	}
-	if resp.JSON200 == nil {
-		return dataMsg{err: fmt.Errorf("unexpected response: %d", resp.HTTPResponse.StatusCode)}
-	}
 
-	rows := make([]tableRow, 0, len(resp.JSON200.Items))
-	for _, item := range resp.JSON200.Items {
+	items := resp.Msg.GetItems()
+	rows := make([]tableRow, 0, len(items))
+	for _, item := range items {
 		rows = append(rows, tableRow{
-			id:      item.Identifier,
-			cols:    []string{item.Name, item.Kind, item.Version, item.Identifier},
+			id:      item.GetIdentifier(),
+			cols:    []string{item.GetName(), item.GetKind(), item.GetVersion(), item.GetIdentifier()},
 			rawItem: item,
 		})
 	}
-	return dataMsg{rows: rows, total: resp.JSON200.Total}
+	return dataMsg{rows: rows, total: int(resp.Msg.GetTotal())}
 }
 
 // fetchResourcesFiltered returns a tea.Cmd that fetches resources with server-side CEL filter
-func fetchResourcesFiltered(client *api.ClientWithResponses, workspaceID string, filter string) tea.Cmd {
+func fetchResourcesFiltered(client *api.Client, workspaceID string, filter string) tea.Cmd {
 	return func() tea.Msg {
 		ctx := context.Background()
 		return fetchResourcesWithFilter(ctx, client, workspaceID, 100, filter)
 	}
 }
 
-func fetchJobs(ctx context.Context, client *api.ClientWithResponses, workspaceID string, limit int) dataMsg {
-	resp, err := client.GetJobsWithResponse(ctx, workspaceID, &api.GetJobsParams{Limit: &limit})
+func fetchJobs(ctx context.Context, client *api.Client, workspaceID string, limit int32) dataMsg {
+	resp, err := client.Job.ListJobs(ctx, connect.NewRequest(&apiv1.ListJobsRequest{
+		WorkspaceId: workspaceID,
+		Limit:       limit,
+	}))
 	if err != nil {
 		return dataMsg{err: err}
 	}
-	if resp.JSON200 == nil {
-		return dataMsg{err: fmt.Errorf("unexpected response: %d", resp.HTTPResponse.StatusCode)}
-	}
 
-	rows := make([]tableRow, 0, len(resp.JSON200.Items))
-	for _, item := range resp.JSON200.Items {
-		depName := ""
-		if item.Deployment != nil {
-			depName = item.Deployment.Name
-		}
-		envName := ""
-		if item.Environment != nil {
-			envName = item.Environment.Name
-		}
-		resName := ""
-		if item.Resource != nil {
-			resName = item.Resource.Name
+	items := resp.Msg.GetItems()
+	rows := make([]tableRow, 0, len(items))
+	for _, job := range items {
+		id := job.GetId()
+		shortID := id
+		if len(shortID) > 8 {
+			shortID = shortID[:8]
 		}
 		rows = append(rows, tableRow{
-			id:      item.Job.Id,
-			cols:    []string{item.Job.Id[:8], string(item.Job.Status), depName, envName, resName, item.Job.CreatedAt.Format("2006-01-02 15:04")},
+			id:      id,
+			cols:    []string{shortID, job.GetStatus(), job.GetReleaseId(), "", "", job.GetCreatedAt().AsTime().Format(timeLayout)},
+			rawItem: job,
+		})
+	}
+	return dataMsg{rows: rows, total: int(resp.Msg.GetTotal())}
+}
+
+func fetchEnvironments(ctx context.Context, client *api.Client, workspaceID string, limit int32) dataMsg {
+	resp, err := client.System.ListEnvironments(ctx, connect.NewRequest(&apiv1.ListEnvironmentsRequest{
+		WorkspaceId: workspaceID,
+		Page:        &apiv1.Page{Limit: limit},
+	}))
+	if err != nil {
+		return dataMsg{err: err}
+	}
+
+	items := resp.Msg.GetItems()
+	rows := make([]tableRow, 0, len(items))
+	for _, item := range items {
+		id := item.GetId()
+		shortID := id
+		if len(shortID) > 8 {
+			shortID = shortID[:8]
+		}
+		rows = append(rows, tableRow{
+			id:      id,
+			cols:    []string{item.GetName(), item.GetDescription(), shortID, item.GetCreatedAt().AsTime().Format(timeLayout)},
 			rawItem: item,
 		})
 	}
-	return dataMsg{rows: rows, total: resp.JSON200.Total}
+	return dataMsg{rows: rows, total: int(resp.Msg.GetTotal())}
 }
 
-func fetchEnvironments(ctx context.Context, client *api.ClientWithResponses, workspaceID string, limit int) dataMsg {
-	resp, err := client.ListEnvironmentsWithResponse(ctx, workspaceID, &api.ListEnvironmentsParams{Limit: &limit})
+func fetchVersions(ctx context.Context, client *api.Client, workspaceID string, limit int32) dataMsg {
+	depResp, err := client.Deployment.ListDeployments(ctx, connect.NewRequest(&apiv1.ListDeploymentsRequest{
+		WorkspaceId: workspaceID,
+		Limit:       limit,
+	}))
 	if err != nil {
 		return dataMsg{err: err}
-	}
-	if resp.JSON200 == nil {
-		return dataMsg{err: fmt.Errorf("unexpected response: %d", resp.HTTPResponse.StatusCode)}
-	}
-
-	rows := make([]tableRow, 0, len(resp.JSON200.Items))
-	for _, item := range resp.JSON200.Items {
-		desc := ""
-		if item.Description != nil {
-			desc = *item.Description
-		}
-		rows = append(rows, tableRow{
-			id:      item.Id,
-			cols:    []string{item.Name, desc, item.Id[:8], item.CreatedAt.Format("2006-01-02 15:04")},
-			rawItem: item,
-		})
-	}
-	return dataMsg{rows: rows, total: resp.JSON200.Total}
-}
-
-func fetchVersions(ctx context.Context, client *api.ClientWithResponses, workspaceID string, limit int) dataMsg {
-	depResp, err := client.ListDeploymentsWithResponse(ctx, workspaceID, &api.ListDeploymentsParams{Limit: &limit})
-	if err != nil {
-		return dataMsg{err: err}
-	}
-	if depResp.JSON200 == nil {
-		return dataMsg{err: fmt.Errorf("unexpected response: %d", depResp.HTTPResponse.StatusCode)}
 	}
 
 	var rows []tableRow
 	total := 0
 
-	versionLimit := 20
-	for _, dep := range depResp.JSON200.Items {
-		resp, err := client.ListDeploymentVersionsWithResponse(ctx, workspaceID, dep.Deployment.Id, &api.ListDeploymentVersionsParams{Limit: &versionLimit})
+	versionLimit := int32(20)
+	for _, dep := range depResp.Msg.GetItems() {
+		deployment := dep.GetDeployment()
+		resp, err := client.Deployment.ListDeploymentVersions(ctx, connect.NewRequest(&apiv1.ListDeploymentVersionsRequest{
+			WorkspaceId:  workspaceID,
+			DeploymentId: deployment.GetId(),
+			Limit:        versionLimit,
+		}))
 		if err != nil {
 			continue
 		}
-		if resp.JSON200 == nil {
-			continue
-		}
-		total += resp.JSON200.Total
-		for _, item := range resp.JSON200.Items {
+		total += int(resp.Msg.GetTotal())
+		for _, item := range resp.Msg.GetItems() {
 			rows = append(rows, tableRow{
-				id:      item.Id,
-				cols:    []string{item.Tag, dep.Deployment.Name, string(item.Status), item.Name, item.CreatedAt.Format("2006-01-02 15:04")},
+				id:      item.GetId(),
+				cols:    []string{item.GetTag(), deployment.GetName(), item.GetStatus(), item.GetName(), item.GetCreatedAt().AsTime().Format(timeLayout)},
 				rawItem: item,
 			})
 		}
@@ -245,36 +248,32 @@ func fetchVersions(ctx context.Context, client *api.ClientWithResponses, workspa
 
 // --- drill-down fetchers ---
 
-// fetchJobsForDeployment fetches all jobs and filters by deployment ID
-func fetchJobsForDeployment(client *api.ClientWithResponses, workspaceID string, deploymentID string) tea.Cmd {
+// fetchJobsForDeployment fetches all jobs and filters by deployment ID.
+// NOTE: the Connect ListJobs RPC returns bare jobs without joined deployment
+// metadata, so jobs are filtered server-side by deployment id.
+func fetchJobsForDeployment(client *api.Client, workspaceID string, deploymentID string) tea.Cmd {
 	return func() tea.Msg {
 		ctx := context.Background()
-		limit := 100
-		resp, err := client.GetJobsWithResponse(ctx, workspaceID, &api.GetJobsParams{Limit: &limit})
+		resp, err := client.Job.ListJobs(ctx, connect.NewRequest(&apiv1.ListJobsRequest{
+			WorkspaceId:  workspaceID,
+			Limit:        100,
+			DeploymentId: &deploymentID,
+		}))
 		if err != nil {
 			return dataMsg{err: err}
 		}
-		if resp.JSON200 == nil {
-			return dataMsg{err: fmt.Errorf("unexpected response: %d", resp.HTTPResponse.StatusCode)}
-		}
 
 		var rows []tableRow
-		for _, item := range resp.JSON200.Items {
-			if item.Deployment == nil || item.Deployment.Id != deploymentID {
-				continue
-			}
-			envName := ""
-			if item.Environment != nil {
-				envName = item.Environment.Name
-			}
-			resName := ""
-			if item.Resource != nil {
-				resName = item.Resource.Name
+		for _, job := range resp.Msg.GetItems() {
+			id := job.GetId()
+			shortID := id
+			if len(shortID) > 8 {
+				shortID = shortID[:8]
 			}
 			rows = append(rows, tableRow{
-				id:      item.Job.Id,
-				cols:    []string{item.Job.Id[:8], string(item.Job.Status), envName, resName, item.Job.CreatedAt.Format("2006-01-02 15:04")},
-				rawItem: item,
+				id:      id,
+				cols:    []string{shortID, job.GetStatus(), "", "", job.GetCreatedAt().AsTime().Format(timeLayout)},
+				rawItem: job,
 			})
 		}
 		return dataMsg{rows: rows, total: len(rows)}
@@ -282,58 +281,56 @@ func fetchJobsForDeployment(client *api.ClientWithResponses, workspaceID string,
 }
 
 // fetchDeploymentsForResource fetches deployments associated with a resource
-func fetchDeploymentsForResource(client *api.ClientWithResponses, workspaceID string, resourceIdentifier string) tea.Cmd {
+func fetchDeploymentsForResource(client *api.Client, workspaceID string, resourceIdentifier string) tea.Cmd {
 	return func() tea.Msg {
 		ctx := context.Background()
-		limit := 100
-		resp, err := client.GetDeploymentsForResourceWithResponse(ctx, workspaceID, resourceIdentifier, &api.GetDeploymentsForResourceParams{Limit: &limit})
+		resp, err := client.Resource.ListResourceDeployments(ctx, connect.NewRequest(&apiv1.ListResourceDeploymentsRequest{
+			WorkspaceId:        workspaceID,
+			ResourceIdentifier: resourceIdentifier,
+			Limit:              100,
+		}))
 		if err != nil {
 			return dataMsg{err: err}
 		}
-		if resp.JSON200 == nil {
-			return dataMsg{err: fmt.Errorf("unexpected response: %d", resp.HTTPResponse.StatusCode)}
-		}
 
-		rows := make([]tableRow, 0, len(resp.JSON200.Items))
-		for _, dep := range resp.JSON200.Items {
-			desc := ""
-			if dep.Description != nil {
-				desc = *dep.Description
-			}
+		items := resp.Msg.GetItems()
+		rows := make([]tableRow, 0, len(items))
+		for _, dep := range items {
 			// Join system IDs (now plural)
 			systemIds := ""
 			rows = append(rows, tableRow{
-				id:      dep.Id,
-				cols:    []string{dep.Name, dep.Slug, systemIds, desc},
+				id:      dep.GetId(),
+				cols:    []string{dep.GetName(), dep.GetSlug(), systemIds, dep.GetDescription()},
 				rawItem: dep,
 			})
 		}
-		return dataMsg{rows: rows, total: resp.JSON200.Total}
+		return dataMsg{rows: rows, total: int(resp.Msg.GetTotal())}
 	}
 }
 
 // fetchVersionsForDeployment fetches versions for a specific deployment
-func fetchVersionsForDeployment(client *api.ClientWithResponses, workspaceID string, deploymentID string) tea.Cmd {
+func fetchVersionsForDeployment(client *api.Client, workspaceID string, deploymentID string) tea.Cmd {
 	return func() tea.Msg {
 		ctx := context.Background()
-		limit := 100
-		resp, err := client.ListDeploymentVersionsWithResponse(ctx, workspaceID, deploymentID, &api.ListDeploymentVersionsParams{Limit: &limit})
+		resp, err := client.Deployment.ListDeploymentVersions(ctx, connect.NewRequest(&apiv1.ListDeploymentVersionsRequest{
+			WorkspaceId:  workspaceID,
+			DeploymentId: deploymentID,
+			Limit:        100,
+		}))
 		if err != nil {
 			return dataMsg{err: err}
 		}
-		if resp.JSON200 == nil {
-			return dataMsg{err: fmt.Errorf("unexpected response: %d", resp.HTTPResponse.StatusCode)}
-		}
 
-		rows := make([]tableRow, 0, len(resp.JSON200.Items))
-		for _, item := range resp.JSON200.Items {
+		items := resp.Msg.GetItems()
+		rows := make([]tableRow, 0, len(items))
+		for _, item := range items {
 			rows = append(rows, tableRow{
-				id:      item.Id,
-				cols:    []string{item.Tag, string(item.Status), item.Name, item.CreatedAt.Format("2006-01-02 15:04")},
+				id:      item.GetId(),
+				cols:    []string{item.GetTag(), item.GetStatus(), item.GetName(), item.GetCreatedAt().AsTime().Format(timeLayout)},
 				rawItem: item,
 			})
 		}
-		return dataMsg{rows: rows, total: resp.JSON200.Total}
+		return dataMsg{rows: rows, total: int(resp.Msg.GetTotal())}
 	}
 }
 
@@ -345,7 +342,7 @@ func columnsForResource(rt resourceType) []string {
 	case resourceTypeResources:
 		return []string{"NAME", "KIND", "VERSION", "IDENTIFIER"}
 	case resourceTypeJobs:
-		return []string{"ID", "STATUS", "DEPLOYMENT", "ENVIRONMENT", "RESOURCE", "CREATED"}
+		return []string{"ID", "STATUS", "RELEASE", "ENVIRONMENT", "RESOURCE", "CREATED"}
 	case resourceTypeEnvironments:
 		return []string{"NAME", "DESCRIPTION", "ID", "CREATED"}
 	case resourceTypeVersions:

@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -38,7 +39,7 @@ func NewSyncPrefixesCmd() *cobra.Command {
 				return fmt.Errorf("failed to list Netbox prefixes: %w", err)
 			}
 
-			resources := make([]api.ResourceProviderResource, 0, len(allPrefixes))
+			resources := make([]*apiv1.ResourceInput, 0, len(allPrefixes))
 			for _, prefix := range allPrefixes {
 				resources = append(resources, mapPrefix(prefix))
 			}
@@ -88,7 +89,7 @@ func fetchAllPrefixes(ctx context.Context, client *netbox.APIClient) ([]netbox.P
 	return all, nil
 }
 
-func mapPrefix(prefix netbox.Prefix) api.ResourceProviderResource {
+func mapPrefix(prefix netbox.Prefix) *apiv1.ResourceInput {
 	metadata := map[string]string{}
 
 	metadata["netbox/id"] = strconv.Itoa(int(prefix.Id))
@@ -128,12 +129,12 @@ func mapPrefix(prefix netbox.Prefix) api.ResourceProviderResource {
 		config["vlan"] = vlan.GetDisplay()
 	}
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "netbox/prefix/v1",
 		Kind:       "Prefix",
 		Name:       prefix.Prefix,
 		Identifier: strconv.Itoa(int(prefix.Id)),
-		Config:     config,
+		Config:     api.NewStruct(config),
 		Metadata:   metadata,
 	}
 }

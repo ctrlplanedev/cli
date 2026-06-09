@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	appsv1 "k8s.io/api/apps/v1"
@@ -19,8 +21,8 @@ type syncConfig struct {
 	workspaceID       string
 	clusterName       string
 	kubeConfig        *rest.Config
-	client            *api.ClientWithResponses
-	resources         []api.ResourceProviderResource
+	client            *api.Client
+	resources         []*apiv1.ResourceInput
 }
 
 func (s *syncConfig) FetchNodes(ctx context.Context, clientset *kubernetes.Clientset) error {
@@ -28,7 +30,7 @@ func (s *syncConfig) FetchNodes(ctx context.Context, clientset *kubernetes.Clien
 	if err != nil {
 		return err
 	}
-	resources := make([]api.ResourceProviderResource, 0)
+	resources := make([]*apiv1.ResourceInput, 0)
 	for _, node := range nodes.Items {
 		processedNode := processNode(ctx, s.clusterName, node)
 		resources = append(resources, processedNode)
@@ -43,7 +45,7 @@ func (s *syncConfig) FetchNamespaces(ctx context.Context, clientset *kubernetes.
 		return err
 	}
 
-	resources := make([]api.ResourceProviderResource, 0)
+	resources := make([]*apiv1.ResourceInput, 0)
 	for _, namespace := range namespaces.Items {
 		resource := processNamespace(context.Background(), s.clusterName, namespace)
 		resources = append(resources, resource)
@@ -58,7 +60,7 @@ func (s *syncConfig) FetchDeployments(ctx context.Context, clientset *kubernetes
 	if err != nil {
 		return err
 	}
-	resources := make([]api.ResourceProviderResource, 0)
+	resources := make([]*apiv1.ResourceInput, 0)
 	for _, deployment := range deployments.Items {
 		resource := processDeployment(context.Background(), s.clusterName, deployment)
 		resources = append(resources, resource)
@@ -67,18 +69,18 @@ func (s *syncConfig) FetchDeployments(ctx context.Context, clientset *kubernetes
 	return nil
 }
 
-func newSync(clusterIdentifier string, workspaceID string, client *api.ClientWithResponses, kubeConfig *rest.Config, clusterName string) *syncConfig {
+func newSync(clusterIdentifier string, workspaceID string, client *api.Client, kubeConfig *rest.Config, clusterName string) *syncConfig {
 	return &syncConfig{
 		clusterIdentifier: clusterIdentifier,
 		workspaceID:       workspaceID,
 		client:            client,
 		clusterName:       clusterName,
 		kubeConfig:        kubeConfig,
-		resources:         make([]api.ResourceProviderResource, 0),
+		resources:         make([]*apiv1.ResourceInput, 0),
 	}
 }
 
-func processNamespace(_ context.Context, clusterName string, namespace corev1.Namespace) api.ResourceProviderResource {
+func processNamespace(_ context.Context, clusterName string, namespace corev1.Namespace) *apiv1.ResourceInput {
 	metadata := map[string]string{}
 	for key, value := range namespace.Labels {
 		metadata[fmt.Sprintf("tags/%s", key)] = value
@@ -89,21 +91,21 @@ func processNamespace(_ context.Context, clusterName string, namespace corev1.Na
 	metadata["namespace/api-version"] = namespace.APIVersion
 	metadata["namespace/status"] = string(namespace.Status.Phase)
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/kubernetes/namespace/v1",
 		Kind:       "KubernetesNamespace",
 		Name:       fmt.Sprintf("%s/%s", clusterName, namespace.Name),
 		Identifier: string(namespace.UID),
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			"id":     string(namespace.UID),
 			"name":   namespace.Name,
 			"status": namespace.Status.Phase,
-		},
+		}),
 		Metadata: metadata,
 	}
 }
 
-func processNode(_ context.Context, clusterName string, node corev1.Node) api.ResourceProviderResource {
+func processNode(_ context.Context, clusterName string, node corev1.Node) *apiv1.ResourceInput {
 	metadata := make(map[string]string)
 	for key, value := range node.Labels {
 		metadata[fmt.Sprintf("tags/%s", key)] = value
@@ -133,21 +135,21 @@ func processNode(_ context.Context, clusterName string, node corev1.Node) api.Re
 	metadata["kubernetes/architecture"] = node.Status.NodeInfo.Architecture
 	metadata["kubernetes/container-runtime"] = node.Status.NodeInfo.ContainerRuntimeVersion
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/kubernetes/node/v1",
 		Kind:       "KubernetesNode",
 		Name:       fmt.Sprintf("%s/%s", clusterName, node.Name),
 		Identifier: string(node.UID),
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			"id":     string(node.UID),
 			"name":   node.Name,
 			"status": node.Status.Phase,
-		},
+		}),
 		Metadata: metadata,
 	}
 }
 
-func processDeployment(_ context.Context, clusterName string, deployment appsv1.Deployment) api.ResourceProviderResource {
+func processDeployment(_ context.Context, clusterName string, deployment appsv1.Deployment) *apiv1.ResourceInput {
 	metadata := map[string]string{}
 	for key, value := range deployment.Labels {
 		metadata[fmt.Sprintf("tags/%s", key)] = value
@@ -157,33 +159,39 @@ func processDeployment(_ context.Context, clusterName string, deployment appsv1.
 	metadata["deployment/api-version"] = deployment.APIVersion
 	metadata["deployment/namespace"] = deployment.Namespace
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/kubernetes/deployment/v1",
 		Kind:       "KubernetesDeployment",
 		Name:       fmt.Sprintf("%s/%s/%s", clusterName, deployment.Namespace, deployment.Name),
 		Identifier: string(deployment.UID),
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			"id":        string(deployment.UID),
 			"name":      deployment.Name,
 			"namespace": deployment.Namespace,
-		},
+		}),
 		Metadata: metadata,
 	}
 }
 
-func (s *syncConfig) process(ctx context.Context, selectors ResourceTypes) ([]api.ResourceProviderResource, error) {
-	clusterResource, err := s.client.GetResourceByIdentifierWithResponse(ctx, s.workspaceID, s.clusterIdentifier)
+func (s *syncConfig) process(ctx context.Context, selectors ResourceTypes) ([]*apiv1.ResourceInput, error) {
+	clusterResource, err := s.client.Resource.GetResourceByIdentifier(ctx, connect.NewRequest(&apiv1.GetResourceByIdentifierRequest{
+		WorkspaceId: s.workspaceID,
+		Identifier:  s.clusterIdentifier,
+	}))
 	if err != nil {
-		log.Warn("Failed to get cluster resource", "identifier", s.clusterIdentifier, "error", err)
-	}
-	if clusterResource != nil && clusterResource.StatusCode() > 499 {
-		log.Warn("Failed to get cluster resource", "status", clusterResource.StatusCode(), "identifier", s.clusterIdentifier, "error", err)
-		return nil, fmt.Errorf("error access ctrlplane api: %s", clusterResource.Status())
+		if connect.CodeOf(err) == connect.CodeNotFound {
+			log.Warn("Failed to get cluster resource", "identifier", s.clusterIdentifier, "error", err)
+		} else {
+			log.Warn("Failed to get cluster resource", "identifier", s.clusterIdentifier, "error", err)
+			return nil, fmt.Errorf("error access ctrlplane api: %w", err)
+		}
 	}
 
-	if clusterResource != nil && clusterResource.JSON200 != nil {
-		log.Info("Found cluster resource", "name", clusterResource.JSON200.Name)
-		s.clusterName = clusterResource.JSON200.Name
+	var clusterMsg *apiv1.Resource
+	if err == nil && clusterResource.Msg != nil {
+		clusterMsg = clusterResource.Msg
+		log.Info("Found cluster resource", "name", clusterMsg.GetName())
+		s.clusterName = clusterMsg.GetName()
 	}
 
 	clientset, err := kubernetes.NewForConfig(s.kubeConfig)
@@ -209,9 +217,10 @@ func (s *syncConfig) process(ctx context.Context, selectors ResourceTypes) ([]ap
 		}
 	}
 
-	if clusterResource != nil && clusterResource.JSON200 != nil {
+	if clusterMsg != nil {
+		clusterMetadata := clusterMsg.GetMetadata()
 		for _, resource := range s.resources {
-			for key, value := range clusterResource.JSON200.Metadata {
+			for key, value := range clusterMetadata {
 				if strings.HasPrefix(key, "tags/") {
 					continue
 				}
@@ -219,7 +228,7 @@ func (s *syncConfig) process(ctx context.Context, selectors ResourceTypes) ([]ap
 					resource.Metadata[key] = value
 				}
 			}
-			resource.Metadata["kubernetes/name"] = clusterResource.JSON200.Name
+			resource.Metadata["kubernetes/name"] = clusterMsg.GetName()
 		}
 	}
 

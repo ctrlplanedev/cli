@@ -41,7 +41,7 @@ func NewResourceCmd() *cobra.Command {
 			log.Debug("resource found", "identifier", resource.Identifier, "name", resource.Name, "kind", resource.Kind)
 
 			if output != "silent" {
-				if err := cliutil.HandleAnyOutput(cmd, resource, output); err != nil {
+				if err := cliutil.HandleProtoAnyOutput(cmd, resource, output); err != nil {
 					return err
 				}
 			}

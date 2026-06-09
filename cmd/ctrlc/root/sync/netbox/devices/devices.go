@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
-	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/ctrlplanedev/cli/internal/common"
 	"github.com/spf13/cobra"
 )
@@ -50,7 +50,7 @@ func NewSyncDevicesCmd() *cobra.Command {
 				return fmt.Errorf("failed to list Netbox devices: %w", err)
 			}
 
-			resources := make([]api.ResourceProviderResource, 0, len(allDevices))
+			resources := make([]*apiv1.ResourceInput, 0, len(allDevices))
 			for _, device := range allDevices {
 				resources = append(resources, mapDevice(device))
 			}

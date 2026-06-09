@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
@@ -38,7 +39,7 @@ func NewSyncSitesCmd() *cobra.Command {
 				return fmt.Errorf("failed to list Netbox sites: %w", err)
 			}
 
-			resources := make([]api.ResourceProviderResource, 0, len(allSites))
+			resources := make([]*apiv1.ResourceInput, 0, len(allSites))
 			for _, site := range allSites {
 				resources = append(resources, mapSite(site))
 			}
@@ -88,7 +89,7 @@ func fetchAllSites(ctx context.Context, client *netbox.APIClient) ([]netbox.Site
 	return all, nil
 }
 
-func mapSite(site netbox.Site) api.ResourceProviderResource {
+func mapSite(site netbox.Site) *apiv1.ResourceInput {
 	metadata := map[string]string{}
 
 	metadata["netbox/id"] = strconv.Itoa(int(site.Id))
@@ -129,12 +130,12 @@ func mapSite(site netbox.Site) api.ResourceProviderResource {
 		config["tenant"] = tenant.GetName()
 	}
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "netbox/site/v1",
 		Kind:       "Site",
 		Name:       site.Name,
 		Identifier: strconv.Itoa(int(site.Id)),
-		Config:     config,
+		Config:     api.NewStruct(config),
 		Metadata:   metadata,
 	}
 }

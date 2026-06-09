@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"strings"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
+	"connectrpc.com/connect"
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/cli/internal/api"
 	"github.com/k-capehart/go-salesforce/v2"
@@ -235,41 +237,39 @@ func AddToMetadata(metadata map[string]string, key string, value any) {
 	}
 }
 
-func UpsertToCtrlplane(ctx context.Context, resources []api.ResourceProviderResource, providerName string) error {
+func UpsertToCtrlplane(ctx context.Context, resources []*apiv1.ResourceInput, providerName string) error {
 	apiURL := viper.GetString("url")
 	apiKey := viper.GetString("api-key")
 	workspaceId := viper.GetString("workspace")
 
-	ctrlplaneClient, err := api.NewAPIKeyClientWithResponses(apiURL, apiKey)
+	ctrlplaneClient, err := api.NewConnectClient(apiURL, apiKey)
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	upsertReq := api.RequestResourceProviderUpsertJSONRequestBody{
-		Name: providerName,
+	ws, err := ctrlplaneClient.GetWorkspaceID(ctx, workspaceId)
+	if err != nil {
+		return fmt.Errorf("failed to resolve workspace: %w", err)
 	}
-	providerResp, err := ctrlplaneClient.RequestResourceProviderUpsertWithResponse(ctx, workspaceId, upsertReq)
+	wsID := ws.String()
+
+	providerResp, err := ctrlplaneClient.Resource.UpsertResourceProvider(ctx, connect.NewRequest(&apiv1.UpsertResourceProviderRequest{
+		WorkspaceId: wsID,
+		Name:        providerName,
+	}))
 	if err != nil {
 		return fmt.Errorf("failed to upsert resource provider: %w", err)
 	}
 
-	if providerResp.JSON202 == nil {
-		return fmt.Errorf("failed to upsert resource provider: %s", providerResp.Body)
-	}
-
-	providerId := providerResp.JSON202.Id
+	providerId := providerResp.Msg.GetId()
 	log.Info("Upserting resources", "provider", providerName, "count", len(resources))
 
-	patchReq := api.SetResourceProviderResourcesJSONRequestBody{
-		Resources: resources,
-	}
-	setResp, err := ctrlplaneClient.SetResourceProviderResourcesWithResponse(ctx, workspaceId, providerId, patchReq)
-	if err != nil {
+	if _, err := ctrlplaneClient.Resource.SetResourceProviderResources(ctx, connect.NewRequest(&apiv1.SetResourceProviderResourcesRequest{
+		WorkspaceId: wsID,
+		ProviderId:  providerId,
+		Resources:   resources,
+	})); err != nil {
 		return fmt.Errorf("failed to set resources: %w", err)
-	}
-
-	if setResp.JSON202 == nil {
-		return fmt.Errorf("failed to set resources: %s", string(setResp.Body))
 	}
 
 	log.Info("Successfully synced resources", "count", len(resources))

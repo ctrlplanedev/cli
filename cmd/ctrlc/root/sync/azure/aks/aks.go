@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	apiv1 "buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go/ctrlplane/api/v1"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
@@ -160,8 +161,8 @@ func getDefaultSubscriptionID(ctx context.Context, cred azcore.TokenCredential) 
 	return "", fmt.Errorf("no subscriptions found")
 }
 
-func processClusters(ctx context.Context, cred azcore.TokenCredential, subscriptionID string, tenantID string) ([]api.ResourceProviderResource, error) {
-	var resources []api.ResourceProviderResource
+func processClusters(ctx context.Context, cred azcore.TokenCredential, subscriptionID string, tenantID string) ([]*apiv1.ResourceInput, error) {
+	var resources []*apiv1.ResourceInput
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	var syncErrors []error
@@ -212,7 +213,7 @@ func processClusters(ctx context.Context, cred azcore.TokenCredential, subscript
 	return resources, nil
 }
 
-func processCluster(_ context.Context, cluster *armcontainerservice.ManagedCluster, subscriptionID string, tenantID string) (api.ResourceProviderResource, error) {
+func processCluster(_ context.Context, cluster *armcontainerservice.ManagedCluster, subscriptionID string, tenantID string) (*apiv1.ResourceInput, error) {
 	resourceGroup := extractResourceGroupFromID(*cluster.ID)
 	metadata := initClusterMetadata(cluster, subscriptionID, resourceGroup, tenantID)
 
@@ -223,12 +224,12 @@ func processCluster(_ context.Context, cluster *armcontainerservice.ManagedClust
 	certificateAuthorityData := ""
 	// The Azure SDK may not expose KubeConfig directly, we'll handle this gracefully
 
-	return api.ResourceProviderResource{
+	return &apiv1.ResourceInput{
 		Version:    "ctrlplane.dev/kubernetes/cluster/v1",
 		Kind:       "AzureKubernetesService",
 		Name:       *cluster.Name,
 		Identifier: *cluster.ID,
-		Config: map[string]any{
+		Config: api.NewStruct(map[string]any{
 			"name":    *cluster.Name,
 			"version": *cluster.Properties.KubernetesVersion,
 			"server": map[string]any{
@@ -245,7 +246,7 @@ func processCluster(_ context.Context, cluster *armcontainerservice.ManagedClust
 				"status":         *cluster.Properties.ProvisioningState,
 				"skuTier":        string(*cluster.SKU.Tier),
 			},
-		},
+		}),
 		Metadata: metadata,
 	}, nil
 }
