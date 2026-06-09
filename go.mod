@@ -3,8 +3,8 @@ module github.com/ctrlplanedev/cli
 go 1.25.0
 
 require (
-	buf.build/gen/go/ctrlplane/ctrlplane/connectrpc/go v1.20.0-20260609184607-a9db52c24460.1
-	buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go v1.36.11-20260609184607-a9db52c24460.1
+	buf.build/gen/go/ctrlplane/ctrlplane/connectrpc/go v1.20.0-20260609195436-7a1c7140d0d3.1
+	buf.build/gen/go/ctrlplane/ctrlplane/protocolbuffers/go v1.36.11-20260609195436-7a1c7140d0d3.1
 	connectrpc.com/connect v1.20.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.9.0
