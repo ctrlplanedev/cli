@@ -130,7 +130,7 @@ func (r *ResourceItemSpec) upsert(ctx Context) error {
 func (r *ResourceItemSpec) getProviderID(ctx Context) (string, error) {
 	providerName := r.Provider
 	if providerName == "" {
-		providerName = "ctrlc-apply"
+		return "", fmt.Errorf("resource has no provider")
 	}
 
 	providerResp, err := ctx.APIClient().GetResourceProviderByNameWithResponse(ctx.Ctx(), ctx.WorkspaceIDValue(), providerName)
